@@ -2,7 +2,8 @@ import * as _ from 'lodash';
 import chalk from 'chalk';
 import ibkr from 'ib';
 import { IB_HOST, IB_PORT } from '../config'
-
+import { publishDataToTopic } from '../events/AppEvents.publisher';
+import { APPEVENTS } from 'src/events/APPEVENTS.const';
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
 
@@ -39,14 +40,20 @@ export class IBKRConnection {
     private listen(): void {
 
         // Important listners
-        this.ib.on('connected', function (err) {
+        this.ib.on('connected', function (err: Error) {
+          
+            if(err){
+                return console.log(APPEVENTS.CONNECTED, chalk.red(`IBKR error connecting client => ${clientId}`));
+            }
+
             console.log(chalk.green(`IBKR Connected client => ${clientId}`));
-            // publishDataToTopic({
-            //     topic: 'connected',
-            //     data: {
-            //         connected: true
-            //     }
-            // });
+
+            publishDataToTopic({
+                topic: APPEVENTS.CONNECTED,
+                data: {
+                    connected: true
+                }
+            });
         })
 
         this.ib.on('error', function (err) {

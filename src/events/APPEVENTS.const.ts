@@ -1,5 +1,5 @@
 
 export enum APPEVENTS {
-    CONNECT = 'connect',
+    CONNECTED = 'connected',
     ORDER = 'order',
 }

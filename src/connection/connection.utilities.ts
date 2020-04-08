@@ -7,7 +7,7 @@ import { APPEVENTS } from "src/events/APPEVENTS.const";
 export const onConnected = (): Promise<boolean> => {
 
     const appEvents = AppEvents.Instance;
-    const eventName = APPEVENTS.CONNECT;
+    const eventName = APPEVENTS.CONNECTED;
     // TODO check if already connected
     return new Promise((resolve, reject) => {
         const handleConnected = () => {
