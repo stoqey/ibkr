@@ -1,0 +1,70 @@
+{
+  "name": "@stoqey/ibkr",
+  "private": false,
+  "version": "0.0.1",
+  "description": "NodeJS Interactive Brokers wrapper & utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "register/",
+    "LICENSE"
+  ],
+  "scripts": {
+    "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
+    "build": "rimraf dist && tsc",
+    "test-spec": "ava src/strategy.test.ts",
+    "test": "npm run test-spec",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=4.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/stoqey/ibkr.git"
+  },
+  "keywords": [
+    "interactive brokers",
+    "interactive-brokers",
+    "ibkr",
+    "ibkr api",
+    "stoqey",
+    "algorithms",
+    "stocks"
+  ],
+  "author": {
+    "name": "Ceddy Muhoza",
+    "email": "ceddymuhoza@gmail.com",
+    "url": "https://ceddy.org"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stoqey/ibkr/issues"
+  },
+  "homepage": "https://github.com/stoqey/ibkr",
+  "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/lodash": "^4.14.144",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^10.0.3",
+    "@types/source-map-support": "^0.4.0",
+    "chai": "^4.2.0",
+    "chalk": "^4.0.0",
+    "dotenv": "^8.2.0",
+    "mocha": "^7.1.1",
+    "rimraf": "^2.5.4",
+    "ts-node": "^8.4.1",
+    "tslint": "^5.11.0",
+    "tslint-config-standard": "^8.0.1",
+    "typescript": "^3.2.4"
+  },
+  "peerDependencies": {
+    "typescript": ">=2.0"
+  },
+  "dependencies": {
+    "ib": "^0.2.7",
+    "lodash": "^4.17.15"
+  }
+}
