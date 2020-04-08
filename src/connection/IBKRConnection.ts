@@ -8,8 +8,8 @@ import { APPEVENTS } from 'src/events/APPEVENTS.const';
 const clientId = _.random(100, 100000);
 
 /**
- * Singleton class
- * For IBKR connection
+ * Global IBKR connection
+ * @singleton class
  */
 export class IBKRConnection {
 
@@ -56,12 +56,12 @@ export class IBKRConnection {
             });
         })
 
-        this.ib.on('error', function (err) {
-            console.log(chalk.red(err.message));
+        this.ib.on('error', function (err: Error) {
+            console.log(APPEVENTS.ERROR_CONNECT, chalk.red(err && err.message));
         })
 
-        this.ib.on('disconnected', function (err) {
-            console.log(chalk.red(`Connection disconnected => ${clientId}`));
+        this.ib.on('disconnected', function (err: Error) {
+            console.log(APPEVENTS.DISCONNECTED, chalk.red(`Connection disconnected => ${clientId}`));
         });
 
         // connect the IBKR
@@ -84,7 +84,7 @@ export class IBKRConnection {
      */
     public disconnectIBKR(): void {
         try {
-            console.log(chalk.keyword("orange")(`IBKR Force shutdown ${clientId} 😴`));
+            console.log(chalk.keyword("orange")(`IBKR Force shutdown ${clientId} 😴😴😴`));
             this.ib.disconnect();
         }
         catch (error) {
@@ -95,5 +95,4 @@ export class IBKRConnection {
 
 
 }
-/*  */
 export default IBKRConnection;
