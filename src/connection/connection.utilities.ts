@@ -12,10 +12,8 @@ export const onConnected = (): Promise<boolean> => {
 
     return new Promise((resolve, reject) => {
 
-        const errorFailedToConnect = new Error('Error failed to connect');
-
         if(ibkr.status === APPEVENTS.CONNECTED){
-            resolve(true);
+            return resolve(true);
         }
 
         const handleConnected = () => {
