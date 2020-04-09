@@ -1,7 +1,7 @@
 import _ from 'lodash';
-import IbConnection from "../ibConnection";
-import { getRadomReqId } from '../utils/text.utils';
-import { ContractDetails, ContractObject } from '../contract/interface.contract';
+import { ContractDetails, ContractObject } from './contracts.interfaces';
+import { getRadomReqId } from '../_utils/text.utils';
+import IBKRConnection from '../connection/IBKRConnection';
 
 
 interface ContactWithCost extends ContractObject {
@@ -14,9 +14,9 @@ interface Contacts {
 };
 
 
-export const getContractDetails = (symbol: string): Promise<ContractDetails.RootObject> => {
+export const getContractDetails = (symbol: string): Promise<ContractDetails> => {
 
-    let contract: ContractDetails.RootObject = {} as any;
+    let contract: ContractDetails = {} as any;
 
 
 
@@ -25,7 +25,7 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails.Root
     return new Promise(
         (resolve, reject) => {
 
-            const ib = IbConnection.Instance.getIBKR();
+            const ib = IBKRConnection.Instance.getIBKR();
 
             const contractArg = ib.contract.stock(symbol);
 
@@ -41,7 +41,7 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails.Root
                 resolve(contract)
             })
 
-            ib.reqContractDetails(reqId, contractArg)
+            ib.reqContractDetails(reqId, contractArg);
         }
 
     )
