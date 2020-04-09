@@ -1,16 +1,14 @@
-import test from 'ava';
-import isEmpty from 'lodash/isEmpty';
-// import { getPortfolio } from './getPortfolio';
+import 'mocha';
+import { expect } from 'chai'
+import Portfolios from './Portfolios';
 
-import IbConnection from '../ibConnection';
-import chalk from 'chalk';
+const portfolios = Portfolios.Instance;
 
-test.after(t => {
-    IbConnection.Instance.disconnectIBKR();
-});
+describe('Given IBKR with proper env, port, url', () => {
 
-test('Get All portfolios', async t => {
-    // const accountPortfolios = await getPortfolio(true);
-    // console.log(chalk.yellowBright(`-----------------------------ALL-PORTFOLIOS-------------------------------`))
-    // t.is(isEmpty(accountPortfolios), false);
+    it('should be connected to ibkr',  async () => {
+         const accountPortfolios = portfolios.getPortfolios();
+        expect(accountPortfolios).to.be.equal([]);
+    });
+
 });
