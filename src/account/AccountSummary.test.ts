@@ -1,6 +1,5 @@
 import 'mocha';
 import { expect } from 'chai'
-import isEmpty from 'lodash/isEmpty';
 import AccountSummary from './AccountSummary';
 
 

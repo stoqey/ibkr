@@ -9,9 +9,8 @@ import isEmpty from 'lodash/isEmpty';
 
 const appEvents = AppEvents.Instance;
 
-const ib = IBKRConnection.Instance.getIBKR();
-
 export class AccountSummary {
+    ib = IBKRConnection.Instance.getIBKR();
     accountReady: boolean = false;
     tickerId = getRadomReqId();
     AccountId;
@@ -24,6 +23,8 @@ export class AccountSummary {
 
     private constructor() {
         const self = this;
+
+        const ib = this.ib;
 
         // Record values from here
         ib.on('accountSummary', (reqId, account, tag, value, currency) => {
