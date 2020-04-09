@@ -5,6 +5,7 @@ import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/AppEvents.publisher';
 import { APPEVENTS } from '../events/APPEVENTS.const';
 import { ConnectionStatus } from './connection.interfaces';
+import AccountSummary from '../account/AccountSummary';
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
@@ -38,6 +39,13 @@ export class IBKRConnection {
     }
 
     /**
+     * initialiseDep
+     */
+    public initialiseDep() {
+        AccountSummary.Instance;
+    }
+
+    /**
      * On listen for IB connection
      */
     private listen(): void {
@@ -58,6 +66,9 @@ export class IBKRConnection {
             }
 
             console.log(chalk.green(`IBKR Connected client => ${clientId}`));
+
+            // initialise dependencies
+            self.initialiseDep();
 
             publishDataToTopic({
                 topic: APPEVENTS.CONNECTED,

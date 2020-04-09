@@ -6,6 +6,7 @@ import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
 import { LIVE_ACCOUNT_IDS } from '../config';
 import isEmpty from 'lodash/isEmpty';
+import { Portfolios } from '../portfolios';
 
 const appEvents = AppEvents.Instance;
 
@@ -33,6 +34,7 @@ export class AccountSummary {
             this.accountSummary.AccountId = account;
             this.accountSummary[tag] = value; // set the account value
             this.accountSummary.Currency = currency; // always set the account currency
+            console.log('accountSummaryEnd', { account, tag, value, });
         });
 
         // Return values from here 
@@ -51,6 +53,8 @@ export class AccountSummary {
                     data: accountSummary
                 })
             }
+
+            self.initialiseDep();
         });
 
         // Request Account summary from here
@@ -87,6 +91,13 @@ export class AccountSummary {
         ]);
 
     }
+
+        /**
+     * initialiseDep
+     */
+    public initialiseDep() {
+        Portfolios.Instance/*  */;
+    }/*  */
 
     /**
      * isLiveAccount

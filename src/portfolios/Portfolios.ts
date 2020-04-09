@@ -6,10 +6,6 @@ import { publishDataToTopic } from '../events/AppEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
 
-const accountSummary = AccountSummary.Instance;
-
-const ib = IBKRConnection.Instance.getIBKR();
-
 /**
  * Log portfolio to console
  * @param @interface PortFolioUpdate
@@ -30,6 +26,9 @@ const logPortfolio = ({ marketPrice, averageCost, position, contract }: PortFoli
 
 export class Portfolios {
 
+    ib = IBKRConnection.Instance.getIBKR();
+    accountSummary = AccountSummary.Instance;
+
     private static _instance: Portfolios;
 
     currentPortfolios: PortFolioUpdate[] = [];
@@ -41,6 +40,8 @@ export class Portfolios {
 
     private constructor() {
 
+        const ib = this.ib;
+        
         ib.on('accountDownloadEnd', () => {
             console.log(chalk.blue('END:PROMISE accountDownloadEnd'))
             console.log(chalk.blueBright(`********************************************************** Portfolio changed emitting to listeners ${this.currentPortfolios.length}`))
@@ -82,7 +83,7 @@ export class Portfolios {
             }
         });
 
-        ib.reqAccountUpdates(true, accountSummary.AccountId);
+        ib.reqAccountUpdates(true, this.accountSummary);
     }
 
     getPortfolios(): PortFolioUpdate[] {
