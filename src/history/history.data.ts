@@ -1,49 +1,13 @@
 import _ from 'lodash';
-import IbConnection from "../../ibConnection";
-import { getRadomReqId } from '../../utils/text.utils';
 import isEmpty from 'lodash/isEmpty';
-import { publishDataToTopic } from '../../servers/MQ.Publishers';
-import { AppEvents } from '../../servers/app.EventEmitter';
-// import { getArgs } from '../../utils/script.utils';
+import { getRadomReqId } from '../_utils/text.utils';
+import IBKRConnection from '../connection/IBKRConnection';
+import { AppEvents, publishDataToTopic } from '../events';
+import { HistoryData, SymbolWithTicker, ReqHistoricalData } from './history.interfaces';
 
-const ib = IbConnection.Instance.getIBKR();
+const ib = IBKRConnection.Instance.getIBKR();
 const appEvents = AppEvents.Instance;
 
-enum WhatToShow {
-  ADJUSTED_LAST,
-  TRADES, MIDPOINT, BID, ASK, // << only these are valid for real-time bars
-  BID_ASK, HISTORICAL_VOLATILITY, OPTION_IMPLIED_VOLATILITY, YIELD_ASK, YIELD_BID, YIELD_BID_ASK, YIELD_LAST
-}
-
-type BarSizeSetting = "1 secs" | "5 secs" | "10 secs" | "15 secs" | "30 secs" | "1 min" | "2 mins" | "3 mins" | "5 mins" | "10 mins" | "15 mins" | "20 mins" | "30 mins" | "1 hour" | "2 hours" | "3 hours" | "4 hours" | "8 hours" | "1 day" | "1W" | "1M";
-export interface HistoryData {
-  reqId?: number;
-  date?: string; // "20190308  11:59:56"
-  open?: number;
-  high?: number;
-  low?: number;
-  close: number;
-  volume?: number;
-  barCount?: number;
-  WAP?: number;
-  hasGaps?: boolean;
-}
-
-interface ReqHistoricalData {
-  contract: string[], // 'IFRX', 'SMART', 'USD',
-  endDateTime: string; // '20190308 12:00:00',
-  durationStr: string; // '1800 S'
-  barSizeSetting: BarSizeSetting; // '1 secs'
-  whatToShow?: keyof typeof WhatToShow; // 'TRADES'
-  useRTH?: any;
-  formatDate?: number;
-  keepUpToDate?: boolean;
-}
-
-interface SymbolWithTicker {
-  tickerId: number,
-  symbol: string;
-}
 
 
 class AccountHistoryData {
@@ -223,7 +187,9 @@ class AccountHistoryData {
   /**
    * getHistoricalDataSync
    */
-  public getHistoricalDataSync(symbol: string): Promise<HistoryData[]> {
+  public getHistoricalDataSync(symbol: string, opt?: { timeout: number }): Promise<HistoryData[]> {
+
+    const timeOut = opt && opt.timeout || 2000;
 
     let that = this;
     const eventName = 'marketData';
@@ -231,8 +197,8 @@ class AccountHistoryData {
     return new Promise((resolve, reject) => {
 
 
-      const handleMarketData = ({ symbol: symbolFromEvent, marketData }: { symbol: string, marketData: HistoryData[]}) => {
-        if(symbolFromEvent === symbol){
+      const handleMarketData = ({ symbol: symbolFromEvent, marketData }: { symbol: string, marketData: HistoryData[] }) => {
+        if (symbolFromEvent === symbol) {
           appEvents.removeListener(eventName, handleMarketData);
           return resolve(marketData)
         }
@@ -244,17 +210,17 @@ class AccountHistoryData {
       // if not found it will initiate reqHistoricalData
       const histData = that.getHistoryData(symbol);
 
-      if(!isEmpty(histData)){
+      if (!isEmpty(histData)) {
         return resolve(histData);
       }
 
       // timeout after 6 seconds 
       setTimeout(() => {
-        handleMarketData({ symbol, marketData: []})
-      }, 6000);
+        handleMarketData({ symbol, marketData: [] })
+      }, timeOut);
 
     });
-    
+
   }
 }
 

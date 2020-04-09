@@ -1,31 +1,26 @@
-import test from 'ava';
-import AccountHistoryData, { HistoryData } from './history.data';
-import IbConnection from '../../ibConnection';
-import isEmpty from 'lodash/isEmpty';
-import { AppEvents, onConnected } from '../../servers/app.EventEmitter';
+import 'mocha';
+import { expect } from 'chai'
+import AccountHistoryData from './history.data';
+import { onConnected } from '../connection/connection.utilities';
 
 const fsPromises = require('fs').promises
-IbConnection.Instance;
-AccountHistoryData.Instance;
-
-AppEvents
-
-test.after(t => {
-    IbConnection.Instance.disconnectIBKR();
-});
 
 let demoSymbolData;
 
-test('Get history data', async t => {
-    const symbol = "PECK";
+describe('Historical Data', () => {
+    it('should get market data', async () => {
+        const symbol = "PECK";
+    
+        await onConnected();
+    
+        demoSymbolData = await AccountHistoryData.Instance.getHistoricalDataSync(symbol);
+    
+        await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(demoSymbolData))
+    
+        console.log(`Historical Data for ${symbol} ${demoSymbolData && demoSymbolData.length}`);
+        expect(demoSymbolData).to.be.not.empty;
+    
+    });
+})
 
-    await onConnected();
-
-    demoSymbolData = await AccountHistoryData.Instance.getHistoricalDataSync(symbol);
-
-    await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(demoSymbolData))
-
-    console.log(`Historical Data for ${symbol} ${demoSymbolData && demoSymbolData.length}`)
-    t.is(isEmpty(demoSymbolData), false);
-});
 
