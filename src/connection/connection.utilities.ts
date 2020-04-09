@@ -27,8 +27,8 @@ export const onConnected = (): Promise<boolean> => {
         };
 
         const removeListners = () => {
-            appEvents.removeListener(APPEVENTS.CONNECTED, handleConnected);
-            appEvents.removeListener(APPEVENTS.DISCONNECTED, handleDisconnect);
+            appEvents.off(APPEVENTS.CONNECTED, handleConnected);
+            appEvents.off(APPEVENTS.DISCONNECTED, handleDisconnect);
         }
 
         appEvents.on(APPEVENTS.CONNECTED, handleConnected)
