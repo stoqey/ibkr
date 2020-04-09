@@ -1,11 +1,13 @@
 import includes from 'lodash/includes';
 import { getRadomReqId } from '../_utils/text.utils';
-import { publishDataToTopic, APPEVENTS } from '../events';
+import { publishDataToTopic, APPEVENTS, AppEvents } from '../events';
 import { IBKRAccountSummary } from './account-summary.interfaces'
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
 import { LIVE_ACCOUNT_IDS } from '../config';
+import isEmpty from 'lodash/isEmpty';
 
+const appEvents = AppEvents.Instance;
 
 const ib = IBKRConnection.Instance.getIBKR();
 
@@ -45,10 +47,7 @@ export class AccountSummary {
                 // Publish account ready
                 publishDataToTopic({
                     topic: APPEVENTS.ACCOUNT_SUMMARY,
-                    data: {
-                        ready: true,
-                        accountSummary,
-                    }
+                    data: accountSummary
                 })
             }
         });
@@ -94,6 +93,27 @@ export class AccountSummary {
      */
     public isLiveAccount(): boolean {
         return includes(LIVE_ACCOUNT_IDS, this.AccountId)
+    }
+
+    /**
+     * getAccountSummary
+     */
+    public getAccountSummary(): Promise<IBKRAccountSummary> {
+        const { accountSummary } = this;
+        return new Promise((resolve, reject) => {
+
+            if (!isEmpty(accountSummary)) {
+                return resolve(accountSummary);
+            }
+
+            // listen for account summary
+            const handleAccountSummary = (accountSummaryData) => {
+                appEvents.off(APPEVENTS.ACCOUNT_SUMMARY, handleAccountSummary);
+                resolve(accountSummaryData);
+            }
+            appEvents.on(APPEVENTS.ACCOUNT_SUMMARY, handleAccountSummary);
+        })
+
     }
 }
 
