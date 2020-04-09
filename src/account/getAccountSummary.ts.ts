@@ -1,6 +1,6 @@
 import test from 'ava';
 import isEmpty from 'lodash/isEmpty';
-import getAccountSummary from './getAccountSummary';
+import getAccountSummary from './AccountSummary';
 import { getAllPositions } from './getPositions';
 import IbConnection from '../ibConnection';
 import { onAccount } from '../servers/app.EventEmitter';
