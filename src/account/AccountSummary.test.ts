@@ -1,16 +1,15 @@
-import test from 'ava';
+import 'mocha';
+import { expect } from 'chai'
 import isEmpty from 'lodash/isEmpty';
-import getAccountSummary from './AccountSummary';
-import { getAllPositions } from './getPositions';
-import IbConnection from '../ibConnection';
-import { onAccount } from '../servers/app.EventEmitter';
-test.after(t => {
-    IbConnection.Instance.disconnectIBKR();
-});
+import AccountSummary from './AccountSummary';
 
-test('Get account Summary', async t => {
-    getAccountSummary.Instance;
-    const { accountSummary } =  await onAccount();
-    console.log(JSON.stringify(accountSummary))
-	t.is(accountSummary.Currency, 'CAD');
-});
+
+describe('Account Summary', () => {
+    it('should get account Summary', async t => {
+        const accountSummary = AccountSummary.Instance;
+        const { AccountId, Currency } = await accountSummary.getAccountSummary();
+        console.log('Account summary', JSON.stringify({ AccountId, Currency }))
+        expect(Currency).to.be.equals("CAD");
+    });
+})
+
