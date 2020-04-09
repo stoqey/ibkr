@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ibkr from 'ib';
 import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/AppEvents.publisher';
-import { APPEVENTS } from 'src/events/APPEVENTS.const';
+import { APPEVENTS } from '../events/APPEVENTS.const';
 import { ConnectionStatus } from './connection.interfaces';
 
 // This has to be unique per this execution
@@ -48,7 +48,13 @@ export class IBKRConnection {
         this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
           
             if(err){
-                return console.log(APPEVENTS.CONNECTED, chalk.red(`IBKR error connecting client => ${clientId}`));
+
+                publishDataToTopic({
+                    topic: APPEVENTS.DISCONNECTED,
+                    data: {}
+                });
+
+                return console.log(APPEVENTS.DISCONNECTED, chalk.red(`IBKR error connecting client => ${clientId}`));
             }
 
             console.log(chalk.green(`IBKR Connected client => ${clientId}`));
@@ -63,8 +69,16 @@ export class IBKRConnection {
             self.status = APPEVENTS.CONNECTED;
         })
 
-        this.ib.on(APPEVENTS.ERROR, function (err: Error) {
+        this.ib.on(APPEVENTS.ERROR, function (err: any) {
             console.log(APPEVENTS.ERROR, err);
+
+            // If connection error, emit disconnect
+            if(err && err.code === 'ECONNREFUSED'){
+                publishDataToTopic({
+                    topic: APPEVENTS.DISCONNECTED,
+                    data: {}
+                });
+            }
         })
 
         this.ib.on(APPEVENTS.DISCONNECTED, function (err: Error) {

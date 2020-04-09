@@ -14,7 +14,7 @@
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
     "build": "rimraf dist && tsc",
     "test-spec": "ava src/strategy.test.ts",
-    "test": "npm run test-spec",
+    "test": "mocha src/**/*test.ts --exit",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm test"
   },

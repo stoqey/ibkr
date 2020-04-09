@@ -1,5 +1,5 @@
-import { AppEvents } from "src/events/AppEvents";
-import { APPEVENTS } from "src/events/APPEVENTS.const";
+import { AppEvents } from "../events/AppEvents";
+import { APPEVENTS } from "../events/APPEVENTS.const";
 import IBKRConnection from "./IBKRConnection";
 
 /**
@@ -10,19 +10,30 @@ export const onConnected = (): Promise<boolean> => {
     const appEvents = AppEvents.Instance;
     const ibkr = IBKRConnection.Instance;
 
-    const eventName = APPEVENTS.CONNECTED;
-
     return new Promise((resolve, reject) => {
+
+        const errorFailedToConnect = new Error('Error failed to connect');
 
         if(ibkr.status === APPEVENTS.CONNECTED){
             resolve(true);
         }
 
         const handleConnected = () => {
-            appEvents.removeListener(eventName, handleConnected);
-            return resolve(true);
+            removeListners();
+            resolve(true);
         };
 
-        appEvents.on(eventName, handleConnected)
+        const handleDisconnect = () => {
+            removeListners();
+            resolve(false)
+        };
+
+        const removeListners = () => {
+            appEvents.removeListener(APPEVENTS.CONNECTED, handleConnected);
+            appEvents.removeListener(APPEVENTS.DISCONNECTED, handleDisconnect);
+        }
+
+        appEvents.on(APPEVENTS.CONNECTED, handleConnected)
+        appEvents.on(APPEVENTS.DISCONNECTED, handleDisconnect)
     })
 }
