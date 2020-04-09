@@ -1,5 +1,6 @@
 import { AppEvents } from "src/events/AppEvents";
 import { APPEVENTS } from "src/events/APPEVENTS.const";
+import IBKRConnection from "./IBKRConnection";
 
 /**
  * Async function for getting IBKR @connected event
@@ -7,13 +8,21 @@ import { APPEVENTS } from "src/events/APPEVENTS.const";
 export const onConnected = (): Promise<boolean> => {
 
     const appEvents = AppEvents.Instance;
+    const ibkr = IBKRConnection.Instance;
+
     const eventName = APPEVENTS.CONNECTED;
-    // TODO check if already connected
+
     return new Promise((resolve, reject) => {
+
+        if(ibkr.status === APPEVENTS.CONNECTED){
+            resolve(true);
+        }
+
         const handleConnected = () => {
             appEvents.removeListener(eventName, handleConnected);
             return resolve(true);
         };
+
         appEvents.on(eventName, handleConnected)
     })
 }

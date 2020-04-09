@@ -4,6 +4,8 @@ import ibkr from 'ib';
 import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/AppEvents.publisher';
 import { APPEVENTS } from 'src/events/APPEVENTS.const';
+import { ConnectionStatus } from './connection.interfaces';
+
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
 
@@ -13,6 +15,7 @@ const clientId = _.random(100, 100000);
  */
 export class IBKRConnection {
 
+    public status: ConnectionStatus = APPEVENTS.DISCONNECTED;
     public IB_PORT: number = IB_PORT;
     public IB_HOST: string = IB_HOST;
     private static _instance: IBKRConnection;
@@ -39,8 +42,10 @@ export class IBKRConnection {
      */
     private listen(): void {
 
+        const self: IBKRConnection = this;
+
         // Important listners
-        this.ib.on('connected', function (err: Error) {
+        this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
           
             if(err){
                 return console.log(APPEVENTS.CONNECTED, chalk.red(`IBKR error connecting client => ${clientId}`));
@@ -54,14 +59,17 @@ export class IBKRConnection {
                     connected: true
                 }
             });
+
+            self.status = APPEVENTS.CONNECTED;
         })
 
-        this.ib.on('error', function (err: Error) {
-            console.log(APPEVENTS.ERROR_CONNECT, chalk.red(err && err.message));
+        this.ib.on(APPEVENTS.ERROR, function (err: Error) {
+            console.log(APPEVENTS.ERROR, err);
         })
 
-        this.ib.on('disconnected', function (err: Error) {
+        this.ib.on(APPEVENTS.DISCONNECTED, function (err: Error) {
             console.log(APPEVENTS.DISCONNECTED, chalk.red(`Connection disconnected => ${clientId}`));
+            self.status = APPEVENTS.DISCONNECTED;
         });
 
         // connect the IBKR
@@ -83,12 +91,13 @@ export class IBKRConnection {
      * disconnectIBKR
      */
     public disconnectIBKR(): void {
+        this.status = APPEVENTS.DISCONNECTED;
         try {
             console.log(chalk.keyword("orange")(`IBKR Force shutdown ${clientId} 😴😴😴`));
             this.ib.disconnect();
         }
         catch (error) {
-            console.log(chalk.red(error))
+            console.log(APPEVENTS.ERROR, chalk.red(error))
         }
 
     }
