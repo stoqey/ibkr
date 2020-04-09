@@ -9,6 +9,15 @@ export enum APPEVENTS {
 
     // Orders portfolios, historicalData, 
     ORDER = 'order',
-    PORTFOLIOS = 'portfolios',
     
+    GET_OPEN_ORDERS = 'get_open_orders',
+
+    SAVE_ORDER = 'save_order',
+
+    PORTFOLIOS = 'portfolios',
+
+    ACCOUNT_SUMMARY = 'account_summary',
+
+
+
 }
