@@ -46,25 +46,33 @@ export class IBKRConnection {
      * initialiseDep
      * Call/Initialize Account summary -> Portfolios -> OpenOrders
      */
-    public async initialiseDep(): Promise<boolean> {
-        // 1. Account summary
-        console.log('1. Account summary')
-        const accountSummary = AccountSummary.Instance;
-        accountSummary.init();
-        await accountSummary.getAccountSummary();
-        // 2. Portolios
-        console.log('2. Portolios')
-        const portfolio = Portfolios.Instance;
-        await portfolio.init();
-        await portfolio.getPortfolios();
+    public initialiseDep = async (): Promise<boolean> => {
 
-        console.log('3. OpenOrders');
-        const openOrders = OpenOrders.Instance;
-        openOrders.init();
-        await openOrders.getOpenOrders();
+        try {
+            // 1. Account summary
+            console.log('1. Account summary')
+            const accountSummary = AccountSummary.Instance;
+            accountSummary.init();
+            await accountSummary.getAccountSummary();
+            // 2. Portolios
+            console.log('2. Portolios')
+            const portfolio = Portfolios.Instance;
+            await portfolio.init();
+            await portfolio.getPortfolios();
 
-        appEvents.emit(APPEVENTS.READY, { ready: true });
-        return true;
+            console.log('3. OpenOrders');
+            const openOrders = OpenOrders.Instance;
+            openOrders.init();
+            await openOrders.getOpenOrders();
+
+            return true;
+
+        }
+        catch (error) {
+            console.log('error initialising IBKR', error);
+            return false;
+        }
+
     }
 
     /**
