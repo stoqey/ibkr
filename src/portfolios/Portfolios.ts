@@ -89,7 +89,7 @@ export class Portfolios {
             });
 
             // Check if portfolio exists in currentPortfolios
-            const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.contract.symbol });
+            const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
 
             // Position has to be greater than 0
             if (!isPortFolioAlreadyExist && position > 0) {
