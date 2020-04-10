@@ -32,8 +32,9 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails> => 
             ib.on('contractDetails', (reqIdX, contract) => {
                 reqId = reqIdX;
                 contract = contract;
-
                 console.log('Contract details', JSON.stringify(contract))
+                resolve(contract);
+                
             })
 
             ib.on('contractDetailsEnd', (reqId) => {

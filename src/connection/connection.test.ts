@@ -2,11 +2,13 @@ import 'mocha';
 import { expect } from 'chai';
 import { onConnected } from './connection.utilities';
 import IBKRConnection from './IBKRConnection';
+import { delay } from '../_utils/promise';
 
 before(done => {
     async function connect() {
         const connection = await onConnected();
         if (connection) {
+            await IBKRConnection.Instance.initialiseDep();
             return done();
         }
         done(new Error('Failed to connect interactive brokers, please check envs'))

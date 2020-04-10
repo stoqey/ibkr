@@ -10,10 +10,9 @@ describe('Given IBKR with proper env, port, url', () => {
         let accountPortfolios = [];
         if (await onConnected()) {
             const portfolios = Portfolios.Instance;
-            accountPortfolios = portfolios.getPortfolios();
+            accountPortfolios = await portfolios.getPortfolios();
         }
-
-        expect(accountPortfolios).to.be.equal([]);
+        expect(accountPortfolios).to.be.not.null;
     });
 
 });

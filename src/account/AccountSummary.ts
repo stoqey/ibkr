@@ -9,9 +9,10 @@ import isEmpty from 'lodash/isEmpty';
 import { Portfolios } from '../portfolios';
 
 const appEvents = AppEvents.Instance;
+const ib = IBKRConnection.Instance.getIBKR();
 
 export class AccountSummary {
-    ib = IBKRConnection.Instance.getIBKR();
+    ib: any;
     accountReady: boolean = false;
     tickerId = getRadomReqId();
     AccountId;
@@ -23,42 +24,51 @@ export class AccountSummary {
     }
 
     private constructor() {
-        const self = this;
+        this.ib = IBKRConnection.Instance.getIBKR();
+    }
 
-        const ib = this.ib;
+    public init() {
+        const self = this;
 
         // Record values from here
         ib.on('accountSummary', (reqId, account, tag, value, currency) => {
-            this.tickerId = reqId;
-            this.AccountId = account;
-            this.accountSummary.AccountId = account;
-            this.accountSummary[tag] = value; // set the account value
-            this.accountSummary.Currency = currency; // always set the account currency
-            console.log('accountSummaryEnd', { account, tag, value, });
+            self.tickerId = reqId;
+            self.AccountId = account;
+            self.accountSummary.AccountId = account;
+            self.accountSummary[tag] = value; // set the account value
+            self.accountSummary.Currency = currency; // always set the account currency
+            // console.log('accountSummaryEnd', { account, tag, value, });
         });
 
         // Return values from here 
-        ib.on('accountSummaryEnd', () => {
+        ib.once('accountSummaryEnd', () => {
             const { AccountId = 'unknown', tickerId, accountReady, accountSummary } = self;
 
-            // We got the account id so success
-            log('accountSummaryEnd', { AccountId, tickerId });
+            log('accountSummaryEnd', { AccountId, tickerId, accountReady });
+
 
             ib.cancelAccountSummary(tickerId);
 
-            if (!accountReady) {
-                // Publish account ready
-                publishDataToTopic({
-                    topic: APPEVENTS.ACCOUNT_SUMMARY,
-                    data: accountSummary
-                })
-            }
 
-            self.initialiseDep();
+            publishDataToTopic({
+                topic: APPEVENTS.ACCOUNT_SUMMARY,
+                data: accountSummary
+            });
+
+            self.accountReady = true;
+
         });
 
+        self.reqAccountSummary();
+
+    }
+
+    /**
+     * reqAccountSummary
+     */
+    public reqAccountSummary = () => {
         // Request Account summary from here
-        ib.reqAccountSummary(self.tickerId, 'All', [
+        ib.reqAccountSummary(this.tickerId, 'All', [
             'AccountType',
             'NetLiquidation',
             'TotalCashValue',
@@ -89,12 +99,11 @@ export class AccountSummary {
             'DayTradesRemaining',
             'Leverage'
         ]);
-
     }
 
-        /**
-     * initialiseDep
-     */
+    /**
+ * initialiseDep
+ */
     public initialiseDep() {
         Portfolios.Instance/*  */;
     }/*  */
@@ -111,7 +120,7 @@ export class AccountSummary {
      * getAccountSummary
      */
     public getAccountSummary(): Promise<IBKRAccountSummary> {
-        const { accountSummary } = this;
+        const { accountSummary, reqAccountSummary } = this;
         return new Promise((resolve, reject) => {
 
             if (!isEmpty(accountSummary)) {
@@ -124,6 +133,8 @@ export class AccountSummary {
                 resolve(accountSummaryData);
             }
             appEvents.on(APPEVENTS.ACCOUNT_SUMMARY, handleAccountSummary);
+
+            reqAccountSummary();
         })
 
     }

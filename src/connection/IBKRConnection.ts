@@ -6,6 +6,7 @@ import { publishDataToTopic } from '../events/AppEvents.publisher';
 import { APPEVENTS } from '../events/APPEVENTS.const';
 import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
+import { Portfolios } from '../portfolios';
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
@@ -41,8 +42,23 @@ export class IBKRConnection {
     /**
      * initialiseDep
      */
-    public initialiseDep() {
-        AccountSummary.Instance;
+    public async initialiseDep(): Promise<boolean> {
+        // 1. Account summary
+        console.log('1. Account summary')
+        const accountSummary = AccountSummary.Instance;
+        accountSummary.init();
+        await accountSummary.getAccountSummary();
+        // 2. Portolios
+        console.log('2. Portolios')
+        const portfolio = Portfolios.Instance;
+        await portfolio.init();
+        await portfolio.getPortfolios();
+
+        console.log('3. OpenOrders');
+
+        // 3. OpenOrders
+        // 4. History
+        return true;
     }
 
     /**
@@ -54,8 +70,8 @@ export class IBKRConnection {
 
         // Important listners
         this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
-          
-            if(err){
+
+            if (err) {
 
                 publishDataToTopic({
                     topic: APPEVENTS.DISCONNECTED,
@@ -81,10 +97,10 @@ export class IBKRConnection {
         })
 
         this.ib.on(APPEVENTS.ERROR, function (err: any) {
-            console.log(APPEVENTS.ERROR, err);
+            console.log(APPEVENTS.ERROR, chalk.red(err && err.message));
 
             // If connection error, emit disconnect
-            if(err && err.code === 'ECONNREFUSED'){
+            if (err && err.code === 'ECONNREFUSED') {
                 publishDataToTopic({
                     topic: APPEVENTS.DISCONNECTED,
                     data: {}

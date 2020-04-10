@@ -1,10 +1,15 @@
 import _ from 'lodash';
 import chalk from 'chalk';
 import AccountSummary from '../account/AccountSummary';
-import { APPEVENTS } from '../events';
+import { APPEVENTS, AppEvents } from '../events';
 import { publishDataToTopic } from '../events/AppEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
+import isEmpty from 'lodash/isEmpty';
+import { IBKRAccountSummary } from '../account/account-summary.interfaces';
+
+const appEvents = AppEvents.Instance;
+
 
 /**
  * Log portfolio to console
@@ -26,8 +31,9 @@ const logPortfolio = ({ marketPrice, averageCost, position, contract }: PortFoli
 
 export class Portfolios {
 
-    ib = IBKRConnection.Instance.getIBKR();
-    accountSummary = AccountSummary.Instance;
+    ib: any;
+
+    accountSummary: IBKRAccountSummary;
 
     private static _instance: Portfolios;
 
@@ -38,39 +44,50 @@ export class Portfolios {
         return this._instance || (this._instance = new this());
     }
 
-    private constructor() {
+    private constructor() { }
+
+    init = async () => {
+
+        const self = this;
+
+        this.ib = IBKRConnection.Instance.getIBKR();
+        this.accountSummary = await AccountSummary.Instance.getAccountSummary();
 
         const ib = this.ib;
-        
-        ib.on('accountDownloadEnd', () => {
-            console.log(chalk.blue('END:PROMISE accountDownloadEnd'))
-            console.log(chalk.blueBright(`********************************************************** Portfolio changed emitting to listeners ${this.currentPortfolios.length}`))
 
-            if (this.currentPortfolios !== this.portfoliosSnapshot) {
+        ib.on('accountDownloadEnd', () => {
+            const { currentPortfolios, portfoliosSnapshot } = self;
+            console.log(chalk.blue('END:PROMISE accountDownloadEnd'))
+            console.log(chalk.blueBright(`********************************************************** Portfolio changed emitting to listeners ${currentPortfolios.length}`))
+
+            if (currentPortfolios !== portfoliosSnapshot) {
                 // update snapshot
-                this.portfoliosSnapshot = this.currentPortfolios;
+                self.portfoliosSnapshot = currentPortfolios;
             }
+
+            // Emit empty portfolio/*  */
+            publishDataToTopic({
+                topic: APPEVENTS.PORTFOLIOS,
+                data: {
+                    portfolios: currentPortfolios
+                }
+            });
 
         })
 
         ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
             const thisPortfolio = { contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
-            
-
-            if (position > 0) {
-                
-                logPortfolio(thisPortfolio);
-
-                // Send Portfolios
-                publishDataToTopic({
-                    topic: APPEVENTS.PORTFOLIOS,
-                    data: {
-                        portfolios: [thisPortfolio]
-                    }
-                });
-            }
 
 
+            logPortfolio(thisPortfolio);
+
+            // Send Portfolios
+            publishDataToTopic({
+                topic: APPEVENTS.PORTFOLIOS,
+                data: {
+                    portfolios: [thisPortfolio]
+                }
+            });
 
             // Check if portfolio exists in currentPortfolios
             const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.contract.symbol === thisPortfolio.contract.symbol });
@@ -83,12 +100,44 @@ export class Portfolios {
             }
         });
 
-        ib.reqAccountUpdates(true, this.accountSummary);
+        this.reqAccountUpdates();
     }
 
-    getPortfolios(): PortFolioUpdate[] {
-        return this.currentPortfolios;
+    /**
+     * reqAccountUpdates
+     */
+    public reqAccountUpdates = () => {
+        this.ib.reqAccountUpdates(true, this.accountSummary.AccountId);
     }
+
+    /**
+     * getPortfolios
+     */
+    public getPortfolios(): Promise<PortFolioUpdate[]> {
+        const { currentPortfolios, reqAccountUpdates } = this;
+        return new Promise((resolve, reject) => {
+
+            if (!isEmpty(currentPortfolios)) {
+                return resolve(currentPortfolios);
+            }
+
+
+
+            // listen for account summary
+            const handleAccountSummary = (accountSummaryData) => {
+                appEvents.off(APPEVENTS.PORTFOLIOS, handleAccountSummary);
+                resolve(accountSummaryData);
+            }
+            appEvents.on(APPEVENTS.PORTFOLIOS, handleAccountSummary);
+
+            reqAccountUpdates();
+        })
+
+    }
+
+    // getPortfolios(): PortFolioUpdate[] {
+    //     return this.currentPortfolios;
+    // }
 
 
 }
