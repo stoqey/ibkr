@@ -15,9 +15,9 @@ const appEvents = AppEvents.Instance;
  * Log portfolio to console
  * @param @interface PortFolioUpdate
  */
-const logPortfolio = ({ marketPrice, averageCost, position, contract }: PortFolioUpdate) => {
-    const symbol = contract && contract.symbol;
-    const contractIdWithSymbol = `${symbol} ${contract.conId}`
+const logPortfolio = ({ marketPrice, averageCost, position, symbol, conId }: PortFolioUpdate) => {
+
+    const contractIdWithSymbol = `${symbol} ${conId}`
     if (Math.round(marketPrice) > Math.round(averageCost)) {
         // We are in profit
         console.log(chalk.green(`logPortfolio:profit shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `, chalk.black(contractIdWithSymbol)))
@@ -75,7 +75,7 @@ export class Portfolios {
         })
 
         ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
-            const thisPortfolio = { contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
+            const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
 
 
             logPortfolio(thisPortfolio);
@@ -89,7 +89,7 @@ export class Portfolios {
             });
 
             // Check if portfolio exists in currentPortfolios
-            const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.contract.symbol === thisPortfolio.contract.symbol });
+            const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.contract.symbol });
 
             // Position has to be greater than 0
             if (!isPortFolioAlreadyExist && position > 0) {
