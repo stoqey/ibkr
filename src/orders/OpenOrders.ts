@@ -4,7 +4,7 @@ import { ORDER, OrderState, OrderWithContract } from './orders.interfaces';
 import { AppEvents, APPEVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
-import isEmpty from 'lodash/isEmpty';
+import { OrderTrade } from './OrderTrade';
 
 const appEvents = AppEvents.Instance;
 
@@ -79,6 +79,9 @@ export default class OpenOrders {
         });
 
         self.reqAllOpenOrders();
+
+        // Initialise OrderTrader
+        OrderTrade.Instance;
 
     }
 

@@ -27,7 +27,7 @@ interface SymbolTickerOrder {
     stockOrderRequest: OrderStock
 }
 
-export class AccountOrderStock {
+export class OrderTrade {
 
     ib: any;
     tickerId = getRadomReqId();
@@ -36,7 +36,7 @@ export class AccountOrderStock {
 
     orders: OrderStock[] = [];
 
-    private static _instance: AccountOrderStock;
+    private static _instance: OrderTrade;
 
     public static get Instance() {
         return this._instance || (this._instance = new this());
@@ -203,6 +203,8 @@ export class AccountOrderStock {
                 // 1. Check existing open orders
                 if (!isEmpty(checkExistingOrders)) {
                     // check if we have the same order from here
+
+                    // TODO check if matching buying or selling
                     const findMatchingAction = checkExistingOrders.filter(
                         exi => exi.action === stockOrder.action
                             && exi.symbol === stockOrder.symbol);
@@ -248,9 +250,9 @@ export class AccountOrderStock {
 
                 }
 
-                this.orders.push(stockOrder);
+                that.orders.push(stockOrder);
 
-                this.ib.reqIds(that.tickerId);
+                that.ib.reqIds(that.tickerId);
 
                 setTimeout(() => {
                     console.log(chalk.red(`setTimeout: ReqIds -> ${that.tickerId}`))
