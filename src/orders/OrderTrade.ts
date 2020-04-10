@@ -200,9 +200,9 @@ export class AccountOrderStock {
 
                 console.log(chalk.red(`Existing orders are -> ${checkExistingOrders.map(i => i.symbol)}`))
 
-                // Check existing open orders
+                // 1. Check existing open orders
                 if (!isEmpty(checkExistingOrders)) {
-                    // check if we have it from here
+                    // check if we have the same order from here
                     const findMatchingAction = checkExistingOrders.filter(
                         exi => exi.action === stockOrder.action
                             && exi.symbol === stockOrder.symbol);
@@ -211,6 +211,8 @@ export class AccountOrderStock {
 
                         // No need to check status
                         return console.log(chalk.red(`Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]} ${findMatchingAction[0].orderState.status}`))
+
+                        // TODO do not delete, check order stattus before returning
 
                         // check status
                         // const statuses = findMatchingAction.map(i => i.orderState.status);
@@ -224,14 +226,14 @@ export class AccountOrderStock {
                     }
                 }
 
-                const checkExistingPositions = Portfolios.Instance.getPortfolios();
-                console.log(chalk.red(`Existing portfolios are -> ${JSON.stringify(checkExistingPositions.map(i => i.contract.symbol))}`));
+                const checkExistingPositions = await Portfolios.Instance.getPortfolios();
+                console.log(chalk.red(`Existing portfolios are -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
 
-                // Check existing portfolios
+                // 2. Check existing portfolios
                 const foundExistingPortfolios = checkExistingPositions.filter(
-                    exi => exi.contract.symbol === stockOrder.symbol);
+                    exi => exi.symbol === stockOrder.symbol);
 
-                console.log(chalk.red(`foundExistingPortfolios are -> ${JSON.stringify(foundExistingPortfolios.map(i => i.contract.symbol))}`));
+                console.log(chalk.red(`foundExistingPortfolios are -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
 
                 if (!isEmpty(checkExistingPositions)) {
 
@@ -239,24 +241,25 @@ export class AccountOrderStock {
                     if (!isEmpty(foundExistingPortfolios)) {
 
                         if (!exitTrade) {
-                            return console.log(chalk.magenta(`*********************************Portfolio already exist and has position for ${stockOrder.action}, ${foundExistingPortfolios[0].contract.symbol} ->  order@${stockOrder.parameters[0]} portfolio@${foundExistingPortfolios[0].position}`))
+                            return console.log(chalk.magenta(`*********************************Portfolio already exist and has position for ${stockOrder.action}, ${foundExistingPortfolios[0].symbol} ->  order@${stockOrder.parameters[0]} portfolio@${foundExistingPortfolios[0].position}`))
                         }
-
                         // Else existing trades are allowed
-
                     }
 
                 }
 
                 this.orders.push(stockOrder);
 
+                this.ib.reqIds(that.tickerId);
+
                 setTimeout(() => {
                     console.log(chalk.red(`setTimeout: ReqIds -> ${that.tickerId}`))
-                    ib.reqIds(that.tickerId);
                     resolve({ tickerId: that.tickerId })
                 }, 1000);
 
             }
+
+            placeOrderToIBKR();
 
 
         })
