@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { ContractObject } from '../contracts/contracts.interfaces';
-import { ORDER, OrderState } from './orders.interfaces';
+import { ORDER, OrderState, OrderWithContract } from './orders.interfaces';
 import { AppEvents, APPEVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
@@ -15,7 +15,7 @@ export default class OpenOrders {
 
     receivedOrders: boolean = false;
 
-    public orders: { [x: string]: ORDER } = {};
+    public orders: { [x: string]: OrderWithContract } = {};
 
     private static _instance: OpenOrders;
 
@@ -31,7 +31,7 @@ export default class OpenOrders {
 
         const ib = self.ib;
 
-        ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
+        ib.on('openOrder', function (orderId, contract: ContractObject, order: ORDER, orderState: OrderState) {
             log(`AccountOpenOrders.openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
             self.receivedOrders = true;
@@ -42,10 +42,15 @@ export default class OpenOrders {
                 ...orders,
                 [orderId]: {
                     ...(orders && orders[orderId] || null),
+
+                    // OrderId + orderState
                     orderId,
-                    order,
                     orderState,
-                    contract
+
+                    // Add order
+                    ...order,
+                    // Add contract
+                    ...contract
                 }
             };
 
@@ -85,7 +90,7 @@ export default class OpenOrders {
         this.ib.reqAllOpenOrders();
     }
 
-    getOpenOrders(): ORDER[] {
+    getOpenOrders(): OrderWithContract[] {
         appEvents.emit(APPEVENTS.GET_OPEN_ORDERS, { data: true })
         const openOrders = Object.keys(this.orders).map(key => this.orders[key])
         return openOrders;

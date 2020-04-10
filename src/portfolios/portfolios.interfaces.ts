@@ -3,8 +3,7 @@ import { ContractObject } from '../contracts/contracts.interfaces';
 /**
  * A.K.A Contract with it's position
  */
-export interface PortFolioUpdate {
-    contract?: ContractObject;
+export interface PortFolioUpdate extends ContractObject {
     position?: number; // 100,
     marketPrice?: number; // 40.33366015,
     marketValue?: number; // 4033.37,

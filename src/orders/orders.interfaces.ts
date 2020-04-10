@@ -1,3 +1,5 @@
+import { ContractObject } from "../contracts";
+
 export type action = 'BUY' | 'SELL';
 
 // https://interactivebrokers.github.io/tws-api/interfaceIBApi_1_1EWrapper.html#a17f2a02d6449710b6394d0266a353313
@@ -87,6 +89,11 @@ export interface ORDER {
     whatIf: boolean;
 }
 
+export interface OrderWithContract extends ORDER, ContractObject {
+    orderId: number,
+    orderState: OrderState,
+};
+
 
 export interface OrderState {
     status: OrderStatus;
@@ -98,4 +105,51 @@ export interface OrderState {
     maxCommission: number;
     commissionCurrency: string;
     warningText: string;
+}
+
+
+// ORDER TRADE
+export type OrderAction = 'BUY' | 'SELL';
+
+export type OrderType =
+    'limit' // ib.order.limit('SELL', 1, 9999)
+    | 'market' // .order.market(action, quantity, transmitOrder, goodAfterTime, goodTillDate)
+    | 'marketClose' // .order.marketClose(action, quantity, price, transmitOrder)
+    | 'stop' // .order.stop(action, quantity, price, transmitOrder, parentId, tif)
+    | 'stopLimit' // .order.stopLimit(action, quantity, limitPrice, stopPrice, transmitOrder, parentId, tif)
+    | 'trailingStop' // .order.trailingStop(action, quantity, auxPrice, tif, transmitOrder, parentId)
+
+export interface OrderStock {
+    symbol: string;
+    action: OrderAction;
+    type: OrderType;
+    parameters: any[]; // 'SELL', 1, 9999,
+    size?: number;
+    capital?: number;
+    exitTrade: boolean;
+    exitParams?: {
+        /**
+         * When exiting a trade
+         * Create sale
+         */
+        entryTime: Date;
+        entryPrice: number;
+        exitTime: Date;
+        exitPrice: number;
+    },
+}
+
+
+// CREATE Sale
+export interface CreateSale {
+    entryPrice: number;
+    entryTime: Date;
+    exitTime: Date;
+    exitPrice: number;
+    symbol: string;
+    capital: number;
+    profit?: number;
+    website?: string;
+    industry?: string;
+    shortName?: string;
 }
