@@ -46,7 +46,7 @@ export class Portfolios {
 
     private constructor() { }
 
-    init = async () => {
+    public init = async () => {
 
         const self = this;
 

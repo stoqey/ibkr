@@ -7,6 +7,7 @@ import { APPEVENTS } from '../events/APPEVENTS.const';
 import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
+import OpenOrders from '../orders/OpenOrders';
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
@@ -55,6 +56,10 @@ export class IBKRConnection {
         await portfolio.getPortfolios();
 
         console.log('3. OpenOrders');
+        const openOrders = OpenOrders.Instance;
+        openOrders.init();
+        await openOrders.getOpenOrders();
+        console.log('4. History');
 
         // 3. OpenOrders
         // 4. History
