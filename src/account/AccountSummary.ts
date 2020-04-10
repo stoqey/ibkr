@@ -9,7 +9,6 @@ import isEmpty from 'lodash/isEmpty';
 import { Portfolios } from '../portfolios';
 
 const appEvents = AppEvents.Instance;
-const ib = IBKRConnection.Instance.getIBKR();
 
 export class AccountSummary {
     ib: any;
@@ -29,6 +28,11 @@ export class AccountSummary {
 
     public init() {
         const self = this;
+
+
+        const ib = IBKRConnection.Instance.getIBKR();
+
+        self.ib = ib;
 
         // Record values from here
         ib.on('accountSummary', (reqId, account, tag, value, currency) => {
@@ -68,7 +72,7 @@ export class AccountSummary {
      */
     public reqAccountSummary = () => {
         // Request Account summary from here
-        ib.reqAccountSummary(this.tickerId, 'All', [
+        this.ib.reqAccountSummary(this.tickerId, 'All', [
             'AccountType',
             'NetLiquidation',
             'TotalCashValue',
