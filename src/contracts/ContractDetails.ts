@@ -32,9 +32,12 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails> => 
             ib.on('contractDetails', (reqIdX, contract) => {
                 reqId = reqIdX;
                 contract = contract;
-                console.log('Contract details', JSON.stringify(contract))
-                resolve(contract);
-                
+                const currentSymbol = contract && contract.summary && contract.summary.symbol;
+                if (currentSymbol === symbol) {
+                    console.log('Contract details', currentSymbol)
+                    resolve(contract);
+                }
+
             })
 
             ib.on('contractDetailsEnd', (reqId) => {

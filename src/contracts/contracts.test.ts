@@ -8,12 +8,10 @@ const symbol = "ITCI"
 describe('Contracts', () => {
     it('should get contract details', (done) => {
         async function getContractDetailsData() {
-            const accountSummary = await getContractDetails(symbol);
-            const currenySymbol = accountSummary && accountSummary.summary && accountSummary.summary.symbol;
-            if (currenySymbol === symbol) {
+            const contractDetails = await getContractDetails(symbol);
+            if (contractDetails) {
                 return done();
             }
-
             done(new Error('Error getting symbol details'));
         }
         getContractDetailsData();
