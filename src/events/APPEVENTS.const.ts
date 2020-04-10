@@ -1,6 +1,8 @@
 
 export enum APPEVENTS {
 
+    READY = 'READY',
+
     // Connections
     DISCONNECTED = 'disconnected',
     CONNECTED = 'connected',

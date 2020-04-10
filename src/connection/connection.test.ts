@@ -8,7 +8,6 @@ before(done => {
     async function connect() {
         const connection = await onConnected();
         if (connection) {
-            await IBKRConnection.Instance.initialiseDep();
             return done();
         }
         done(new Error('Failed to connect interactive brokers, please check envs'))

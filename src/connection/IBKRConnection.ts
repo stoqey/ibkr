@@ -3,11 +3,13 @@ import chalk from 'chalk';
 import ibkr from 'ib';
 import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/AppEvents.publisher';
-import { APPEVENTS } from '../events/APPEVENTS.const';
+import { APPEVENTS, AppEvents } from '../events';
 import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
 import OpenOrders from '../orders/OpenOrders';
+
+const appEvents = AppEvents.Instance;
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
@@ -42,6 +44,7 @@ export class IBKRConnection {
 
     /**
      * initialiseDep
+     * Call/Initialize Account summary -> Portfolios -> OpenOrders
      */
     public async initialiseDep(): Promise<boolean> {
         // 1. Account summary
@@ -59,10 +62,8 @@ export class IBKRConnection {
         const openOrders = OpenOrders.Instance;
         openOrders.init();
         await openOrders.getOpenOrders();
-        console.log('4. History');
 
-        // 3. OpenOrders
-        // 4. History
+        appEvents.emit(APPEVENTS.READY, { ready: true });
         return true;
     }
 
@@ -76,29 +77,42 @@ export class IBKRConnection {
         // Important listners
         this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
 
-            if (err) {
-
+            function disconnectApp() {
                 publishDataToTopic({
                     topic: APPEVENTS.DISCONNECTED,
                     data: {}
                 });
 
-                return console.log(APPEVENTS.DISCONNECTED, chalk.red(`IBKR error connecting client => ${clientId}`));
+                return console.log(APPEVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
             }
 
-            console.log(chalk.green(`IBKR Connected client => ${clientId}`));
-
-            // initialise dependencies
-            self.initialiseDep();
-
-            publishDataToTopic({
-                topic: APPEVENTS.CONNECTED,
-                data: {
-                    connected: true
+            async function connectApp() {
+                if (err) {
+                    return disconnectApp();
                 }
-            });
 
-            self.status = APPEVENTS.CONNECTED;
+                console.log(chalk.blue(`...... Connected client ${clientId}, initialising ......`));
+
+                // initialise dependencies
+                const connected = await self.initialiseDep();
+
+                if (connected) {
+                    publishDataToTopic({
+                        topic: APPEVENTS.CONNECTED,
+                        data: {
+                            connected: true
+                        }
+                    });
+                    self.status = APPEVENTS.CONNECTED;
+                    return console.log(chalk.blue(`...... Successfully initialising Client ${clientId} ......`));
+                }
+
+                disconnectApp();
+
+
+            }
+            connectApp();
+
         })
 
         this.ib.on(APPEVENTS.ERROR, function (err: any) {

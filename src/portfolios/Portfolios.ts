@@ -57,7 +57,7 @@ export class Portfolios {
 
         ib.on('accountDownloadEnd', () => {
             const { currentPortfolios, portfoliosSnapshot } = self;
-            console.log(chalk.blueBright(`********************** Portfolios ${currentPortfolios.length}`))
+            console.log('accountDownloadEnd', chalk.blueBright(`********************** Portfolios ${currentPortfolios.length}`))
 
             if (currentPortfolios !== portfoliosSnapshot) {
                 // update snapshot
