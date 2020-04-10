@@ -10,16 +10,16 @@ let demoSymbolData;
 describe('Historical Data', () => {
     it('should get market data', async () => {
         const symbol = "PECK";
-    
+
         await onConnected();
-    
-        demoSymbolData = await AccountHistoryData.Instance.getHistoricalDataSync(symbol);
-    
+
+        demoSymbolData = await AccountHistoryData.Instance.getHistoricalData(symbol);
+
         await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(demoSymbolData))
-    
+
         console.log(`Historical Data for ${symbol} ${demoSymbolData && demoSymbolData.length}`);
-        expect(demoSymbolData).to.be.not.empty;
-    
+        expect(demoSymbolData).to.be.not.null;
+
     });
 })
 

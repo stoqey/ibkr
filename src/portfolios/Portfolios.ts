@@ -20,11 +20,11 @@ const logPortfolio = ({ marketPrice, averageCost, position, contract }: PortFoli
     const contractIdWithSymbol = `${symbol} ${contract.conId}`
     if (Math.round(marketPrice) > Math.round(averageCost)) {
         // We are in profit
-        console.log(chalk.green(`DATA:STREAM shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `, chalk.black(contractIdWithSymbol)))
+        console.log(chalk.green(`logPortfolio:profit shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `, chalk.black(contractIdWithSymbol)))
     }
     else {
         // We are in loss
-        console.log(chalk.red(`DATA:STREAM shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice}`, chalk.black(contractIdWithSymbol)))
+        console.log(chalk.red(`logPortfolio:LOSS shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice}`, chalk.black(contractIdWithSymbol)))
     }
 }
 
@@ -57,8 +57,7 @@ export class Portfolios {
 
         ib.on('accountDownloadEnd', () => {
             const { currentPortfolios, portfoliosSnapshot } = self;
-            console.log(chalk.blue('END:PROMISE accountDownloadEnd'))
-            console.log(chalk.blueBright(`********************************************************** Portfolio changed emitting to listeners ${currentPortfolios.length}`))
+            console.log(chalk.blueBright(`********************** Portfolios ${currentPortfolios.length}`))
 
             if (currentPortfolios !== portfoliosSnapshot) {
                 // update snapshot

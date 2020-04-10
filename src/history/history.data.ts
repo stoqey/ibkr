@@ -2,7 +2,7 @@ import _ from 'lodash';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
-import { AppEvents, publishDataToTopic } from '../events';
+import { AppEvents, publishDataToTopic, APPEVENTS } from '../events';
 import { HistoryData, SymbolWithTicker, ReqHistoricalData } from './history.interfaces';
 
 const ib = IBKRConnection.Instance.getIBKR();
@@ -28,9 +28,8 @@ class AccountHistoryData {
     let that = this;
     const endhistoricalData = (tickerId) => {
 
-      setTimeout(() => {
-        ib.cancelHistoricalData(tickerId);  // tickerId
-      }, 1000);
+      ib.cancelHistoricalData(tickerId);  // tickerId
+
 
 
       const currentSymbol = this.symbolsWithTicker.find(y => y.tickerId === tickerId);
@@ -55,29 +54,10 @@ class AccountHistoryData {
         marketData: collectedData,
       };
 
-
-      // TODO PUBLISH TO THE CLOUD
       publishDataToTopic({
-        topic: 'marketData',
+        topic: APPEVENTS.MARKET_DATA,
         data: dataToPublish
       });
-
-      // if (commandLineArgs && commandLineArgs.skipAI) {
-      //   console.log(chalk.magenta(`SKIP: SCANNER AI ${commandLineArgs.skipAI}`))
-      //   publishDataToTopic({
-      //     topic: 'highestAI',
-      //     data: dataToPublish
-      //   })
-      // }
-      // else {
-      //   console.log(`AccountHistoryData.endhistoricalData`, chalk.magenta(`TO: SCANNER AI ${currentSymbol.symbol}`))
-      //   publishDataToTopic({
-      //     topic: 'scannerAI',
-      //     data: dataToPublish
-      //   })
-
-      // }
-
 
       delete this.historyDataDump[tickerId];
     }
@@ -109,7 +89,7 @@ class AccountHistoryData {
     });
 
     // listen for any historicalData event
-    appEvents.on('historicalData', ({ symbol }) => {
+    appEvents.on(APPEVENTS.GET_MARKET_DATA, ({ symbol }) => {
       // request History Data
 
       console.log(`on history data ${symbol}`)
@@ -139,7 +119,6 @@ class AccountHistoryData {
 
   private reqHistoryData(args: SymbolWithTicker, params: ReqHistoricalData): void {
 
-
     const {
       tickerId,
       symbol
@@ -157,16 +136,12 @@ class AccountHistoryData {
       barSizeSetting,
       whatToShow } = params;
 
-    setTimeout(() => {
-      //                   tickerId, contract,                    endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
-      ib.reqHistoricalData(tickerId, ib.contract.stock(...contract), endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
-    }, 1000)
-
-    // return this.getHistoryData(symbol);
+    //                   tickerId, contract,                    endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
+    ib.reqHistoricalData(tickerId, ib.contract.stock(...contract), endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
 
   }
 
-  public getHistoryData(symbol: string): HistoryData[] {
+  private getHistoryData(symbol: string): HistoryData[] {
 
     const currentData = this.historyData[symbol] || [];
 
@@ -174,7 +149,7 @@ class AccountHistoryData {
       // if is empty
       // req history data
       publishDataToTopic({
-        topic: 'historicalData',
+        topic: APPEVENTS.GET_MARKET_DATA,
         data: {
           symbol
         }
@@ -185,34 +160,27 @@ class AccountHistoryData {
   }
 
   /**
-   * getHistoricalDataSync
+   * getHistoricalData
    */
-  public getHistoricalDataSync(symbol: string, opt?: { timeout: number }): Promise<HistoryData[]> {
+  public getHistoricalData(symbol: string, opt?: { timeout: number }): Promise<HistoryData[]> {
 
     const timeOut = opt && opt.timeout || 2000;
-
     let that = this;
-    const eventName = 'marketData';
 
     return new Promise((resolve, reject) => {
 
-
       const handleMarketData = ({ symbol: symbolFromEvent, marketData }: { symbol: string, marketData: HistoryData[] }) => {
         if (symbolFromEvent === symbol) {
-          appEvents.removeListener(eventName, handleMarketData);
+          appEvents.removeListener(APPEVENTS.MARKET_DATA, handleMarketData);
           return resolve(marketData)
         }
       };
 
       // response
-      appEvents.on(eventName, handleMarketData);
+      appEvents.on(APPEVENTS.MARKET_DATA, handleMarketData);
 
       // if not found it will initiate reqHistoricalData
-      const histData = that.getHistoryData(symbol);
-
-      if (!isEmpty(histData)) {
-        return resolve(histData);
-      }
+      that.getHistoryData(symbol);
 
       // timeout after 6 seconds 
       setTimeout(() => {
