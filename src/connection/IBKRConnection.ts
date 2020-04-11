@@ -99,7 +99,8 @@ export class IBKRConnection {
                     return disconnectApp();
                 }
 
-                console.log(chalk.blue(`...... Connected client ${clientId}, initialising ......`));
+                console.log(chalk.blue(`.................................................................`));
+                console.log(chalk.blue(`...... Connected client ${clientId}, initialising services ......`));
 
                 // initialise dependencies
                 const connected = await self.initialiseDep();
@@ -112,7 +113,8 @@ export class IBKRConnection {
                         }
                     });
                     self.status = APPEVENTS.CONNECTED;
-                    return console.log(chalk.blue(`...... Successfully initialising Client ${clientId} ......`));
+                    console.log(chalk.blue(`...... Successfully running ${clientId}'s services ..`));
+                    return console.log(chalk.blue(`.....................................................`));
                 }
 
                 disconnectApp();
