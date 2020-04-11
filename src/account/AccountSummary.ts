@@ -55,7 +55,7 @@ export class AccountSummary {
 
 
             publishDataToTopic({
-                topic: APPEVENTS.ACCOUNT_SUMMARY,
+                topic: APPEVENTS.ON_ACCOUNT_SUMMARY,
                 data: accountSummary
             });
 
@@ -133,10 +133,10 @@ export class AccountSummary {
 
             // listen for account summary
             const handleAccountSummary = (accountSummaryData) => {
-                appEvents.off(APPEVENTS.ACCOUNT_SUMMARY, handleAccountSummary);
+                appEvents.off(APPEVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
                 resolve(accountSummaryData);
             }
-            appEvents.on(APPEVENTS.ACCOUNT_SUMMARY, handleAccountSummary);
+            appEvents.on(APPEVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
 
             reqAccountSummary();
         })
