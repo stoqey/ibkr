@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { ibkr } from '.'
+import ibkr from '.'
 
 describe('Given IBKR library', () => {
 
