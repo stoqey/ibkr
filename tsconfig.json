@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["es2015", "ES6"],
+    "lib": [
+      "es2015",
+      "ES6"
+    ],
     "rootDir": "src",
     "outDir": "dist",
     "module": "commonjs",
@@ -10,11 +13,16 @@
     "sourceMap": true,
     "inlineSources": true,
     "esModuleInterop": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "resolveJsonModule": true
   },
   "include": [
     "src/**/*",
     "types.d.ts",
+  ],
+  "exclude": [
+    "src/**/*test.ts",
   ]
 }

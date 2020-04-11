@@ -3,8 +3,13 @@ import chalk from 'chalk';
 import ibkr from 'ib';
 import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/AppEvents.publisher';
-import { APPEVENTS } from '../events/APPEVENTS.const';
+import { APPEVENTS, AppEvents } from '../events';
 import { ConnectionStatus } from './connection.interfaces';
+import AccountSummary from '../account/AccountSummary';
+import { Portfolios } from '../portfolios';
+import OpenOrders from '../orders/OpenOrders';
+
+const appEvents = AppEvents.Instance;
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
@@ -38,6 +43,39 @@ export class IBKRConnection {
     }
 
     /**
+     * initialiseDep
+     * Call/Initialize Account summary -> Portfolios -> OpenOrders
+     */
+    public initialiseDep = async (): Promise<boolean> => {
+
+        try {
+            // 1. Account summary
+            console.log('1. Account summary')
+            const accountSummary = AccountSummary.Instance;
+            accountSummary.init();
+            await accountSummary.getAccountSummary();
+            // 2. Portolios
+            console.log('2. Portolios')
+            const portfolio = Portfolios.Instance;
+            await portfolio.init();
+            await portfolio.getPortfolios();
+
+            console.log('3. OpenOrders');
+            const openOrders = OpenOrders.Instance;
+            openOrders.init();
+            await openOrders.getOpenOrders();
+
+            return true;
+
+        }
+        catch (error) {
+            console.log('error initialising IBKR', error);
+            return false;
+        }
+
+    }
+
+    /**
      * On listen for IB connection
      */
     private listen(): void {
@@ -46,34 +84,52 @@ export class IBKRConnection {
 
         // Important listners
         this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
-          
-            if(err){
 
+            function disconnectApp() {
                 publishDataToTopic({
                     topic: APPEVENTS.DISCONNECTED,
                     data: {}
                 });
 
-                return console.log(APPEVENTS.DISCONNECTED, chalk.red(`IBKR error connecting client => ${clientId}`));
+                return console.log(APPEVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
             }
 
-            console.log(chalk.green(`IBKR Connected client => ${clientId}`));
-
-            publishDataToTopic({
-                topic: APPEVENTS.CONNECTED,
-                data: {
-                    connected: true
+            async function connectApp() {
+                if (err) {
+                    return disconnectApp();
                 }
-            });
 
-            self.status = APPEVENTS.CONNECTED;
+                console.log(chalk.blue(`.................................................................`));
+                console.log(chalk.blue(`...... Connected client ${clientId}, initialising services ......`));
+
+                // initialise dependencies
+                const connected = await self.initialiseDep();
+
+                if (connected) {
+                    publishDataToTopic({
+                        topic: APPEVENTS.CONNECTED,
+                        data: {
+                            connected: true
+                        }
+                    });
+                    self.status = APPEVENTS.CONNECTED;
+                    console.log(chalk.blue(`...... Successfully running ${clientId}'s services ..`));
+                    return console.log(chalk.blue(`.....................................................`));
+                }
+
+                disconnectApp();
+
+
+            }
+            connectApp();
+
         })
 
         this.ib.on(APPEVENTS.ERROR, function (err: any) {
-            console.log(APPEVENTS.ERROR, err);
+            console.log(APPEVENTS.ERROR, chalk.red(err && err.message));
 
             // If connection error, emit disconnect
-            if(err && err.code === 'ECONNREFUSED'){
+            if (err && err.code === 'ECONNREFUSED') {
                 publishDataToTopic({
                     topic: APPEVENTS.DISCONNECTED,
                     data: {}

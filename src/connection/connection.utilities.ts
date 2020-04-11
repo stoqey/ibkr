@@ -12,10 +12,8 @@ export const onConnected = (): Promise<boolean> => {
 
     return new Promise((resolve, reject) => {
 
-        const errorFailedToConnect = new Error('Error failed to connect');
-
         if(ibkr.status === APPEVENTS.CONNECTED){
-            resolve(true);
+            return resolve(true);
         }
 
         const handleConnected = () => {
@@ -29,8 +27,8 @@ export const onConnected = (): Promise<boolean> => {
         };
 
         const removeListners = () => {
-            appEvents.removeListener(APPEVENTS.CONNECTED, handleConnected);
-            appEvents.removeListener(APPEVENTS.DISCONNECTED, handleDisconnect);
+            appEvents.off(APPEVENTS.CONNECTED, handleConnected);
+            appEvents.off(APPEVENTS.DISCONNECTED, handleDisconnect);
         }
 
         appEvents.on(APPEVENTS.CONNECTED, handleConnected)
