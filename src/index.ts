@@ -1,7 +1,7 @@
 import { onConnected } from './connection';
 
 // Export main
-export const ibkr = (): Promise<boolean> => {
+const ibkr = (): Promise<boolean> => {
     return new Promise((resolve, reject) => {
         async function runIbkrApp() {
             const connection = await onConnected();
