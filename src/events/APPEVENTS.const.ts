@@ -20,9 +20,19 @@ export enum APPEVENTS {
 
     PORTFOLIOS = 'portfolios',
 
-    ACCOUNT_SUMMARY = 'account_summary',
+    /**
+     * @interface IBKRAccountSummary
+     */
+    ON_ACCOUNT_SUMMARY = 'on_account_summary',
 
-    MARKET_DATA = 'market_data',
+    /**
+     * @interface SymbolWithMarketData 
+     * {    symbol: string,
+            marketData: HistoryData[]
+       }
+     */
+    ON_MARKET_DATA = 'on_market_data',
+
     GET_MARKET_DATA = 'get_market_data',
 
 

@@ -3,7 +3,7 @@ import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { AppEvents, publishDataToTopic, APPEVENTS } from '../events';
-import { HistoryData, SymbolWithTicker, ReqHistoricalData } from './history.interfaces';
+import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData } from './history.interfaces';
 
 const ib = IBKRConnection.Instance.getIBKR();
 const appEvents = AppEvents.Instance;
@@ -55,7 +55,7 @@ class AccountHistoryData {
       };
 
       publishDataToTopic({
-        topic: APPEVENTS.MARKET_DATA,
+        topic: APPEVENTS.ON_MARKET_DATA,
         data: dataToPublish
       });
 
@@ -169,15 +169,15 @@ class AccountHistoryData {
 
     return new Promise((resolve, reject) => {
 
-      const handleMarketData = ({ symbol: symbolFromEvent, marketData }: { symbol: string, marketData: HistoryData[] }) => {
+      const handleMarketData = ({ symbol: symbolFromEvent, marketData }: SymbolWithMarketData) => {
         if (symbolFromEvent === symbol) {
-          appEvents.removeListener(APPEVENTS.MARKET_DATA, handleMarketData);
+          appEvents.removeListener(APPEVENTS.ON_MARKET_DATA, handleMarketData);
           return resolve(marketData)
         }
       };
 
       // response
-      appEvents.on(APPEVENTS.MARKET_DATA, handleMarketData);
+      appEvents.on(APPEVENTS.ON_MARKET_DATA, handleMarketData);
 
       // if not found it will initiate reqHistoricalData
       that.getHistoryData(symbol);

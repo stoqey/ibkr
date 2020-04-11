@@ -34,3 +34,8 @@ export interface SymbolWithTicker {
     tickerId: number,
     symbol: string;
 }
+
+export interface SymbolWithMarketData {
+    symbol: string,
+    marketData: HistoryData[]
+}
