@@ -1,3 +1,3 @@
-import { APPEVENTS } from "../events/APPEVENTS.const";
+import { IBKREVENTS } from "../events/IBKREVENTS.const";
 
-export type ConnectionStatus = APPEVENTS.CONNECTED | APPEVENTS.DISCONNECTED;
+export type ConnectionStatus = IBKREVENTS.CONNECTED | IBKREVENTS.DISCONNECTED;

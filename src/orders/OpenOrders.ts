@@ -1,12 +1,12 @@
 import chalk from 'chalk';
 import { ContractObject } from '../contracts/contracts.interfaces';
 import { ORDER, OrderState, OrderWithContract } from './orders.interfaces';
-import { AppEvents, APPEVENTS, publishDataToTopic } from '../events';
+import { IbkrEvents, IBKREVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
 import { OrderTrade } from './OrderTrade';
 
-const appEvents = AppEvents.Instance;
+const appEvents = IbkrEvents.Instance;
 
 
 export default class OpenOrders {
@@ -57,7 +57,7 @@ export default class OpenOrders {
             const openOrders = Object.keys(orders).map(key => orders[key]);
 
             publishDataToTopic({
-                topic: APPEVENTS.GET_OPEN_ORDERS,
+                topic: IBKREVENTS.GET_OPEN_ORDERS,
                 data: openOrders,
             });
 
@@ -68,7 +68,7 @@ export default class OpenOrders {
             parentId, lastFillPrice, clientId, whyHeld) => {
 
             publishDataToTopic({
-                topic: APPEVENTS.SAVE_ORDER, //push to topic below,
+                topic: IBKREVENTS.SAVE_ORDER, //push to topic below,
                 data: {
                     status, filled, remaining, avgFillPrice, permId,
                     parentId, lastFillPrice, clientId, whyHeld
@@ -94,7 +94,7 @@ export default class OpenOrders {
     }
 
     getOpenOrders(): OrderWithContract[] {
-        appEvents.emit(APPEVENTS.GET_OPEN_ORDERS, { data: true })
+        appEvents.emit(IBKREVENTS.GET_OPEN_ORDERS, { data: true })
         const openOrders = Object.keys(this.orders).map(key => this.orders[key])
         return openOrders;
     }

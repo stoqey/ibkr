@@ -1,16 +1,19 @@
-import _ from 'lodash';
+
+import includes from 'lodash/includes';
+import reverse from 'lodash/reverse';
+import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
-import { AppEvents, publishDataToTopic, APPEVENTS } from '../events';
+import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
 import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData } from './history.interfaces';
 
 const ib = IBKRConnection.Instance.getIBKR();
-const appEvents = AppEvents.Instance;
+const appEvents = IbkrEvents.Instance;
 
 
 
-class AccountHistoryData {
+export class AccountHistoryData {
 
   historyData: { [x: string]: HistoryData[] } = {};
   historyDataDump: { [x: string]: { data: any[] } } = {};
@@ -38,7 +41,7 @@ class AccountHistoryData {
         return null;
       }
 
-      const collectedData = this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || [];
+      const collectedData = reverse(this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || []);
 
       this.historyData = {
         ...this.historyData,
@@ -55,7 +58,7 @@ class AccountHistoryData {
       };
 
       publishDataToTopic({
-        topic: APPEVENTS.ON_MARKET_DATA,
+        topic: IBKREVENTS.ON_MARKET_DATA,
         data: dataToPublish
       });
 
@@ -64,14 +67,16 @@ class AccountHistoryData {
 
     ib.on('historicalData', (reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps) => {
 
-      if (_.includes([-1], open)) {
+      if (includes([-1], open)) {
         endhistoricalData(reqId);
       } else {
 
         const currentSymbol = this.symbolsWithTicker.find(y => y.tickerId === reqId);
 
-        const newEntry = {
-          reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps
+        const dateFormat = "YYYYMMDD hh:mm:ss";
+
+        const newEntry: HistoryData = {
+          reqId, date: moment(date, dateFormat).toDate(), open, high, low, close, volume, barCount, WAP, hasGaps
         };
 
         if (!isEmpty(currentSymbol)) {
@@ -89,7 +94,7 @@ class AccountHistoryData {
     });
 
     // listen for any historicalData event
-    appEvents.on(APPEVENTS.GET_MARKET_DATA, ({ symbol }) => {
+    appEvents.on(IBKREVENTS.GET_MARKET_DATA, ({ symbol }) => {
       // request History Data
 
       console.log(`on history data ${symbol}`)
@@ -149,7 +154,7 @@ class AccountHistoryData {
       // if is empty
       // req history data
       publishDataToTopic({
-        topic: APPEVENTS.GET_MARKET_DATA,
+        topic: IBKREVENTS.GET_MARKET_DATA,
         data: {
           symbol
         }
@@ -171,13 +176,13 @@ class AccountHistoryData {
 
       const handleMarketData = ({ symbol: symbolFromEvent, marketData }: SymbolWithMarketData) => {
         if (symbolFromEvent === symbol) {
-          appEvents.removeListener(APPEVENTS.ON_MARKET_DATA, handleMarketData);
+          appEvents.removeListener(IBKREVENTS.ON_MARKET_DATA, handleMarketData);
           return resolve(marketData)
         }
       };
 
       // response
-      appEvents.on(APPEVENTS.ON_MARKET_DATA, handleMarketData);
+      appEvents.on(IBKREVENTS.ON_MARKET_DATA, handleMarketData);
 
       // if not found it will initiate reqHistoricalData
       that.getHistoryData(symbol);

@@ -1,6 +1,6 @@
 import includes from 'lodash/includes';
 import { getRadomReqId } from '../_utils/text.utils';
-import { publishDataToTopic, APPEVENTS, AppEvents } from '../events';
+import { publishDataToTopic, IBKREVENTS, IbkrEvents } from '../events';
 import { IBKRAccountSummary } from './account-summary.interfaces'
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
@@ -8,7 +8,7 @@ import { LIVE_ACCOUNT_IDS } from '../config';
 import isEmpty from 'lodash/isEmpty';
 import { Portfolios } from '../portfolios';
 
-const appEvents = AppEvents.Instance;
+const appEvents = IbkrEvents.Instance;
 
 export class AccountSummary {
     ib: any;
@@ -55,7 +55,7 @@ export class AccountSummary {
 
 
             publishDataToTopic({
-                topic: APPEVENTS.ON_ACCOUNT_SUMMARY,
+                topic: IBKREVENTS.ON_ACCOUNT_SUMMARY,
                 data: accountSummary
             });
 
@@ -133,10 +133,10 @@ export class AccountSummary {
 
             // listen for account summary
             const handleAccountSummary = (accountSummaryData) => {
-                appEvents.off(APPEVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
+                appEvents.off(IBKREVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
                 resolve(accountSummaryData);
             }
-            appEvents.on(APPEVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
+            appEvents.on(IBKREVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
 
             reqAccountSummary();
         })

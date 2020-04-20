@@ -5,13 +5,13 @@ import { getRadomReqId } from '../_utils/text.utils';
 import { ORDER, OrderState, CreateSale } from './orders.interfaces';
 import AccountOpenOrders from './OpenOrders';
 
-import { publishDataToTopic, AppEvents, APPEVENTS } from '../events';
+import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
 import { OrderStock } from './orders.interfaces';
 import OpenOrders from './OpenOrders';
 import { Portfolios } from '../portfolios';
 
-const appEvents = AppEvents.Instance;
+const appEvents = IbkrEvents.Instance;
 
 // TODO
 // Place Order + Cancel Order
@@ -95,7 +95,7 @@ export class OrderTrade {
                             console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
                             publishDataToTopic({
-                                topic: APPEVENTS.CREATE_SALE,
+                                topic: IBKREVENTS.CREATE_SALE,
                                 data: newSale
                             })
                         }
@@ -166,7 +166,7 @@ export class OrderTrade {
 
 
         // placeOrder event
-        appEvents.on(APPEVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
+        appEvents.on(IBKREVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
             return await that.placeOrder(stockOrder);
         })
 
