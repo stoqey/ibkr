@@ -8,6 +8,7 @@ import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
 import OpenOrders from '../orders/OpenOrders';
+import includes from 'lodash/includes';
 
 const appEvents = AppEvents.Instance;
 
@@ -20,7 +21,7 @@ const clientId = _.random(100, 100000);
  */
 export class IBKRConnection {
 
-    public status: ConnectionStatus = APPEVENTS.DISCONNECTED;
+    public status: ConnectionStatus = null;
     public IB_PORT: number = IB_PORT;
     public IB_HOST: string = IB_HOST;
     private static _instance: IBKRConnection;
@@ -82,17 +83,17 @@ export class IBKRConnection {
 
         const self: IBKRConnection = this;
 
+        function disconnectApp() {
+            publishDataToTopic({
+                topic: APPEVENTS.DISCONNECTED,
+                data: {}
+            });
+            self.status = APPEVENTS.DISCONNECTED;
+            return console.error(APPEVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
+        }
+
         // Important listners
         this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
-
-            function disconnectApp() {
-                publishDataToTopic({
-                    topic: APPEVENTS.DISCONNECTED,
-                    data: {}
-                });
-
-                return console.log(APPEVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
-            }
 
             async function connectApp() {
                 if (err) {
@@ -126,24 +127,37 @@ export class IBKRConnection {
         })
 
         this.ib.on(APPEVENTS.ERROR, function (err: any) {
+
+            const message = err && err.message;
+
             console.log(APPEVENTS.ERROR, chalk.red(err && err.message));
 
-            // If connection error, emit disconnect
-            if (err && err.code === 'ECONNREFUSED') {
-                publishDataToTopic({
-                    topic: APPEVENTS.DISCONNECTED,
-                    data: {}
-                });
+            if (includes(message, 'ECONNREFUSED') || err && err.code === 'ECONNREFUSED') {
+                return disconnectApp()
             }
         })
 
         this.ib.on(APPEVENTS.DISCONNECTED, function (err: Error) {
             console.log(APPEVENTS.DISCONNECTED, chalk.red(`Connection disconnected => ${clientId}`));
-            self.status = APPEVENTS.DISCONNECTED;
+            return disconnectApp();
         });
 
         // connect the IBKR
         this.ib.connect();
+
+        // App events
+        appEvents.on(APPEVENTS.PING, () => {
+
+            // If we have the status
+            if (self.status) {
+                // PONG the current status
+                publishDataToTopic({
+                    topic: self.status,
+                    data: {}
+                });
+            }
+
+        })
 
     }
 

@@ -1,5 +1,3 @@
-# [WIP] 
-
 ## IBKR - NodeJS Interactive Brokers wrapper & utilities
 
 [![npm](https://img.shields.io/npm/dt/@stoqey/ibkr.svg)](http://www.npmtrends.com/@stoqey/ibkr)

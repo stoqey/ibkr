@@ -12,7 +12,7 @@ export const onConnected = (): Promise<boolean> => {
 
     return new Promise((resolve, reject) => {
 
-        if(ibkr.status === APPEVENTS.CONNECTED){
+        if (ibkr.status === APPEVENTS.CONNECTED) {
             return resolve(true);
         }
 
@@ -33,5 +33,8 @@ export const onConnected = (): Promise<boolean> => {
 
         appEvents.on(APPEVENTS.CONNECTED, handleConnected)
         appEvents.on(APPEVENTS.DISCONNECTED, handleDisconnect)
+
+        // ping
+        appEvents.emit(APPEVENTS.PING, {})
     })
 }
