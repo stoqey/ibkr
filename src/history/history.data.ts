@@ -1,4 +1,6 @@
-import _ from 'lodash';
+
+import includes from 'lodash/includes';
+import reverse from 'lodash/reverse';
 import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
@@ -11,7 +13,7 @@ const appEvents = AppEvents.Instance;
 
 
 
-class AccountHistoryData {
+export class AccountHistoryData {
 
   historyData: { [x: string]: HistoryData[] } = {};
   historyDataDump: { [x: string]: { data: any[] } } = {};
@@ -39,7 +41,7 @@ class AccountHistoryData {
         return null;
       }
 
-      const collectedData = this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || [];
+      const collectedData = reverse(this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || []);
 
       this.historyData = {
         ...this.historyData,
@@ -65,7 +67,7 @@ class AccountHistoryData {
 
     ib.on('historicalData', (reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps) => {
 
-      if (_.includes([-1], open)) {
+      if (includes([-1], open)) {
         endhistoricalData(reqId);
       } else {
 
