@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
@@ -70,8 +71,10 @@ class AccountHistoryData {
 
         const currentSymbol = this.symbolsWithTicker.find(y => y.tickerId === reqId);
 
-        const newEntry = {
-          reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps
+        const dateFormat = "YYYYMMDD hh:mm:ss";
+
+        const newEntry: HistoryData = {
+          reqId, date: moment(date, dateFormat).toDate(), open, high, low, close, volume, barCount, WAP, hasGaps
         };
 
         if (!isEmpty(currentSymbol)) {
