@@ -1,5 +1,5 @@
-import { AppEvents } from "../events/AppEvents";
-import { APPEVENTS } from "../events/APPEVENTS.const";
+import { IbkrEvents } from "../events/IbkrEvents";
+import { IBKREVENTS } from "../events/IBKREVENTS.const";
 import IBKRConnection from "./IBKRConnection";
 
 /**
@@ -7,12 +7,12 @@ import IBKRConnection from "./IBKRConnection";
  */
 export const onConnected = (): Promise<boolean> => {
 
-    const appEvents = AppEvents.Instance;
+    const appEvents = IbkrEvents.Instance;
     const ibkr = IBKRConnection.Instance;
 
     return new Promise((resolve, reject) => {
 
-        if (ibkr.status === APPEVENTS.CONNECTED) {
+        if (ibkr.status === IBKREVENTS.CONNECTED) {
             return resolve(true);
         }
 
@@ -27,14 +27,14 @@ export const onConnected = (): Promise<boolean> => {
         };
 
         const removeListners = () => {
-            appEvents.off(APPEVENTS.CONNECTED, handleConnected);
-            appEvents.off(APPEVENTS.DISCONNECTED, handleDisconnect);
+            appEvents.off(IBKREVENTS.CONNECTED, handleConnected);
+            appEvents.off(IBKREVENTS.DISCONNECTED, handleDisconnect);
         }
 
-        appEvents.on(APPEVENTS.CONNECTED, handleConnected)
-        appEvents.on(APPEVENTS.DISCONNECTED, handleDisconnect)
+        appEvents.on(IBKREVENTS.CONNECTED, handleConnected)
+        appEvents.on(IBKREVENTS.DISCONNECTED, handleDisconnect)
 
         // ping
-        appEvents.emit(APPEVENTS.PING, {})
+        appEvents.emit(IBKREVENTS.PING, {})
     })
 }

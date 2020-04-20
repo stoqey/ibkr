@@ -1,6 +1,6 @@
-import { AppEvents } from './AppEvents';
+import { IbkrEvents } from './IbkrEvents';
 
-const emitter = AppEvents.Instance;
+const emitter = IbkrEvents.Instance;
 
 interface PublishToListeners {
     topic: string;

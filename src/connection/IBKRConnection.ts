@@ -2,15 +2,15 @@ import * as _ from 'lodash';
 import chalk from 'chalk';
 import ibkr from 'ib';
 import { IB_HOST, IB_PORT } from '../config'
-import { publishDataToTopic } from '../events/AppEvents.publisher';
-import { APPEVENTS, AppEvents } from '../events';
+import { publishDataToTopic } from '../events/IbkrEvents.publisher';
+import { IBKREVENTS, IbkrEvents } from '../events';
 import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
 import OpenOrders from '../orders/OpenOrders';
 import includes from 'lodash/includes';
 
-const appEvents = AppEvents.Instance;
+const appEvents = IbkrEvents.Instance;
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
@@ -85,15 +85,15 @@ export class IBKRConnection {
 
         function disconnectApp() {
             publishDataToTopic({
-                topic: APPEVENTS.DISCONNECTED,
+                topic: IBKREVENTS.DISCONNECTED,
                 data: {}
             });
-            self.status = APPEVENTS.DISCONNECTED;
-            return console.error(APPEVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
+            self.status = IBKREVENTS.DISCONNECTED;
+            return console.error(IBKREVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
         }
 
         // Important listners
-        this.ib.on(APPEVENTS.CONNECTED, function (err: Error) {
+        this.ib.on(IBKREVENTS.CONNECTED, function (err: Error) {
 
             async function connectApp() {
                 if (err) {
@@ -108,12 +108,12 @@ export class IBKRConnection {
 
                 if (connected) {
                     publishDataToTopic({
-                        topic: APPEVENTS.CONNECTED,
+                        topic: IBKREVENTS.CONNECTED,
                         data: {
                             connected: true
                         }
                     });
-                    self.status = APPEVENTS.CONNECTED;
+                    self.status = IBKREVENTS.CONNECTED;
                     console.log(chalk.blue(`...... Successfully running ${clientId}'s services ..`));
                     return console.log(chalk.blue(`.....................................................`));
                 }
@@ -126,19 +126,19 @@ export class IBKRConnection {
 
         })
 
-        this.ib.on(APPEVENTS.ERROR, function (err: any) {
+        this.ib.on(IBKREVENTS.ERROR, function (err: any) {
 
             const message = err && err.message;
 
-            console.log(APPEVENTS.ERROR, chalk.red(err && err.message));
+            console.log(IBKREVENTS.ERROR, chalk.red(err && err.message));
 
             if (includes(message, 'ECONNREFUSED') || err && err.code === 'ECONNREFUSED') {
                 return disconnectApp()
             }
         })
 
-        this.ib.on(APPEVENTS.DISCONNECTED, function (err: Error) {
-            console.log(APPEVENTS.DISCONNECTED, chalk.red(`Connection disconnected => ${clientId}`));
+        this.ib.on(IBKREVENTS.DISCONNECTED, function (err: Error) {
+            console.log(IBKREVENTS.DISCONNECTED, chalk.red(`Connection disconnected => ${clientId}`));
             return disconnectApp();
         });
 
@@ -146,7 +146,7 @@ export class IBKRConnection {
         this.ib.connect();
 
         // App events
-        appEvents.on(APPEVENTS.PING, () => {
+        appEvents.on(IBKREVENTS.PING, () => {
 
             // If we have the status
             if (self.status) {
@@ -175,13 +175,13 @@ export class IBKRConnection {
      * disconnectIBKR
      */
     public disconnectIBKR(): void {
-        this.status = APPEVENTS.DISCONNECTED;
+        this.status = IBKREVENTS.DISCONNECTED;
         try {
             console.log(chalk.keyword("orange")(`IBKR Force shutdown ${clientId} 😴😴😴`));
             this.ib.disconnect();
         }
         catch (error) {
-            console.log(APPEVENTS.ERROR, chalk.red(error))
+            console.log(IBKREVENTS.ERROR, chalk.red(error))
         }
 
     }

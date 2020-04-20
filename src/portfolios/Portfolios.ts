@@ -1,14 +1,14 @@
 import _ from 'lodash';
 import chalk from 'chalk';
 import AccountSummary from '../account/AccountSummary';
-import { APPEVENTS, AppEvents } from '../events';
+import { IBKREVENTS, IbkrEvents } from '../events';
 import { publishDataToTopic } from '../events/AppEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
 import isEmpty from 'lodash/isEmpty';
 import { IBKRAccountSummary } from '../account/account-summary.interfaces';
 
-const appEvents = AppEvents.Instance;
+const appEvents = IbkrEvents.Instance;
 
 
 /**
@@ -66,7 +66,7 @@ export class Portfolios {
 
             // Emit empty portfolio/*  */
             publishDataToTopic({
-                topic: APPEVENTS.PORTFOLIOS,
+                topic: IBKREVENTS.PORTFOLIOS,
                 data: {
                     portfolios: currentPortfolios
                 }
@@ -82,7 +82,7 @@ export class Portfolios {
 
             // Send Portfolios
             publishDataToTopic({
-                topic: APPEVENTS.PORTFOLIOS,
+                topic: IBKREVENTS.PORTFOLIOS,
                 data: {
                     portfolios: [thisPortfolio]
                 }
@@ -124,10 +124,10 @@ export class Portfolios {
 
             // listen for account summary
             const handleAccountSummary = (accountSummaryData) => {
-                appEvents.off(APPEVENTS.PORTFOLIOS, handleAccountSummary);
+                appEvents.off(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
                 resolve(accountSummaryData);
             }
-            appEvents.on(APPEVENTS.PORTFOLIOS, handleAccountSummary);
+            appEvents.on(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
 
             reqAccountUpdates();
         })

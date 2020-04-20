@@ -1,5 +1,5 @@
 
-export enum APPEVENTS {
+export enum IBKREVENTS {
 
   READY = 'READY',
 
