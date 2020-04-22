@@ -10,7 +10,7 @@ This is an event-based ibkr client for node
 - Accounts
 - Portfolios
 - Orders/Trades
-- Historical Data
+- Historical Data + Realtime price updates
 - Contracts
 
 ## 1. Install
