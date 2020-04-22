@@ -23,5 +23,6 @@ export * from './events';
 export * from './history';
 export * from './orders';
 export * from './portfolios';
+export * from './realtime';
 
 export default ibkr;

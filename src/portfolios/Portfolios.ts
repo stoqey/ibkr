@@ -2,7 +2,7 @@ import _ from 'lodash';
 import chalk from 'chalk';
 import AccountSummary from '../account/AccountSummary';
 import { IBKREVENTS, IbkrEvents } from '../events';
-import { publishDataToTopic } from '../events/AppEvents.publisher';
+import { publishDataToTopic } from '../events/IbkrEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
 import isEmpty from 'lodash/isEmpty';
@@ -67,9 +67,7 @@ export class Portfolios {
             // Emit empty portfolio/*  */
             publishDataToTopic({
                 topic: IBKREVENTS.PORTFOLIOS,
-                data: {
-                    portfolios: currentPortfolios
-                }
+                data: currentPortfolios
             });
 
         })
@@ -95,7 +93,7 @@ export class Portfolios {
             if (!isPortFolioAlreadyExist && position > 0) {
                 //postions changed
                 this.currentPortfolios.push(thisPortfolio);
-                this.currentPortfolios = _.uniqBy(this.currentPortfolios, "contract.symbol");
+                this.currentPortfolios = _.uniqBy(this.currentPortfolios, "symbol");
             }
         });
 
@@ -119,8 +117,6 @@ export class Portfolios {
             if (!isEmpty(currentPortfolios)) {
                 return resolve(currentPortfolios);
             }
-
-
 
             // listen for account summary
             const handleAccountSummary = (accountSummaryData) => {
