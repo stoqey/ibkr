@@ -37,6 +37,17 @@ export enum IBKREVENTS {
   GET_MARKET_DATA = 'get_market_data',
 
 
+  /**
+   * { symbol, tickType?: 'ASK' | 'BID' | 'CLOSE' }
+   */
+  SUBSCRIBE_PRICE_UPDATES = 'subscribe_price_updates',
+
+  /**
+   * { symbol: string; date: Date; close: number; }
+   */
+  ON_PRICE_UPDATES = 'subscribe_price_updates',
+
+
 
 
 
