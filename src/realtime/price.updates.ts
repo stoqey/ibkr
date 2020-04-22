@@ -2,7 +2,7 @@
 import chalk from 'chalk';
 import _ from 'lodash';
 import isEmpty from 'lodash/isEmpty';
-import { SymbolWithData, TickSize, TickPrice } from './symbol.interfaces';
+import { SymbolWithData, TickSize, TickPrice } from './price.interfaces';
 import { IBKRConnection } from '../connection';
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
 import { getRadomReqId } from '../_utils/text.utils';
