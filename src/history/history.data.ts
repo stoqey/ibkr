@@ -8,13 +8,11 @@ import IBKRConnection from '../connection/IBKRConnection';
 import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
 import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData } from './history.interfaces';
 
-const ib = IBKRConnection.Instance.getIBKR();
+
 const appEvents = IbkrEvents.Instance;
-
-
-
 export class AccountHistoryData {
 
+  ib: any;
   historyData: { [x: string]: HistoryData[] } = {};
   historyDataDump: { [x: string]: { data: any[] } } = {};
 
@@ -29,6 +27,10 @@ export class AccountHistoryData {
   private constructor() {
 
     let that = this;
+
+    const ib = IBKRConnection.Instance.getIBKR();
+    this.ib = ib;
+
     const endhistoricalData = (tickerId) => {
 
       ib.cancelHistoricalData(tickerId);  // tickerId
@@ -142,7 +144,7 @@ export class AccountHistoryData {
       whatToShow } = params;
 
     //                   tickerId, contract,                    endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
-    ib.reqHistoricalData(tickerId, ib.contract.stock(...contract), endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
+    this.ib.reqHistoricalData(tickerId, this.ib.contract.stock(...contract), endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
 
   }
 

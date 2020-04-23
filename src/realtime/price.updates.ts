@@ -9,7 +9,7 @@ import { getRadomReqId } from '../_utils/text.utils';
 
 const ibEvents = IbkrEvents.Instance;
 
-const ib = IBKRConnection.Instance.getIBKR();
+
 
 interface SymbolSubscribers {
     [x: string]: number;
@@ -27,6 +27,7 @@ interface ReqPriceUpdates {
 
 class PriceUpdates {
 
+    ib: any;
     subscribers: SymbolSubscribers = {};
 
     subscribersWithTicker: SymbolWithTicker[] = [];
@@ -39,6 +40,8 @@ class PriceUpdates {
 
     private constructor() {
 
+        const ib = IBKRConnection.Instance.getIBKR();
+        this.ib = ib;
         let that = this;
 
         ib.on('tickPrice', (tickerId: number, tickType: TickPrice, price: number, canAutoExecute: boolean) => {
@@ -119,7 +122,7 @@ class PriceUpdates {
         });
 
         setTimeout(() => {
-            ib.reqMktData(that.subscribers[symbol], ib.contract.stock(symbol), '', false, false);
+            that.ib.reqMktData(that.subscribers[symbol], that.ib.contract.stock(symbol), '', false, false);
             return console.log('PriceUpdates.subscribe', chalk.greenBright(`${symbol.toLocaleUpperCase()} is successfully subscribed`))
         }, 900)
 
@@ -132,7 +135,7 @@ class PriceUpdates {
             if (!isEmpty(that.subscribersWithTicker)) {
                 that.subscribersWithTicker.forEach((symbolTicker) => {
                     console.log(chalk.dim(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`))
-                    ib.cancelMktData(symbolTicker.tickerId);
+                    that.ib.cancelMktData(symbolTicker.tickerId);
                 });
             }
             return;
