@@ -38,13 +38,16 @@ export class IBKRConnection {
      * init
      */
     public init(host: string, port: number) {
-        this.ib = new ibkr({
-            clientId,
-            host,
-            port
-        });
 
-        this.listen();
+        if (!this.ib) {
+            this.ib = new ibkr({
+                clientId,
+                host,
+                port
+            });
+
+            this.listen();
+        }
     }
 
     /**
