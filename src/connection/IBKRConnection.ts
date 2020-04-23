@@ -32,12 +32,16 @@ export class IBKRConnection {
         return this._instance || (this._instance = new this());
     }
 
-    private constructor() {
+    private constructor() { }
 
+    /**
+     * init
+     */
+    public init(host: string, port: number) {
         this.ib = new ibkr({
             clientId,
-            host: this.IB_HOST,
-            port: this.IB_PORT
+            host,
+            port
         });
 
         this.listen();
