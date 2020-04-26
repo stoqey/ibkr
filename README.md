@@ -12,10 +12,7 @@
 <div style="display: flex;justify-content:center;">
 
 <img alt="NPM" src="https://img.shields.io/npm/dt/@stoqey/ibkr.svg"></img>
-
-<p style="padding:5px"></p>
  
-<img alt="TypeScript compatible" src="https://img.shields.io/badge/typescript-compatible-brightgreen.svg"></img>
 
 </div>
 
@@ -126,7 +123,7 @@ see any `.test.ts` file for examples
 
 
 
-<div align="center" style="background:#231f20; color:white; width:100%;padding:10px">
+<div align="center" style="background:#231f20;color:white; width:100%;padding:10px">
 <img src="./docs/logo_interactive-brokers_white.png"></img>
 <h3>Stoqey Inc<h3>
 </div>
