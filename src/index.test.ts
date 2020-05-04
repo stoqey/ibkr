@@ -6,7 +6,7 @@ describe('Given IBKR library', () => {
 
     it('should successfully run ibkr', async () => {
         // @ts-ignore
-        const connectionStatus = await ibkr({ port: 7496 });
+        const connectionStatus = await ibkr();
         expect(connectionStatus).to.be.equal(true);
     });
 
