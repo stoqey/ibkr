@@ -25,7 +25,7 @@ interface ReqPriceUpdates {
     tickType?: TickPrice;
 }
 
-class PriceUpdates {
+export class PriceUpdates {
 
     ib: any;
     subscribers: SymbolSubscribers = {};
