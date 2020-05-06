@@ -82,7 +82,7 @@ ibkrEvents.on(IBKREVENTS.PORTFOLIOS, (porfolios: PortFolioUpdate[]) => {
 
 - Market data
 ```ts
-import AccountHistoryData from '@stoqey/ibkr/dist/history/history.data';
+import { AccountHistoryData } from '@stoqey/ibkr';
 
 // 1. Async 
 const myData = await AccountHistoryData.Instance.getHistoricalData(symbol);
@@ -99,7 +99,7 @@ ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, ({ symbol, marketData }) => {
 
 - Real-time price updates
 ```ts
-import PriceUpdates from '@stoqey/ibkr/dist/realtime/price.updates';
+import { PriceUpdates } from '@stoqey/ibkr';
 
 PriceUpdates.Instance; // init
 
