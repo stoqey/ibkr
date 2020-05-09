@@ -5,6 +5,7 @@ import { IbkrEvents, IBKREVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
 import { OrderTrade } from './OrderTrade';
+import isEmpty from 'lodash/isEmpty';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -31,8 +32,22 @@ export default class OpenOrders {
 
         const ib = self.ib;
 
+        ib.on('openOrderEnd', () => {
+            log(`OpenOrders > init > openOrderEnd`, chalk.blue(` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`));
+            // Initialise OrderTrader
+            OrderTrade.Instance.init();
+
+            const openOrders = Object.keys(self.orders).map(key => self.orders[key]);
+
+            publishDataToTopic({
+                topic: IBKREVENTS.OPEN_ORDERS,
+                data: openOrders,
+            });
+
+        })
+
         ib.on('openOrder', function (orderId, contract: ContractObject, order: ORDER, orderState: OrderState) {
-            log(`AccountOpenOrders.openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+            log(`OpenOrders > init > openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
             self.receivedOrders = true;
 
@@ -55,12 +70,6 @@ export default class OpenOrders {
             };
 
             const openOrders = Object.keys(self.orders).map(key => self.orders[key]);
-
-            publishDataToTopic({
-                topic: IBKREVENTS.OPEN_ORDERS,
-                data: openOrders,
-            });
-
             log(chalk.black(`OPEN ORDERS ${openOrders && openOrders.length}`))
         });
 
@@ -82,13 +91,16 @@ export default class OpenOrders {
                 }
             });
 
-            log(chalk.black(`orderStatus`))
+            log(chalk.black(`OpenOrders > init > orderStatus`), {
+                id,
+                status,
+                filled,
+                remaining,
+                symbol: currentOrder && currentOrder.symbol
+            })
         });
 
         self.reqAllOpenOrders();
-
-        // Initialise OrderTrader
-        OrderTrade.Instance;
 
     }
 
@@ -96,15 +108,29 @@ export default class OpenOrders {
      *  reqAllOpenOrders
      */
     public reqAllOpenOrders = () => {
-        console.log(`AccountOpenOrders.getOpenOrders init`, chalk.black(`reqAllOpenOrders`))
+        console.log(`OpenOrders > reqAllOpenOrders `)
         this.ib.reqAllOpenOrders();
     }
 
-    getOpenOrders(): OrderWithContract[] {
+    async getOpenOrders(): Promise<OrderWithContract[]> {
+
         const { orders, reqAllOpenOrders } = this;
-        reqAllOpenOrders(); // refresh orders
-        const openOrders = Object.keys(orders).map(key => orders[key])
-        return openOrders;
+
+        return new Promise((resolve, reject) => {
+            // listen for account summary
+            const handleOpenOrders = (ordersData) => {
+                appEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+                resolve(ordersData);
+            }
+            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+
+            reqAllOpenOrders(); // refresh orders
+
+            if (!isEmpty(orders)) {
+                const openOrders = Object.keys(orders).map(key => orders[key])
+                return resolve(openOrders);
+            }
+        })
     }
 
     isActive(): boolean {

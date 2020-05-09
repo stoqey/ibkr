@@ -4,12 +4,12 @@ import { OrderTrade } from './OrderTrade';
 import { onConnected } from '../connection/connection.utilities';
 import { OrderStock } from './orders.interfaces';
 import { IbkrEvents, IBKREVENTS } from '../events';
+import ibkr from '..';
 
 const ibkrEvents = IbkrEvents.Instance;
 
 const fsPromises = require('fs').promises
 
-const orderTrade = OrderTrade.Instance;
 let demoSymbolData;
 
 const symbol = "PECK";
@@ -41,7 +41,19 @@ const stockOrderBuyOut: OrderStock = {
     }
 }
 
+beforeEach((done) => {
+    ibkr().then(started => {
+        if (started) {
+            return done();
+        }
+        done(new Error('error starting ibkr'))
+
+    })
+})
+
 describe('Orders', () => {
+
+
 
     it('Place Order', async () => {
 
@@ -55,12 +67,12 @@ describe('Orders', () => {
             ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
         });
 
-        if (await onConnected()) {
+        const orderTrade = OrderTrade.Instance;
 
-            await orderTrade.placeOrder(stockOrderBuyIn);
-            results = await getPlacedOrder();
+        console.log('connected now, placing order now');
+        await orderTrade.placeOrder(stockOrderBuyIn);
+        results = await getPlacedOrder();
 
-        }
         expect(results).to.be.not.null;
 
     });

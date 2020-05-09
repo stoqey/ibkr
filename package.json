@@ -15,6 +15,7 @@
     "build": "rimraf dist && tsc",
     "connection": "mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",
+    "order": "mocha src/orders/*test.ts --exit",
     "unit-test": "mocha src/**/*test.ts --exit",
     "test": "mocha src/*test.ts --exit",
     "prepare": "npm run build",
