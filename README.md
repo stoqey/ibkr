@@ -183,7 +183,7 @@ see any `.test.ts` file for examples
 
 
 
-<div align="center" style="background:#231f20;color:white; width:100%;padding:10px">
-<img src="./docs/logo_interactive-brokers_white.png"></img>
+<div align="center" >
+<img style="background:#231f20;color:white; width:100%;padding:10px" src="./docs/logo_interactive-brokers_white.png"></img>
 <h3>Stoqey Inc<h3>
 </div>
