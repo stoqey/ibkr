@@ -60,33 +60,34 @@ describe('Orders', () => {
 
         console.log('connected now, placing order now');
         const results = await openOrders.getOpenOrders();
+        console.log('Open orders are', results && results.length)
 
         expect(results).to.be.not.null;
 
     });
 
 
-    // it('Place Order', async () => {
+    it('Place Order', async () => {
 
-    //     let results = null;
+        let results = null;
 
-    //     const getPlacedOrder = () => new Promise((resolve, reject) => {
-    //         const handleData = (data) => {
-    //             ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
-    //             resolve(data)
-    //         };
-    //         ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
-    //     });
+        const getPlacedOrder = () => new Promise((resolve, reject) => {
+            const handleData = (data) => {
+                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
+                resolve(data)
+            };
+            ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
+        });
 
-    //     const orderTrade = OrderTrade.Instance;
+        const orderTrade = OrderTrade.Instance;
 
-    //     console.log('connected now, placing order now');
-    //     await orderTrade.placeOrder(stockOrderBuyIn);
-    //     results = await getPlacedOrder();
+        console.log('connected now, placing order now');
+        await orderTrade.placeOrder(stockOrderBuyIn);
+        results = await getPlacedOrder();
 
-    //     expect(results).to.be.not.null;
+        expect(results).to.be.not.null;
 
-    // });
+    });
 })
 
 

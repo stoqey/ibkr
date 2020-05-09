@@ -4,7 +4,7 @@ import { ORDER, OrderState, OrderWithContract, OrderStatus } from './orders.inte
 import { IbkrEvents, IBKREVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
-import { OrderTrade } from './OrderTrade';
+// import { OrderTrade } from './OrderTrade';
 import isEmpty from 'lodash/isEmpty';
 
 const appEvents = IbkrEvents.Instance;
@@ -35,7 +35,7 @@ export default class OpenOrders {
         ib.on('openOrderEnd', () => {
             log(`OpenOrders > init > openOrderEnd`, chalk.blue(` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`));
             // Initialise OrderTrader
-            OrderTrade.Instance.init();
+            // OrderTrade.Instance.init();
 
             const openOrders = Object.keys(self.orders).map(key => self.orders[key]);
 
@@ -122,14 +122,14 @@ export default class OpenOrders {
                 appEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
                 resolve(ordersData);
             }
-            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-
-            reqAllOpenOrders(); // refresh orders
+            appEvents.once(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
 
             if (!isEmpty(orders)) {
                 const openOrders = Object.keys(orders).map(key => orders[key])
                 return resolve(openOrders);
             }
+
+            reqAllOpenOrders(); // refresh orders
         })
     }
 
