@@ -5,6 +5,7 @@ import { onConnected } from '../connection/connection.utilities';
 import { OrderStock } from './orders.interfaces';
 import { IbkrEvents, IBKREVENTS } from '../events';
 import ibkr from '..';
+import OpenOrders from './OpenOrders';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -41,7 +42,7 @@ const stockOrderBuyOut: OrderStock = {
     }
 }
 
-beforeEach((done) => {
+before((done) => {
     ibkr().then(started => {
         if (started) {
             return done();
@@ -53,29 +54,39 @@ beforeEach((done) => {
 
 describe('Orders', () => {
 
+    it('should get open orders', async () => {
 
-
-    it('Place Order', async () => {
-
-        let results = null;
-
-        const getPlacedOrder = () => new Promise((resolve, reject) => {
-            const handleData = (data) => {
-                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
-                resolve(data)
-            };
-            ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
-        });
-
-        const orderTrade = OrderTrade.Instance;
+        const openOrders = OpenOrders.Instance;
 
         console.log('connected now, placing order now');
-        await orderTrade.placeOrder(stockOrderBuyIn);
-        results = await getPlacedOrder();
+        const results = await openOrders.getOpenOrders();
 
         expect(results).to.be.not.null;
 
     });
+
+
+    // it('Place Order', async () => {
+
+    //     let results = null;
+
+    //     const getPlacedOrder = () => new Promise((resolve, reject) => {
+    //         const handleData = (data) => {
+    //             ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
+    //             resolve(data)
+    //         };
+    //         ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
+    //     });
+
+    //     const orderTrade = OrderTrade.Instance;
+
+    //     console.log('connected now, placing order now');
+    //     await orderTrade.placeOrder(stockOrderBuyIn);
+    //     results = await getPlacedOrder();
+
+    //     expect(results).to.be.not.null;
+
+    // });
 })
 
 
