@@ -215,27 +215,12 @@ export class OrderTrade {
                 if (!isEmpty(checkExistingOrders)) {
                     // check if we have the same order from here
 
-                    // TODO check if matching buying or selling
                     const findMatchingAction = checkExistingOrders.filter(
                         exi => exi.action === stockOrder.action
                             && exi.symbol === stockOrder.symbol);
 
                     if (!isEmpty(findMatchingAction)) {
-
-                        // No need to check status
                         return console.log(chalk.red(`Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]} ${findMatchingAction[0].orderState.status}`))
-
-                        // TODO do not delete, check order stattus before returning
-
-                        // check status
-                        // const statuses = findMatchingAction.map(i => i.orderState.status);
-
-                        // const prohibitedStatuses = ["PreSubmitted", "Submitted", "Filled"];
-                        // const allFounded = prohibitedStatuses.every((ai: any) => statuses.includes(ai));
-
-                        // if (allFounded) {
-                        // }
-
                     }
                 }
 

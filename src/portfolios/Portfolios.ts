@@ -114,17 +114,17 @@ export class Portfolios {
         const { currentPortfolios, reqAccountUpdates } = this;
         return new Promise((resolve, reject) => {
 
-            if (!isEmpty(currentPortfolios)) {
-                return resolve(currentPortfolios);
-            }
-
             // listen for account summary
             const handleAccountSummary = (accountSummaryData) => {
                 appEvents.off(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
                 resolve(accountSummaryData);
             }
-            appEvents.on(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
 
+            if (!isEmpty(currentPortfolios)) {
+                return resolve(currentPortfolios);
+            }
+
+            appEvents.on(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
             reqAccountUpdates();
         })
 

@@ -3,7 +3,7 @@ import { ContractObject } from "../contracts";
 export type action = 'BUY' | 'SELL';
 
 // https://interactivebrokers.github.io/tws-api/interfaceIBApi_1_1EWrapper.html#a17f2a02d6449710b6394d0266a353313
-type OrderStatusType =
+export type OrderStatusType =
     'PendingSubmit' // indicates that you have transmitted the order, but have not yet received confirmation that it has been accepted by the order destination.
     | 'PendingCancel' // PendingCancel - indicates that you have sent a request to cancel the order but have not yet received cancel confirmation from the order destination. At this point, your order is not confirmed canceled. It is not guaranteed that the cancellation will be successful.
     | 'PreSubmitted' //

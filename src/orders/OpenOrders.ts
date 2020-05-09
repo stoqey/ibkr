@@ -122,13 +122,13 @@ export default class OpenOrders {
                 appEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
                 resolve(ordersData);
             }
-            appEvents.once(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
 
             if (!isEmpty(orders)) {
                 const openOrders = Object.keys(orders).map(key => orders[key])
                 return resolve(openOrders);
             }
 
+            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
             reqAllOpenOrders(); // refresh orders
         })
     }
