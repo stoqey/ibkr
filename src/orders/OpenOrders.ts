@@ -57,7 +57,7 @@ export default class OpenOrders {
             const openOrders = Object.keys(self.orders).map(key => self.orders[key]);
 
             publishDataToTopic({
-                topic: IBKREVENTS.GET_OPEN_ORDERS,
+                topic: IBKREVENTS.OPEN_ORDERS,
                 data: openOrders,
             });
 
@@ -101,36 +101,11 @@ export default class OpenOrders {
     }
 
     getOpenOrders(): OrderWithContract[] {
-        appEvents.emit(IBKREVENTS.GET_OPEN_ORDERS, { data: true })
-        const openOrders = Object.keys(this.orders).map(key => this.orders[key])
+        const { orders, reqAllOpenOrders } = this;
+        reqAllOpenOrders(); // refresh orders
+        const openOrders = Object.keys(orders).map(key => orders[key])
         return openOrders;
     }
-
-    /**
- * getPortfolios
- */
-    // public getOpenOrders(): Promise<ORDER[]> {
-    //     const { orders, reqAllOpenOrders } = this;
-    //     const openOrders = Object.keys(orders).map(key => this.orders[key])
-    //     return new Promise((resolve, reject) => {
-
-    //         if (!isEmpty(openOrders)) {
-    //             return resolve(openOrders);
-    //         }
-
-    //         // listen for account summary
-    //         const handleOpenOrders = (accountSummaryData) => {
-    //             appEvents.off(APPEVENTS.GET_OPEN_ORDERS, handleOpenOrders);
-    //             resolve(accountSummaryData);
-    //         }
-    //         appEvents.on(APPEVENTS.GET_OPEN_ORDERS, handleOpenOrders);
-
-    //         reqAllOpenOrders();
-    //     })
-
-    // }
-
-
 
     isActive(): boolean {
         return this.receivedOrders;

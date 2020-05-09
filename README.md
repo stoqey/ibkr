@@ -148,6 +148,36 @@ const stockOrderBuyOut: OrderStock = {
 }
 ```
 
+**type**
+- limit `('SELL', 1, 9999)` like in example above
+- market `(action, quantity, transmitOrder, goodAfterTime, goodTillDate)`
+- marketClose `(action, quantity, price, transmitOrder)`
+- stop `(action, quantity, price, transmitOrder, parentId, tif)`
+ - stopLimit `(action, quantity, limitPrice, stopPrice, transmitOrder, parentId, tif)`
+- trailingStop `(action, quantity, auxPrice, tif, transmitOrder, parentId)`
+
+**Order events**
+
+- Order filled
+```ts
+ibkrEvents.on(IBKREVENTS.ORDER_FILLED, (data) => {
+
+});
+```
+
+- Order status
+```ts
+ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data) => {
+
+});
+```
+
+- Open Orders updates
+```ts
+ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, (data) => {
+
+});
+```
 
 see any `.test.ts` file for examples
 

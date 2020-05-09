@@ -22,7 +22,7 @@ export enum IBKREVENTS {
   /**
    * OrderWithContract
    */
-  GET_OPEN_ORDERS = 'get_open_orders',
+  OPEN_ORDERS = 'open_orders',
 
   /**
    * OrderStock
