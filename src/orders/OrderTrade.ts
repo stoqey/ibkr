@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import random from 'lodash/random';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
-import { ORDER, OrderState, CreateSale } from './orders.interfaces';
+import { ORDER, OrderState, CreateSale, OrderWithContract } from './orders.interfaces';
 import AccountOpenOrders from './OpenOrders';
 
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
@@ -94,9 +94,15 @@ export class OrderTrade {
 
                             console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
+                            const dataSaleSymbolOrder: OrderWithContract = {
+                                ...order,
+                                ...contract,
+                                orderState,
+                                orderId
+                            }
                             publishDataToTopic({
-                                topic: IBKREVENTS.CREATE_SALE,
-                                data: newSale
+                                topic: IBKREVENTS.ORDER_FILLED,
+                                data: { sale: newSale, order: dataSaleSymbolOrder }
                             })
                         }
                         else {
@@ -105,6 +111,8 @@ export class OrderTrade {
 
                     }
                 }
+
+
             }
 
 

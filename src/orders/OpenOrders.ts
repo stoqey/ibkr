@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { ContractObject } from '../contracts/contracts.interfaces';
-import { ORDER, OrderState, OrderWithContract } from './orders.interfaces';
+import { ORDER, OrderState, OrderWithContract, OrderStatus } from './orders.interfaces';
 import { IbkrEvents, IBKREVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
@@ -54,7 +54,7 @@ export default class OpenOrders {
                 }
             };
 
-            const openOrders = Object.keys(orders).map(key => orders[key]);
+            const openOrders = Object.keys(self.orders).map(key => self.orders[key]);
 
             publishDataToTopic({
                 topic: IBKREVENTS.GET_OPEN_ORDERS,
@@ -67,11 +67,18 @@ export default class OpenOrders {
         ib.on('orderStatus', (id, status, filled, remaining, avgFillPrice, permId,
             parentId, lastFillPrice, clientId, whyHeld) => {
 
+            const currentOrder = self.orders[id];
+
+            const orderStatus: OrderStatus = {
+                status, filled, remaining, avgFillPrice, permId,
+                parentId, lastFillPrice, clientId, whyHeld
+            }
+
             publishDataToTopic({
-                topic: IBKREVENTS.SAVE_ORDER, //push to topic below,
+                topic: IBKREVENTS.ORDER_STATUS, //push to topic below,
                 data: {
-                    status, filled, remaining, avgFillPrice, permId,
-                    parentId, lastFillPrice, clientId, whyHeld
+                    order: currentOrder,
+                    orderStatus
                 }
             });
 

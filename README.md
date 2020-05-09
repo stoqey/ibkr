@@ -117,7 +117,37 @@ ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
  const contractDetails = await getContractDetails('AAPL');
 ```
 
-### Orders/Trades (TODO doc)
+### Orders/Trades
+```ts
+import { OrderTrade, OrderStock } from '@stoqey/ibkr';
+
+const orderTrade = OrderTrade.Instance;
+
+const myStockOrder: OrderStock = { ... }
+
+const placedOrder = await orderTrade.placeOrder(myStockOrder);
+          
+```
+
+**OrderStock** 
+```ts
+const stockOrderBuyOut: OrderStock = {
+    symbol: symbol,
+    action: "SELL",
+    type: "market",
+    parameters: ["1", "9999"], // 'SELL', 1, 9999,
+    size: 3,
+    capital: 1000,
+    exitTrade: true,
+    exitParams: {
+        entryTime: new Date(),
+        entryPrice: 0,
+        exitTime: new Date(),
+        exitPrice: 0
+    }
+}
+```
+
 
 see any `.test.ts` file for examples
 

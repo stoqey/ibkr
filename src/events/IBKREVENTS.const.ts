@@ -9,22 +9,46 @@ export enum IBKREVENTS {
   CONNECTED = 'connected',
   ERROR = 'error',
 
+  /**
+ * @interface IBKRAccountSummary
+ */
+  ON_ACCOUNT_SUMMARY = 'on_account_summary',
+
 
   // Orders portfolios, historicalData, 
-  ORDER = 'order',
-  GET_OPEN_ORDERS = 'get_open_orders',
-  SAVE_ORDER = 'save_order',
 
+  // --------------------------------------------------------------------------------------
+  // --------------------------------------------ORDERS------------------------------------
+  /**
+   * OrderWithContract
+   */
+  GET_OPEN_ORDERS = 'get_open_orders',
+
+  /**
+   * OrderStock
+   */
   PLACE_ORDER = 'place_order',
+
+  /**
+   * { orderStatus: OrderStatus, order: OrderWithContract }
+  */
+  ORDER_STATUS = 'order_status',
+
+  /**
+   * { sale: CreateSale, order: OrderWithContract }
+   */
+  ORDER_FILLED = 'order_filled',
 
   CREATE_SALE = 'create_sale',
 
+  // --------------------------------------------------------------------------------------
+  // ---------------------------------------------PORTFOLIOS-------------------------------
+
   PORTFOLIOS = 'portfolios',
 
-  /**
-   * @interface IBKRAccountSummary
-   */
-  ON_ACCOUNT_SUMMARY = 'on_account_summary',
+  // --------------------------------------------------------------------------------------
+  // ---------------------------------------------MARKETDATA-------------------------------
+
 
   /**
    * @interface SymbolWithMarketData 

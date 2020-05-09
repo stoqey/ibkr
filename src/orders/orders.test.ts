@@ -49,10 +49,10 @@ describe('Orders', () => {
 
         const getPlacedOrder = () => new Promise((resolve, reject) => {
             const handleData = (data) => {
-                ibkrEvents.off(IBKREVENTS.SAVE_ORDER, handleData);
+                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
                 resolve(data)
             };
-            ibkrEvents.on(IBKREVENTS.SAVE_ORDER, handleData);
+            ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
         });
 
         if (await onConnected()) {
