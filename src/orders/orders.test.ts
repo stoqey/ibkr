@@ -13,13 +13,13 @@ const orderTrade = OrderTrade.Instance;
 let demoSymbolData;
 
 const symbol = "PECK";
-const order = [2,]
+const orderParams = [2, "9999"]
 
 const stockOrderBuyIn: OrderStock = {
     symbol: symbol,
     action: "BUY",
     type: "market",
-    parameters: [2, "9999"], // 'SELL', 1, 9999,
+    parameters: orderParams, // 'SELL', 1, 9999,
     size: 3,
     capital: 1000,
     exitTrade: false
@@ -29,7 +29,7 @@ const stockOrderBuyOut: OrderStock = {
     symbol: symbol,
     action: "SELL",
     type: "market",
-    parameters: ["1", "9999"], // 'SELL', 1, 9999,
+    parameters: orderParams, // 'SELL', 1, 9999,
     size: 3,
     capital: 1000,
     exitTrade: true,
