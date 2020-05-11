@@ -40,8 +40,23 @@ export class PriceUpdates {
     }
 
     private constructor() {
+        let that = this;
+        /**
+         * When request to subscribe to market data
+         * IBKREVENTS.SUBSCRIBE_PRICE_UPDATES
+         */
+        ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, (data: ReqPriceUpdates) => {
+            that.subscribe(data);
+        });
 
+    }
+
+    /**
+     * init
+     */
+    public init() {
         const ib = IBKRConnection.Instance.getIBKR();
+
         this.ib = ib;
         let that = this;
 
@@ -73,17 +88,13 @@ export class PriceUpdates {
 
                 const dataToPublish: {
                     symbol: string;
-                    tick: {
-                        price: number;
-                        date: Date;
-                    }
+                    price: number;
+                    date: Date;
 
                 } = {
                     symbol: currentSymbol,
-                    tick: {
-                        price,
-                        date: new Date()
-                    }
+                    price,
+                    date: new Date()
                 }
 
                 // send to symbolData topic
@@ -96,18 +107,16 @@ export class PriceUpdates {
 
         })
 
-        /**
-         * When request to subscribe to market data
-         * IBKREVENTS.SUBSCRIBE_PRICE_UPDATES
-         */
-        ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, (data: ReqPriceUpdates) => {
-            that.subscribe(data);
-        });
+
     }
 
     private subscribe({ symbol, tickType = 'ASK' }: ReqPriceUpdates) {
 
         let that = this;
+
+        if (!that.ib) {
+            that.init()
+        }
 
         // Check if symbol exist
         if (isEmpty(symbol)) {
