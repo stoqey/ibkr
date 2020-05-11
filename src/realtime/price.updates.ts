@@ -18,6 +18,7 @@ interface SymbolSubscribers {
 interface SymbolWithTicker {
     tickerId: number;
     symbol: string;
+    tickType?: TickPrice;
 }
 
 interface ReqPriceUpdates {
@@ -49,6 +50,8 @@ export class PriceUpdates {
 
             const thisSymbol = that.subscribersWithTicker.find(symbol => symbol.tickerId === tickerId);
 
+            const currentTickerType = thisSymbol.tickType;
+
             const currentSymbol = thisSymbol && thisSymbol.symbol;
 
             const tickTypeWords = ib.util.tickTypeToString(tickType);
@@ -58,10 +61,10 @@ export class PriceUpdates {
                 return;
             }
 
-
             // https://www.investopedia.com/terms/b/bid-and-ask.asp
-            if (tickTypeWords === "ASK") {
 
+            // Matches as requested
+            if (currentTickerType === tickTypeWords) {
                 console.log('PriceUpdates.tickPrice', chalk.dim(`${tickTypeWords}:PRICE ${chalk.bold(currentSymbol)} => $${price} tickerId = ${tickerId}`))
 
                 if (price === -1) {
@@ -70,19 +73,24 @@ export class PriceUpdates {
 
                 const dataToPublish: {
                     symbol: string;
-                    close: number;
-                    date: Date;
+                    tick: {
+                        price: number;
+                        date: Date;
+                    }
+
                 } = {
                     symbol: currentSymbol,
-                    close: price,
-                    date: new Date(),
+                    tick: {
+                        price,
+                        date: new Date()
+                    }
                 }
 
                 // send to symbolData topic
                 publishDataToTopic({
                     topic: IBKREVENTS.ON_PRICE_UPDATES,
                     data: dataToPublish
-                })
+                });
 
             }
 
@@ -118,7 +126,8 @@ export class PriceUpdates {
         // Add this symbol to subscribersTicker
         this.subscribersWithTicker.push({
             symbol,
-            tickerId: that.subscribers[symbol]
+            tickerId: that.subscribers[symbol],
+            tickType
         });
 
         setTimeout(() => {
