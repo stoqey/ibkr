@@ -264,3 +264,5 @@ export class OrderTrade {
 
     }
 }
+
+export default OrderTrade;

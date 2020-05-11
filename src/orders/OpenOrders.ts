@@ -10,7 +10,7 @@ import isEmpty from 'lodash/isEmpty';
 const appEvents = IbkrEvents.Instance;
 
 
-export default class OpenOrders {
+export class OpenOrders {
 
     ib: any;
 
@@ -137,3 +137,5 @@ export default class OpenOrders {
         return this.receivedOrders;
     }
 }
+
+export default OpenOrders;
