@@ -90,6 +90,13 @@ export class OrderTrade {
                             const { stockOrderRequest } = updatedSymbolTicker;
                             const { exitTrade, exitParams, symbol, capital } = stockOrderRequest;
 
+                            const dataSaleSymbolOrder: OrderWithContract = {
+                                ...order,
+                                ...contract,
+                                orderState,
+                                orderId
+                            }
+
                             if (exitTrade) {
                                 const { exitPrice, exitTime, entryTime, entryPrice } = exitParams;
                                 // If this trade is for exiting then record the sale
@@ -106,12 +113,6 @@ export class OrderTrade {
 
                                 console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
-                                const dataSaleSymbolOrder: OrderWithContract = {
-                                    ...order,
-                                    ...contract,
-                                    orderState,
-                                    orderId
-                                }
                                 publishDataToTopic({
                                     topic: IBKREVENTS.ORDER_FILLED,
                                     data: { sale: newSale, order: dataSaleSymbolOrder }
@@ -119,6 +120,11 @@ export class OrderTrade {
                             }
                             else {
                                 console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+
+                                publishDataToTopic({
+                                    topic: IBKREVENTS.ORDER_FILLED,
+                                    data: { sale: null, order: dataSaleSymbolOrder }
+                                })
                             }
 
                         }
