@@ -75,6 +75,10 @@ export class Portfolios {
         ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
             const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
 
+            // Position has to be greater than 0
+            if (position === 0) {
+                return console.log(chalk.blue(`updatePortfolio: positions are empty = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `))
+            }
 
             logPortfolio(thisPortfolio);
 
@@ -89,9 +93,8 @@ export class Portfolios {
             // Check if portfolio exists in currentPortfolios
             const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
 
-            // Position has to be greater than 0
             if (!isPortFolioAlreadyExist) {
-                //postions changed
+                //positions changed
                 this.currentPortfolios.push(thisPortfolio);
                 this.currentPortfolios = _.uniqBy(this.currentPortfolios, "symbol");
             }
