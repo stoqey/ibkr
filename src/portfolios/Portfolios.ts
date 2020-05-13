@@ -90,7 +90,7 @@ export class Portfolios {
             const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
 
             // Position has to be greater than 0
-            if (!isPortFolioAlreadyExist && position > 0) {
+            if (!isPortFolioAlreadyExist) {
                 //postions changed
                 this.currentPortfolios.push(thisPortfolio);
                 this.currentPortfolios = _.uniqBy(this.currentPortfolios, "symbol");
