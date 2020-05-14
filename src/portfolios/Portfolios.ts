@@ -7,6 +7,7 @@ import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
 import isEmpty from 'lodash/isEmpty';
 import { IBKRAccountSummary } from '../account/account-summary.interfaces';
+import { ORDER, OrderState } from '../orders';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -83,14 +84,25 @@ export class Portfolios {
             logPortfolio(thisPortfolio);
 
             // Check if portfolio exists in currentPortfolios
-            const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
+            const isPortFolioAlreadyExist = self.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
 
             if (!isPortFolioAlreadyExist) {
                 //positions changed
-                this.currentPortfolios.push(thisPortfolio);
-                this.currentPortfolios = _.uniqBy(this.currentPortfolios, "symbol");
+                self.currentPortfolios.push(thisPortfolio);
+                self.currentPortfolios = _.uniqBy(self.currentPortfolios, "symbol");
             }
         });
+
+        ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
+            console.log(`OrderTrade > init > openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+
+            if (orderState.status === "Filled") {
+                // refresh the portfolios
+                self.reqAccountUpdates();
+            }
+
+        });
+
 
         this.reqAccountUpdates();
     }
