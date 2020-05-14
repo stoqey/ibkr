@@ -28,7 +28,7 @@ interface SymbolTickerOrder {
 
 export class Orders {
 
-    ib: any;
+    ib: any = null;
 
     // StockOrders
     tickerId = getRadomReqId();
@@ -59,14 +59,16 @@ export class Orders {
     /**
      * init
      */
-    public init() {
-        if (!this.ib) {
+    public init = async (): Promise<void> => {
+        let self = this;
+
+        if (!self.ib) {
             const ib = IBKRConnection.Instance.getIBKR();
-            this.ib = ib;
-            let self = this;
+            self.ib = ib;
+
 
             ib.on('openOrderEnd', () => {
-                log(`OpenOrders > init > openOrderEnd`, chalk.blue(` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`));
+                log(`Orders > init > openOrderEnd`, chalk.blue(` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`));
                 // Initialise OrderTrader
                 // OrderTrade.Instance.init();
 
@@ -279,22 +281,27 @@ export class Orders {
             ibkrEvents.on(IBKREVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
                 return await self.placeOrder(stockOrder);
             })
-
-            self.reqAllOpenOrders();
         }
+
+        return self.reqAllOpenOrders();
     }
 
     /**
      *  reqAllOpenOrders
      */
-    public reqAllOpenOrders = () => {
+    public reqAllOpenOrders = (): void => {
         console.log(`Orders > reqAllOpenOrders `)
-        this.ib.reqAllOpenOrders();
+        if (this.ib) {
+            this.ib.reqAllOpenOrders();
+        }
     }
 
-    public async getOpenOrders(): Promise<OrderWithContract[]> {
+    public getOpenOrders = async (): Promise<OrderWithContract[]> => {
 
-        const { openOrders, reqAllOpenOrders } = this;
+        const self = this;
+        const reqAllOpenOrders = self.reqAllOpenOrders;
+
+        const openOrders = self && self.openOrders || {};
 
         return new Promise((resolve, reject) => {
 
@@ -322,14 +329,14 @@ export class Orders {
         })
     }
 
-    public isActive(): boolean {
+    public isActive = (): boolean => {
         return this.receivedOrders;
     }
 
-    public async placeOrder(stockOrder: OrderStock): Promise<any> {
+    public placeOrder = async (stockOrder: OrderStock): Promise<any> => {
 
-        let that, { getOpenOrders } = this;
-
+        let self = this;
+        const { getOpenOrders } = self;
 
         return new Promise((resolve, reject) => {
             const { exitTrade } = stockOrder;
@@ -381,13 +388,13 @@ export class Orders {
 
                 }
 
-                that.stockOrders.push(stockOrder);
+                self.stockOrders.push(stockOrder);
 
-                that.ib.reqIds(that.tickerId);
+                self.ib.reqIds(self.tickerId);
 
                 setTimeout(() => {
-                    console.log(chalk.red(`OrderTrade > placeOrder -> tickerId ${that.tickerId}`))
-                    resolve({ tickerId: that.tickerId })
+                    console.log(chalk.red(`OrderTrade > placeOrder -> tickerId ${self.tickerId}`))
+                    resolve({ tickerId: self.tickerId })
                 }, 1000);
 
             }

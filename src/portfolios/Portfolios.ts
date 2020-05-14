@@ -78,7 +78,7 @@ export class Portfolios {
 
             // Position has to be greater than 0
             if (position === 0) {
-                return console.log(chalk.blue(`updatePortfolio: positions are empty = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `))
+                return console.log(chalk.blue(`updatePortfolio: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `))
             }
 
             logPortfolio(thisPortfolio);
@@ -94,13 +94,11 @@ export class Portfolios {
         });
 
         ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-            console.log(`OrderTrade > init > openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
-
             if (orderState.status === "Filled") {
+                console.log(`Portfolio > openOrder FILLED`, chalk.blue(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
                 // refresh the portfolios
                 self.reqAccountUpdates();
             }
-
         });
 
 

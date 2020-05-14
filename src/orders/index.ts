@@ -1,2 +1,2 @@
-export * from './OrderTrade';
+export * from './Orders';
 export * from './orders.interfaces';

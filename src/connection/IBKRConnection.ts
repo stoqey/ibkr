@@ -70,7 +70,7 @@ export class IBKRConnection {
 
             console.log('3. Orders');
             const openOrders = Orders.Instance;
-            openOrders.init();
+            await openOrders.init();
             await openOrders.getOpenOrders();
 
             return true;
