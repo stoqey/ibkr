@@ -82,10 +82,10 @@ ibkrEvents.on(IBKREVENTS.PORTFOLIOS, (porfolios: PortFolioUpdate[]) => {
 
 - Market data
 ```ts
-import { AccountHistoryData } from '@stoqey/ibkr';
+import { HistoricalData } from '@stoqey/ibkr';
 
 // 1. Async 
-const myData = await AccountHistoryData.Instance.getHistoricalData(symbol);
+const myData = await HistoricalData.Instance.getHistoricalData(symbol);
 
 // 2. raw callback events
 // Requeust market data
@@ -138,13 +138,7 @@ const stockOrderBuyOut: OrderStock = {
     parameters: ["1", "9999"], // 'SELL', 1, 9999,
     size: 3,
     capital: 1000,
-    exitTrade: true,
-    exitParams: {
-        entryTime: new Date(),
-        entryPrice: 0,
-        exitTime: new Date(),
-        exitPrice: 0
-    }
+    exitTrade: false,
 }
 ```
 

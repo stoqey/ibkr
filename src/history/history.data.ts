@@ -10,7 +10,7 @@ import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData 
 
 
 const appEvents = IbkrEvents.Instance;
-export class AccountHistoryData {
+export class HistoricalData {
 
   ib: any;
   historyData: { [x: string]: HistoryData[] } = {};
@@ -18,7 +18,7 @@ export class AccountHistoryData {
 
   symbolsWithTicker: { tickerId: number, symbol: string }[] = []
 
-  private static _instance: AccountHistoryData;
+  private static _instance: HistoricalData;
 
   public static get Instance() {
     return this._instance || (this._instance = new this());
@@ -199,4 +199,4 @@ export class AccountHistoryData {
   }
 }
 
-export default AccountHistoryData;
+export default HistoricalData;

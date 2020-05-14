@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai'
-import AccountHistoryData from './history.data';
+import { HistoricalData } from '.';
 import { onConnected } from '../connection/connection.utilities';
 
 const fsPromises = require('fs').promises
@@ -13,7 +13,7 @@ describe('Historical Data', () => {
 
         await onConnected();
 
-        demoSymbolData = await AccountHistoryData.Instance.getHistoricalData(symbol);
+        demoSymbolData = await HistoricalData.Instance.getHistoricalData(symbol);
 
         await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(demoSymbolData))
 
