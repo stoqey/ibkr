@@ -83,12 +83,12 @@ export class Portfolios {
             logPortfolio(thisPortfolio);
 
             // Send Portfolios
-            publishDataToTopic({
-                topic: IBKREVENTS.PORTFOLIOS,
-                data: {
-                    portfolios: [thisPortfolio]
-                }
-            });
+            // publishDataToTopic({
+            //     topic: IBKREVENTS.PORTFOLIOS,
+            //     data: {
+            //         portfolios: [thisPortfolio]
+            //     }
+            // });
 
             // Check if portfolio exists in currentPortfolios
             const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
@@ -117,18 +117,24 @@ export class Portfolios {
         const { currentPortfolios, reqAccountUpdates } = this;
         return new Promise((resolve, reject) => {
 
-            // listen for account summary
-            const handleAccountSummary = (accountSummaryData) => {
-                appEvents.off(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
+            // listen for portfolios
+            const handlePortfolios = (accountSummaryData) => {
+                appEvents.off(IBKREVENTS.PORTFOLIOS, handlePortfolios);
                 resolve(accountSummaryData);
             }
 
+            appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
+
             if (!isEmpty(currentPortfolios)) {
-                return resolve(currentPortfolios);
+                handlePortfolios(currentPortfolios);
             }
 
-            appEvents.on(IBKREVENTS.PORTFOLIOS, handleAccountSummary);
             reqAccountUpdates();
+
+            // TIMEOUT after 5 seconds
+            setTimeout(() => {
+                handlePortfolios([])
+            }, 5000)
         })
 
     }
