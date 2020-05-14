@@ -87,7 +87,6 @@ import { HistoricalData } from '@stoqey/ibkr';
 // 1. Init
 HistoricalData.Instance;
 
-// 2.1 Request for market data directly
 const args = {
   symbol,
   contract = [symbol, 'SMART', 'USD'],
@@ -96,6 +95,8 @@ const args = {
   barSizeSetting = '1 min',
   whatToShow = 'ASK'
 };
+
+// 2.1 Request for market data directly
 HistoricalData.Instance.getHistoricalData(args);
 
 // 2.2 Request for market using events
