@@ -21,11 +21,16 @@
 
 ### Run IBKR in style
 This is an event-based ibkr client for node
-- Accounts
-- Portfolios
-- Orders/Trades
-- Historical Data + Realtime price updates
-- Contracts
+|       | Feature                |
+| :---: | ---------------------- |
+|   ✅   | Accounts               |
+|   ✅   | Portfolios             |
+|   ✅   | Orders                 |
+|   ✅   | Historical Data        |
+|   ✅   | Realtime price updates |
+|   ✅   | Contracts              |
+|   ⬜️   | Mosaic Market scanner  |
+
 
 ## 1. Install
 ```bash
