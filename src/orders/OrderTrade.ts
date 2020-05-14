@@ -15,6 +15,7 @@ import { log } from '../log';
 
 const ibkrEvents = IbkrEvents.Instance;
 
+
 // Place Order + Cancel Order
 // Get Filled open orders
 
@@ -279,7 +280,51 @@ export class OrderTrade {
             ibkrEvents.on(IBKREVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
                 return await self.placeOrder(stockOrder);
             })
+
+            self.reqAllOpenOrders();
         }
+    }
+
+    /**
+ *  reqAllOpenOrders
+ */
+    public reqAllOpenOrders = () => {
+        console.log(`Orders > reqAllOpenOrders `)
+        this.ib.reqAllOpenOrders();
+    }
+
+    async getOpenOrders(): Promise<OrderWithContract[]> {
+
+        const { openOrders, reqAllOpenOrders } = this;
+
+        return new Promise((resolve, reject) => {
+
+            // listen for account summary
+            const handleOpenOrders = (ordersData) => {
+                ibkrEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+                resolve(ordersData);
+            }
+
+            if (!isEmpty(openOrders)) {
+                const allopenOrders = Object.keys(openOrders).map(key => openOrders[key])
+                return resolve(allopenOrders)
+            }
+
+
+
+            ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+            reqAllOpenOrders(); // refresh orders
+
+
+            // TIMEOUT after 5 seconds
+            setTimeout(() => {
+                handleOpenOrders([])
+            }, 5000)
+        })
+    }
+
+    isActive(): boolean {
+        return this.receivedOrders;
     }
 
     async placeOrder(stockOrder: OrderStock): Promise<any> {
