@@ -3,6 +3,9 @@ import { expect } from 'chai'
 import { HistoricalData } from '.';
 import { onConnected } from '../connection/connection.utilities';
 import ibkr from '..';
+import { IbkrEvents, IBKREVENTS } from '../events';
+
+const ibkrEvents = IbkrEvents.Instance;
 
 const fsPromises = require('fs').promises
 
@@ -19,17 +22,17 @@ before((done) => {
 })
 
 describe('Historical Data', () => {
-    it('should get market data', async () => {
+    it('should get market data', (done) => {
         const symbol = "PECK";
 
-        await onConnected();
+        HistoricalData.Instance.getHistoricalData({ symbol, whatToShow: "BID" });
 
-        demoSymbolData = await HistoricalData.Instance.getHistoricalData(symbol);
+        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
+            await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+            console.log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
 
-        await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(demoSymbolData))
-
-        console.log(`Historical Data for ${symbol} ${demoSymbolData && demoSymbolData.length}`);
-        expect(demoSymbolData).to.be.not.null;
+        })
 
     });
 })
