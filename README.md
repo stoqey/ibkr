@@ -84,14 +84,24 @@ ibkrEvents.on(IBKREVENTS.PORTFOLIOS, (porfolios: PortFolioUpdate[]) => {
 ```ts
 import { HistoricalData } from '@stoqey/ibkr';
 
-// 1. Async 
-const myData = await HistoricalData.Instance.getHistoricalData(symbol);
+// 1. Init
+HistoricalData.Instance;
 
-// 2. raw callback events
-// Requeust market data
-ibkrEvents.emit(IBKREVENTS.GET_MARKET_DATA, { symbol: 'AAPL' });
+// 2.1 Request for market data directly
+const args = {
+  symbol,
+  contract = [symbol, 'SMART', 'USD'],
+  endDateTime = '',
+  durationStr = '1 D',
+  barSizeSetting = '1 min',
+  whatToShow = 'ASK'
+};
+HistoricalData.Instance.getHistoricalData(args);
 
-// Subscribe to market data
+// 2.2 Request for market using events
+ibkrEvents.emit(IBKREVENTS.GET_MARKET_DATA, args);
+
+// 3. Subscribe to market data results
 ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, ({ symbol, marketData }) => {
     //  Use the data here
 })
