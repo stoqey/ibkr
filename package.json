@@ -1,7 +1,7 @@
 {
   "name": "@stoqey/ibkr",
   "private": false,
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "NodeJS Interactive Brokers wrapper & utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,6 +15,7 @@
     "build": "rimraf dist && tsc",
     "connection": "mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",
+    "history": "mocha src/history/*test.ts --exit",
     "order": "mocha src/orders/*test.ts --exit",
     "unit-test": "mocha src/**/*test.ts --exit",
     "test": "mocha src/*test.ts --exit",

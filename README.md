@@ -21,11 +21,16 @@
 
 ### Run IBKR in style
 This is an event-based ibkr client for node
-- Accounts
-- Portfolios
-- Orders/Trades
-- Historical Data + Realtime price updates
-- Contracts
+|       | Feature                |
+| :---: | ---------------------- |
+|   ✅   | Accounts               |
+|   ✅   | Portfolios             |
+|   ✅   | Orders                 |
+|   ✅   | Historical Data        |
+|   ✅   | Realtime price updates |
+|   ✅   | Contracts              |
+|   ⬜️   | Mosaic Market scanner  |
+
 
 ## 1. Install
 ```bash
@@ -82,16 +87,27 @@ ibkrEvents.on(IBKREVENTS.PORTFOLIOS, (porfolios: PortFolioUpdate[]) => {
 
 - Market data
 ```ts
-import { AccountHistoryData } from '@stoqey/ibkr';
+import { HistoricalData } from '@stoqey/ibkr';
 
-// 1. Async 
-const myData = await AccountHistoryData.Instance.getHistoricalData(symbol);
+// 1. Init
+HistoricalData.Instance;
 
-// 2. raw callback events
-// Requeust market data
-ibkrEvents.emit(IBKREVENTS.GET_MARKET_DATA, { symbol: 'AAPL' });
+const args = {
+  symbol,
+  contract = [symbol, 'SMART', 'USD'],
+  endDateTime = '',
+  durationStr = '1 D',
+  barSizeSetting = '1 min',
+  whatToShow = 'ASK'
+};
 
-// Subscribe to market data
+// 2.1 Request for market data directly
+HistoricalData.Instance.getHistoricalData(args);
+
+// 2.2 Request for market using events
+ibkrEvents.emit(IBKREVENTS.GET_MARKET_DATA, args);
+
+// 3. Subscribe to market data results
 ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, ({ symbol, marketData }) => {
     //  Use the data here
 })
@@ -138,13 +154,7 @@ const stockOrderBuyOut: OrderStock = {
     parameters: ["1", "9999"], // 'SELL', 1, 9999,
     size: 3,
     capital: 1000,
-    exitTrade: true,
-    exitParams: {
-        entryTime: new Date(),
-        entryPrice: 0,
-        exitTime: new Date(),
-        exitPrice: 0
-    }
+    exitTrade: false,
 }
 ```
 

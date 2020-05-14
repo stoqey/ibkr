@@ -1,24 +1,38 @@
 import 'mocha';
 import { expect } from 'chai'
-import AccountHistoryData from './history.data';
+import { HistoricalData } from '.';
 import { onConnected } from '../connection/connection.utilities';
+import ibkr from '..';
+import { IbkrEvents, IBKREVENTS } from '../events';
+
+const ibkrEvents = IbkrEvents.Instance;
 
 const fsPromises = require('fs').promises
 
 let demoSymbolData;
 
+before((done) => {
+    ibkr().then(started => {
+        if (started) {
+            return done();
+        }
+        done(new Error('error starting ibkr'))
+
+    })
+})
+
 describe('Historical Data', () => {
-    it('should get market data', async () => {
+    it('should get market data', (done) => {
         const symbol = "PECK";
 
-        await onConnected();
+        HistoricalData.Instance.getHistoricalData({ symbol, whatToShow: "BID" });
 
-        demoSymbolData = await AccountHistoryData.Instance.getHistoricalData(symbol);
+        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
+            await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+            console.log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
 
-        await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(demoSymbolData))
-
-        console.log(`Historical Data for ${symbol} ${demoSymbolData && demoSymbolData.length}`);
-        expect(demoSymbolData).to.be.not.null;
+        })
 
     });
 })

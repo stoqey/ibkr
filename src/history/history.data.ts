@@ -6,11 +6,21 @@ import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
-import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData } from './history.interfaces';
+import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData, WhatToShow, BarSizeSetting } from './history.interfaces';
 
 
 const appEvents = IbkrEvents.Instance;
-export class AccountHistoryData {
+
+interface GetMarketData {
+  symbol: string;
+  contract?: any[],
+  endDateTime?: string;
+  durationStr?: string;
+  barSizeSetting?: BarSizeSetting;
+  whatToShow?: WhatToShow;
+}
+
+export class HistoricalData {
 
   ib: any;
   historyData: { [x: string]: HistoryData[] } = {};
@@ -18,7 +28,7 @@ export class AccountHistoryData {
 
   symbolsWithTicker: { tickerId: number, symbol: string }[] = []
 
-  private static _instance: AccountHistoryData;
+  private static _instance: HistoricalData;
 
   public static get Instance() {
     return this._instance || (this._instance = new this());
@@ -96,8 +106,17 @@ export class AccountHistoryData {
     });
 
     // listen for any historicalData event
-    appEvents.on(IBKREVENTS.GET_MARKET_DATA, ({ symbol }) => {
+    appEvents.on(IBKREVENTS.GET_MARKET_DATA, (args: GetMarketData) => {
       // request History Data
+
+      const {
+        symbol,
+        contract = [symbol, 'SMART', 'USD'],
+        endDateTime = '',
+        durationStr = '1 D',
+        barSizeSetting = '1 min',
+        whatToShow = 'ASK'
+      } = args;
 
       console.log(`on history data ${symbol}`)
 
@@ -106,15 +125,16 @@ export class AccountHistoryData {
       }
 
 
+
       that.reqHistoryData({
         symbol,
         tickerId: getRadomReqId(),
       }, {
-        contract: [symbol, 'SMART', 'USD'],
-        endDateTime: '',
-        durationStr: '4 D',
-        barSizeSetting: '1 min',
-        whatToShow: 'ASK'
+        contract,
+        endDateTime,
+        durationStr,
+        barSizeSetting,
+        whatToShow
       });
 
 
@@ -124,14 +144,14 @@ export class AccountHistoryData {
 
   }
 
-  private reqHistoryData(args: SymbolWithTicker, params: ReqHistoricalData): void {
+  private reqHistoryData = (args: SymbolWithTicker, params: ReqHistoricalData): void => {
 
     const {
       tickerId,
       symbol
     } = args;
 
-    console.log(`AccountHistoryData.reqHistoryData`, `Request historyData ${symbol}`)
+    console.log(`HistoricalData.reqHistoryData`, `Request historyData ${symbol}`)
 
     // Save this symbol in this class
     this.symbolsWithTicker.push(args);
@@ -148,55 +168,14 @@ export class AccountHistoryData {
 
   }
 
-  private getHistoryData(symbol: string): HistoryData[] {
-
-    const currentData = this.historyData[symbol] || [];
-
-    if (isEmpty(currentData)) {
-      // if is empty
-      // req history data
-      publishDataToTopic({
-        topic: IBKREVENTS.GET_MARKET_DATA,
-        data: {
-          symbol
-        }
-      })
-
-    }
-    return currentData;
-  }
-
-  /**
-   * getHistoricalData
-   */
-  public getHistoricalData(symbol: string, opt?: { timeout: number }): Promise<HistoryData[]> {
-
-    const timeOut = opt && opt.timeout || 2000;
-    let that = this;
-
-    return new Promise((resolve, reject) => {
-
-      const handleMarketData = ({ symbol: symbolFromEvent, marketData }: SymbolWithMarketData) => {
-        if (symbolFromEvent === symbol) {
-          appEvents.removeListener(IBKREVENTS.ON_MARKET_DATA, handleMarketData);
-          return resolve(marketData)
-        }
-      };
-
-      // response
-      appEvents.on(IBKREVENTS.ON_MARKET_DATA, handleMarketData);
-
-      // if not found it will initiate reqHistoricalData
-      that.getHistoryData(symbol);
-
-      // timeout after 6 seconds 
-      setTimeout(() => {
-        handleMarketData({ symbol, marketData: [] })
-      }, timeOut);
-
+  public getHistoricalData = (args: GetMarketData): void => {
+    publishDataToTopic({
+      topic: IBKREVENTS.GET_MARKET_DATA,
+      data: args
     });
 
   }
+
 }
 
-export default AccountHistoryData;
+export default HistoricalData;
