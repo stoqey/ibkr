@@ -67,38 +67,38 @@ describe('Orders', () => {
     });
 
 
-    it('Place Order', async () => {
+    // it('Place Order', async () => {
 
-        let results = null;
+    //     let results = null;
 
-        const getPlacedOrder = () => new Promise((resolve, reject) => {
-            const handleData = (data) => {
-                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
-                resolve(data)
-            };
-            ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
+    //     const getPlacedOrder = () => new Promise((resolve, reject) => {
+    //         const handleData = (data) => {
+    //             ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
+    //             resolve(data)
+    //         };
+    //         ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
 
 
-            ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
+    //         ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
 
-                const { order, orderStatus } = data;
+    //             const { order, orderStatus } = data;
 
-                if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
-                    resolve(data);
-                }
+    //             if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
+    //                 resolve(data);
+    //             }
 
-            });
-        });
+    //         });
+    //     });
 
-        const orderTrade = OrderTrade.Instance;
+    //     const orderTrade = OrderTrade.Instance;
 
-        await orderTrade.placeOrder(stockOrderBuyIn);
+    //     await orderTrade.placeOrder(stockOrderBuyIn);
 
-        results = await getPlacedOrder();
+    //     results = await getPlacedOrder();
 
-        expect(results).to.be.not.null;
+    //     expect(results).to.be.not.null;
 
-    });
+    // });
 })
 
 

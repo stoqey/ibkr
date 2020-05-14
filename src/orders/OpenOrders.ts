@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { ContractObject } from '../contracts/contracts.interfaces';
-import { ORDER, OrderState, OrderWithContract, OrderStatus } from './orders.interfaces';
+import { ORDER, OrderState, OrderWithContract, OrderStatus, CreateSale } from './orders.interfaces';
 import { IbkrEvents, IBKREVENTS, publishDataToTopic } from '../events';
 import { log } from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
@@ -68,6 +68,12 @@ export class OpenOrders {
                     ...contract
                 }
             };
+
+            //  Delete order from openOrders list
+            if (orderState.status === "Filled") {
+                log(chalk.black(`Filled -----> DELETE FROM OPEN ORDERS -------> ${JSON.stringify(contract)}`))
+                delete self.orders[orderId];
+            }
 
             const openOrders = Object.keys(self.orders).map(key => self.orders[key]);
             log(chalk.black(`OPEN ORDERS ${openOrders && openOrders.length}`))
