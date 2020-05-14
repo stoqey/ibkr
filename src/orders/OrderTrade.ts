@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import random from 'lodash/random';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
-import { ORDER, OrderState, CreateSale, OrderWithContract } from './orders.interfaces';
+import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus } from './orders.interfaces';
 import AccountOpenOrders from './OpenOrders';
 
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
@@ -11,6 +11,7 @@ import { OrderStock } from './orders.interfaces';
 import OpenOrders from './OpenOrders';
 import { Portfolios } from '../portfolios';
 import { onConnected } from '../connection';
+import { log } from '../log';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -28,11 +29,15 @@ interface SymbolTickerOrder {
 export class OrderTrade {
 
     ib: any;
-    tickerId = getRadomReqId();
 
+    // StockOrders
+    tickerId = getRadomReqId();
+    stockOrders: OrderStock[] = [];
     symbolsTickerOrder: { [x: string]: SymbolTickerOrder } = {}
 
-    orders: OrderStock[] = [];
+    // OPEN ORDERS
+    public openOrders: { [x: string]: OrderWithContract } = {};
+    public receivedOrders: boolean = false;
 
     private static _instance: OrderTrade;
 
@@ -58,12 +63,92 @@ export class OrderTrade {
         if (!this.ib) {
             const ib = IBKRConnection.Instance.getIBKR();
             this.ib = ib;
-            let that = this;
+            let self = this;
+
+            ib.on('openOrderEnd', () => {
+                log(`OpenOrders > init > openOrderEnd`, chalk.blue(` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`));
+                // Initialise OrderTrader
+                // OrderTrade.Instance.init();
+
+                const openOrders = Object.keys(self.openOrders).map(key => self.openOrders[key]);
+
+                publishDataToTopic({
+                    topic: IBKREVENTS.OPEN_ORDERS,
+                    data: openOrders,
+                });
+
+            })
+
+            ib.on('orderStatus', (id, status, filled, remaining, avgFillPrice, permId,
+                parentId, lastFillPrice, clientId, whyHeld) => {
+
+                const currentOrder = self.openOrders[id];
+
+                const orderStatus: OrderStatus = {
+                    status, filled, remaining, avgFillPrice, permId,
+                    parentId, lastFillPrice, clientId, whyHeld
+                }
+
+                publishDataToTopic({
+                    topic: IBKREVENTS.ORDER_STATUS, //push to topic below,
+                    data: {
+                        order: currentOrder,
+                        orderStatus
+                    }
+                });
+
+                log(chalk.black(`Orders > orderStatus`), {
+                    id,
+                    status,
+                    filled,
+                    remaining,
+                    symbol: currentOrder && currentOrder.symbol
+                })
+            });
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
                 console.log(`OrderTrade > init > openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
-                const allTickerOrder: SymbolTickerOrder[] = Object.keys(that.symbolsTickerOrder).map(key => that.symbolsTickerOrder[key]);
+
+                // 1. Update OpenOrders
+                // Orders that need to be filled
+                // -----------------------------------------------------------------------------------
+                self.receivedOrders = true;
+
+                let openOrders = self.openOrders;
+
+                self.openOrders = {
+                    ...openOrders,
+                    [orderId]: {
+                        ...(openOrders && openOrders[orderId] || null),
+
+                        // OrderId + orderState
+                        orderId,
+                        orderState,
+
+                        // Add order
+                        ...order,
+                        // Add contract
+                        ...contract
+                    }
+                };
+                //  Delete order from openOrders list
+                if (orderState.status === "Filled") {
+                    log(chalk.black(`Filled -----> DELETE FROM OPEN ORDERS -------> ${JSON.stringify(contract)}`))
+                    delete self.openOrders[orderId];
+                }
+
+                const openOrdersArr = Object.keys(self.openOrders).map(key => self.openOrders[key]);
+                log(chalk.black(`OPEN ORDERS ${openOrdersArr && openOrdersArr.length}`))
+                // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+                // 2. Update OrderStocks
+                // Orders requests to send to transmit
+                // Using ticker Ids
+                // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                const allTickerOrder: SymbolTickerOrder[] = Object.keys(self.symbolsTickerOrder).map(key => self.symbolsTickerOrder[key]);
 
                 const thisOrderTicker = allTickerOrder.find(tickerOrder => tickerOrder.tickerId === orderId);
 
@@ -71,13 +156,13 @@ export class OrderTrade {
                 if (!isEmpty(thisOrderTicker)) {
 
                     // update this symbolTickerOrder
-                    that.symbolsTickerOrder[thisOrderTicker.symbol] = {
-                        ...(that.symbolsTickerOrder[thisOrderTicker.symbol] || null),
+                    self.symbolsTickerOrder[thisOrderTicker.symbol] = {
+                        ...(self.symbolsTickerOrder[thisOrderTicker.symbol] || null),
                         orderPermId: order.permId,
                         symbol: thisOrderTicker.symbol
                     };
 
-                    const updatedSymbolTicker = that.symbolsTickerOrder[thisOrderTicker.symbol];
+                    const updatedSymbolTicker = self.symbolsTickerOrder[thisOrderTicker.symbol];
 
                     // create sale if order is filled
                     if (orderState.status === "Filled") {
@@ -113,19 +198,18 @@ export class OrderTrade {
 
                                 console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
-                                publishDataToTopic({
+                                return publishDataToTopic({
                                     topic: IBKREVENTS.ORDER_FILLED,
                                     data: { sale: newSale, order: dataSaleSymbolOrder }
                                 })
                             }
-                            else {
-                                console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
-                                publishDataToTopic({
-                                    topic: IBKREVENTS.ORDER_FILLED,
-                                    data: { sale: null, order: dataSaleSymbolOrder }
-                                })
-                            }
+                            console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+
+                            publishDataToTopic({
+                                topic: IBKREVENTS.ORDER_FILLED,
+                                data: { sale: null, order: dataSaleSymbolOrder }
+                            })
 
                         }
                     }
@@ -140,22 +224,22 @@ export class OrderTrade {
 
             ib.on('nextValidId', (orderIdNext: number) => {
 
-                that.tickerId = orderIdNext++;
+                self.tickerId = orderIdNext++;
 
-                const currentOrders = this.orders;
+                const currentOrders = this.stockOrders;
 
                 if (isEmpty(currentOrders)) {
                     return console.log(chalk.red(`Stock Orders are empty`));
                 }
 
                 // get first in the list
-                const stockOrder = this.orders.shift();
+                const stockOrder = this.stockOrders.shift();
 
                 if (isEmpty(stockOrder)) {
                     return console.log(chalk.red(`First Stock Orders Item is empty`));
                 }
 
-                const tickerToUse = that.tickerId;
+                const tickerToUse = self.tickerId;
                 const { symbol } = stockOrder;
 
                 console.log(chalk.yellow(`Placing order for ... ${tickerToUse} ${symbol}`));
@@ -170,8 +254,8 @@ export class OrderTrade {
                 }
 
                 // Just save tickerId and stockOrder
-                that.symbolsTickerOrder[symbol] = {
-                    ...(that.symbolsTickerOrder[symbol] || null),
+                self.symbolsTickerOrder[symbol] = {
+                    ...(self.symbolsTickerOrder[symbol] || null),
                     tickerId: tickerToUse,
                     symbol,
                     stockOrderRequest: stockOrder // for reference when closing trade
@@ -179,12 +263,12 @@ export class OrderTrade {
 
                 setTimeout(() => {
                     // Place order
-                    ib.placeOrder(that.tickerId, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
+                    ib.placeOrder(self.tickerId, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
 
                     // request open orders
                     ib.reqAllOpenOrders(); // refresh orders
 
-                    console.log(chalk.yellow(`nextValidId > placedOrder -> ${that.tickerId}`))
+                    console.log(chalk.yellow(`nextValidId > placedOrder -> ${self.tickerId}`))
                 }, 1000);
 
 
@@ -193,7 +277,7 @@ export class OrderTrade {
 
             // placeOrder event
             ibkrEvents.on(IBKREVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
-                return await that.placeOrder(stockOrder);
+                return await self.placeOrder(stockOrder);
             })
         }
     }
@@ -252,7 +336,7 @@ export class OrderTrade {
 
                 }
 
-                that.orders.push(stockOrder);
+                that.stockOrders.push(stockOrder);
 
                 that.ib.reqIds(that.tickerId);
 
