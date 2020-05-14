@@ -82,14 +82,6 @@ export class Portfolios {
 
             logPortfolio(thisPortfolio);
 
-            // Send Portfolios
-            // publishDataToTopic({
-            //     topic: IBKREVENTS.PORTFOLIOS,
-            //     data: {
-            //         portfolios: [thisPortfolio]
-            //     }
-            // });
-
             // Check if portfolio exists in currentPortfolios
             const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
 
@@ -125,11 +117,11 @@ export class Portfolios {
 
             appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
 
-            if (!isEmpty(currentPortfolios)) {
-                handlePortfolios(currentPortfolios);
-            }
-
             reqAccountUpdates();
+
+            if (!isEmpty(currentPortfolios)) {
+                return handlePortfolios(currentPortfolios);
+            }
 
             // TIMEOUT after 5 seconds
             setTimeout(() => {

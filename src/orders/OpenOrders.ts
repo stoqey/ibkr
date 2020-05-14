@@ -122,14 +122,19 @@ export class OpenOrders {
                 appEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
                 resolve(ordersData);
             }
+            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+
+            reqAllOpenOrders(); // refresh orders
 
             if (!isEmpty(orders)) {
                 const openOrders = Object.keys(orders).map(key => orders[key])
-                return resolve(openOrders);
+                return handleOpenOrders(openOrders)
             }
 
-            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-            reqAllOpenOrders(); // refresh orders
+            // TIMEOUT after 5 seconds
+            setTimeout(() => {
+                handleOpenOrders([])
+            }, 5000)
         })
     }
 
