@@ -3,12 +3,11 @@ import random from 'lodash/random';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus } from './orders.interfaces';
-import AccountOpenOrders from './OpenOrders';
 
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
 import { OrderStock } from './orders.interfaces';
-import OpenOrders from './OpenOrders';
+
 import { Portfolios } from '../portfolios';
 import { onConnected } from '../connection';
 import { log } from '../log';
@@ -27,7 +26,7 @@ interface SymbolTickerOrder {
     stockOrderRequest: OrderStock
 }
 
-export class OrderTrade {
+export class Orders {
 
     ib: any;
 
@@ -40,7 +39,7 @@ export class OrderTrade {
     public openOrders: { [x: string]: OrderWithContract } = {};
     public receivedOrders: boolean = false;
 
-    private static _instance: OrderTrade;
+    private static _instance: Orders;
 
     public static get Instance() {
         return this._instance || (this._instance = new this());
@@ -286,14 +285,14 @@ export class OrderTrade {
     }
 
     /**
- *  reqAllOpenOrders
- */
+     *  reqAllOpenOrders
+     */
     public reqAllOpenOrders = () => {
         console.log(`Orders > reqAllOpenOrders `)
         this.ib.reqAllOpenOrders();
     }
 
-    async getOpenOrders(): Promise<OrderWithContract[]> {
+    public async getOpenOrders(): Promise<OrderWithContract[]> {
 
         const { openOrders, reqAllOpenOrders } = this;
 
@@ -323,13 +322,14 @@ export class OrderTrade {
         })
     }
 
-    isActive(): boolean {
+    public isActive(): boolean {
         return this.receivedOrders;
     }
 
-    async placeOrder(stockOrder: OrderStock): Promise<any> {
+    public async placeOrder(stockOrder: OrderStock): Promise<any> {
 
-        let that = this;
+        let that, { getOpenOrders } = this;
+
 
         return new Promise((resolve, reject) => {
             const { exitTrade } = stockOrder;
@@ -342,7 +342,7 @@ export class OrderTrade {
                 }
 
                 // TODO check if stock exist
-                const checkExistingOrders = await OpenOrders.Instance.getOpenOrders();
+                const checkExistingOrders = await getOpenOrders();
 
                 console.log(chalk.blue(`Existing orders are -> ${checkExistingOrders.map(i => i.symbol)}`))
 
@@ -400,4 +400,4 @@ export class OrderTrade {
     }
 }
 
-export default OrderTrade;
+export default Orders;

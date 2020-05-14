@@ -7,7 +7,7 @@ import { IBKREVENTS, IbkrEvents } from '../events';
 import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
-import OpenOrders from '../orders/OpenOrders';
+import Orders from '../orders/Orders';
 import includes from 'lodash/includes';
 
 const appEvents = IbkrEvents.Instance;
@@ -68,8 +68,8 @@ export class IBKRConnection {
             await portfolio.init();
             await portfolio.getPortfolios();
 
-            console.log('3. OpenOrders');
-            const openOrders = OpenOrders.Instance;
+            console.log('3. Orders');
+            const openOrders = Orders.Instance;
             openOrders.init();
             await openOrders.getOpenOrders();
 
