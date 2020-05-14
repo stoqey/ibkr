@@ -117,19 +117,23 @@ export class OpenOrders {
         const { orders, reqAllOpenOrders } = this;
 
         return new Promise((resolve, reject) => {
+
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 appEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
                 resolve(ordersData);
             }
-            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-
-            reqAllOpenOrders(); // refresh orders
 
             if (!isEmpty(orders)) {
                 const openOrders = Object.keys(orders).map(key => orders[key])
-                return handleOpenOrders(openOrders)
+                return resolve(openOrders)
             }
+
+
+
+            appEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+            reqAllOpenOrders(); // refresh orders
+
 
             // TIMEOUT after 5 seconds
             setTimeout(() => {

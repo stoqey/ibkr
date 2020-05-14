@@ -115,13 +115,13 @@ export class Portfolios {
                 resolve(accountSummaryData);
             }
 
+            if (!isEmpty(currentPortfolios)) {
+                return resolve(currentPortfolios);
+            }
+
             appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
 
             reqAccountUpdates();
-
-            if (!isEmpty(currentPortfolios)) {
-                return handlePortfolios(currentPortfolios);
-            }
 
             // TIMEOUT after 5 seconds
             setTimeout(() => {
