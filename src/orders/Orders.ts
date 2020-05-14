@@ -109,7 +109,7 @@ export class Orders {
             });
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-                console.log(`OrderTrade > init > openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+                console.log(`Order> openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
 
 
                 // 1. Update OpenOrders
@@ -393,7 +393,7 @@ export class Orders {
                 self.ib.reqIds(self.tickerId);
 
                 setTimeout(() => {
-                    console.log(chalk.red(`OrderTrade > placeOrder -> tickerId ${self.tickerId}`))
+                    console.log(chalk.red(`Order > placeOrder -> tickerId ${self.tickerId}`))
                     resolve({ tickerId: self.tickerId })
                 }, 1000);
 

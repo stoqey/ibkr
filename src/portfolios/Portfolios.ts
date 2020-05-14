@@ -115,7 +115,7 @@ export class Portfolios {
     /**
      * getPortfolios
      */
-    public getPortfolios(): Promise<PortFolioUpdate[]> {
+    public getPortfolios = async (): Promise<PortFolioUpdate[]> => {
         const { currentPortfolios, reqAccountUpdates } = this;
         return new Promise((resolve, reject) => {
 
@@ -140,10 +140,6 @@ export class Portfolios {
         })
 
     }
-
-    // getPortfolios(): PortFolioUpdate[] {
-    //     return this.currentPortfolios;
-    // }
 
 
 }

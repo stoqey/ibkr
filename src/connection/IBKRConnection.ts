@@ -37,7 +37,7 @@ export class IBKRConnection {
     /**
      * init
      */
-    public init(host: string, port: number) {
+    public init = (host: string, port: number) => {
 
         if (!this.ib) {
             this.ib = new ibkr({
@@ -86,7 +86,7 @@ export class IBKRConnection {
     /**
      * On listen for IB connection
      */
-    private listen(): void {
+    private listen = (): void => {
 
         const self: IBKRConnection = this;
 
@@ -168,15 +168,12 @@ export class IBKRConnection {
 
     }
 
-
-
     /**
      * getIBKR instance
      */
-    public getIBKR(): any {
+    public getIBKR = (): any => {
         return this.ib;
     }
-
 
     /**
      * disconnectIBKR
@@ -192,7 +189,6 @@ export class IBKRConnection {
         }
 
     }
-
 
 }
 export default IBKRConnection;
