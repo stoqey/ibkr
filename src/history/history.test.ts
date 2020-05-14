@@ -2,10 +2,21 @@ import 'mocha';
 import { expect } from 'chai'
 import { HistoricalData } from '.';
 import { onConnected } from '../connection/connection.utilities';
+import ibkr from '..';
 
 const fsPromises = require('fs').promises
 
 let demoSymbolData;
+
+before((done) => {
+    ibkr().then(started => {
+        if (started) {
+            return done();
+        }
+        done(new Error('error starting ibkr'))
+
+    })
+})
 
 describe('Historical Data', () => {
     it('should get market data', async () => {

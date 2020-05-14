@@ -131,7 +131,7 @@ export class HistoricalData {
       symbol
     } = args;
 
-    console.log(`AccountHistoryData.reqHistoryData`, `Request historyData ${symbol}`)
+    console.log(`HistoricalData.reqHistoryData`, `Request historyData ${symbol}`)
 
     // Save this symbol in this class
     this.symbolsWithTicker.push(args);
