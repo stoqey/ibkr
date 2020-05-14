@@ -36,7 +36,7 @@ npm i @stoqey/ibkr
 
 ### Initialize
 ```ts
-import ibkr, { AccountSummary, IBKREVENTS, IbkrEvents, HistoryData, PortFolioUpdate, getContractDetails } from '@stoqey/ibkr';
+import ibkr, { AccountSummary, IBKREVENTS, IbkrEvents, PortFolioUpdate, getContractDetails } from '@stoqey/ibkr';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -117,11 +117,11 @@ ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
  const contractDetails = await getContractDetails('AAPL');
 ```
 
-### Orders/Trades
+### Orders
 ```ts
-import { OrderTrade, OrderStock } from '@stoqey/ibkr';
+import { Orders, OrderStock } from '@stoqey/ibkr';
 
-const orderTrade = OrderTrade.Instance;
+const orderTrade = Orders.Instance;
 
 const myStockOrder: OrderStock = { ... }
 

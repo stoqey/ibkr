@@ -7,6 +7,7 @@ import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
 import isEmpty from 'lodash/isEmpty';
 import { IBKRAccountSummary } from '../account/account-summary.interfaces';
+import { ORDER, OrderState } from '../orders';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -77,20 +78,29 @@ export class Portfolios {
 
             // Position has to be greater than 0
             if (position === 0) {
-                return console.log(chalk.blue(`updatePortfolio: positions are empty = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `))
+                return console.log(chalk.blue(`updatePortfolio: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `))
             }
 
             logPortfolio(thisPortfolio);
 
             // Check if portfolio exists in currentPortfolios
-            const isPortFolioAlreadyExist = this.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
+            const isPortFolioAlreadyExist = self.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
 
             if (!isPortFolioAlreadyExist) {
                 //positions changed
-                this.currentPortfolios.push(thisPortfolio);
-                this.currentPortfolios = _.uniqBy(this.currentPortfolios, "symbol");
+                self.currentPortfolios.push(thisPortfolio);
+                self.currentPortfolios = _.uniqBy(self.currentPortfolios, "symbol");
             }
         });
+
+        ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
+            if (orderState.status === "Filled") {
+                console.log(`Portfolio > openOrder FILLED`, chalk.blue(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+                // refresh the portfolios
+                self.reqAccountUpdates();
+            }
+        });
+
 
         this.reqAccountUpdates();
     }
@@ -105,7 +115,7 @@ export class Portfolios {
     /**
      * getPortfolios
      */
-    public getPortfolios(): Promise<PortFolioUpdate[]> {
+    public getPortfolios = async (): Promise<PortFolioUpdate[]> => {
         const { currentPortfolios, reqAccountUpdates } = this;
         return new Promise((resolve, reject) => {
 
@@ -130,10 +140,6 @@ export class Portfolios {
         })
 
     }
-
-    // getPortfolios(): PortFolioUpdate[] {
-    //     return this.currentPortfolios;
-    // }
 
 
 }

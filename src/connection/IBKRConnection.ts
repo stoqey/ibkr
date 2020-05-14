@@ -7,7 +7,7 @@ import { IBKREVENTS, IbkrEvents } from '../events';
 import { ConnectionStatus } from './connection.interfaces';
 import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
-import OpenOrders from '../orders/OpenOrders';
+import Orders from '../orders/Orders';
 import includes from 'lodash/includes';
 
 const appEvents = IbkrEvents.Instance;
@@ -37,7 +37,7 @@ export class IBKRConnection {
     /**
      * init
      */
-    public init(host: string, port: number) {
+    public init = (host: string, port: number) => {
 
         if (!this.ib) {
             this.ib = new ibkr({
@@ -68,9 +68,9 @@ export class IBKRConnection {
             await portfolio.init();
             await portfolio.getPortfolios();
 
-            console.log('3. OpenOrders');
-            const openOrders = OpenOrders.Instance;
-            openOrders.init();
+            console.log('3. Orders');
+            const openOrders = Orders.Instance;
+            await openOrders.init();
             await openOrders.getOpenOrders();
 
             return true;
@@ -86,7 +86,7 @@ export class IBKRConnection {
     /**
      * On listen for IB connection
      */
-    private listen(): void {
+    private listen = (): void => {
 
         const self: IBKRConnection = this;
 
@@ -168,15 +168,12 @@ export class IBKRConnection {
 
     }
 
-
-
     /**
      * getIBKR instance
      */
-    public getIBKR(): any {
+    public getIBKR = (): any => {
         return this.ib;
     }
-
 
     /**
      * disconnectIBKR
@@ -192,7 +189,6 @@ export class IBKRConnection {
         }
 
     }
-
 
 }
 export default IBKRConnection;

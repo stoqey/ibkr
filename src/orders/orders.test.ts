@@ -1,11 +1,10 @@
 import 'mocha';
 import { expect } from 'chai';
-import { OrderTrade } from './OrderTrade';
+import { Orders } from './Orders';
 import { onConnected } from '../connection/connection.utilities';
 import { OrderStock, OrderWithContract, OrderStatus, OrderStatusType } from './orders.interfaces';
 import { IbkrEvents, IBKREVENTS } from '../events';
 import ibkr from '..';
-import OpenOrders from './OpenOrders';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -56,7 +55,7 @@ describe('Orders', () => {
 
     it('should get open orders', async () => {
 
-        const openOrders = OpenOrders.Instance;
+        const openOrders = Orders.Instance;
 
         console.log('connected now, placing order now');
         const results = await openOrders.getOpenOrders();
@@ -67,38 +66,38 @@ describe('Orders', () => {
     });
 
 
-    // it('Place Order', async () => {
+    it('Place Order', async () => {
 
-    //     let results = null;
+        let results = null;
 
-    //     const getPlacedOrder = () => new Promise((resolve, reject) => {
-    //         const handleData = (data) => {
-    //             ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
-    //             resolve(data)
-    //         };
-    //         ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
+        const getPlacedOrder = () => new Promise((resolve, reject) => {
+            const handleData = (data) => {
+                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
+                resolve(data)
+            };
+            ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
 
 
-    //         ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
+            ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
 
-    //             const { order, orderStatus } = data;
+                const { order, orderStatus } = data;
 
-    //             if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
-    //                 resolve(data);
-    //             }
+                if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
+                    resolve(data);
+                }
 
-    //         });
-    //     });
+            });
+        });
 
-    //     const orderTrade = OrderTrade.Instance;
+        const orderTrade = Orders.Instance;
 
-    //     await orderTrade.placeOrder(stockOrderBuyIn);
+        await orderTrade.placeOrder(stockOrderBuyIn);
 
-    //     results = await getPlacedOrder();
+        results = await getPlacedOrder();
 
-    //     expect(results).to.be.not.null;
+        expect(results).to.be.not.null;
 
-    // });
+    });
 })
 
 
