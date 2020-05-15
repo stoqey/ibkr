@@ -291,9 +291,14 @@ export class Orders {
      */
     public reqAllOpenOrders = (): void => {
         console.log(`Orders > reqAllOpenOrders `)
-        if (this.ib) {
-            this.ib.reqAllOpenOrders();
-        }
+        const that = this;
+
+        setTimeout(() => {
+            if (that.ib) {
+                that.ib.reqAllOpenOrders();
+            }
+        }, 1000)
+
     }
 
     public getOpenOrders = async (): Promise<OrderWithContract[]> => {
@@ -386,12 +391,11 @@ export class Orders {
                     // Else existing trades are allowed
                 }
 
-                self.stockOrders.push(stockOrder);
-
-                self.ib.reqIds(self.tickerId);
 
                 setTimeout(() => {
                     console.log(chalk.red(`Order > placeOrder -> tickerId ${self.tickerId}`))
+                    self.stockOrders.push(stockOrder);
+                    self.ib.reqIds(self.tickerId);
                     resolve({ tickerId: self.tickerId })
                 }, 1000);
 

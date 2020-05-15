@@ -109,7 +109,10 @@ export class Portfolios {
      * reqAccountUpdates
      */
     public reqAccountUpdates = () => {
-        this.ib.reqAccountUpdates(true, this.accountSummary.AccountId);
+        let that = this;
+        setTimeout(() => {
+            that.ib.reqAccountUpdates(true, that.accountSummary.AccountId);
+        }, 1000)
     }
 
     /**
