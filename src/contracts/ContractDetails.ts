@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { ContractDetails, ContractObject } from './contracts.interfaces';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
+import { log } from '../log';
 
 
 interface ContactWithCost extends ContractObject {
@@ -34,14 +35,14 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails> => 
                 contract = contract;
                 const currentSymbol = contract && contract.summary && contract.summary.symbol;
                 if (currentSymbol === symbol) {
-                    console.log('Contract details', currentSymbol)
+                    log('Contract details', currentSymbol)
                     resolve(contract);
                 }
 
             })
 
             ib.on('contractDetailsEnd', (reqId) => {
-                console.log('Contract details end')
+                log('Contract details end')
                 resolve(contract)
             })
 

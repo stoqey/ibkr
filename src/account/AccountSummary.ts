@@ -41,7 +41,7 @@ export class AccountSummary {
             self.accountSummary.AccountId = account;
             self.accountSummary[tag] = value; // set the account value
             self.accountSummary.Currency = currency; // always set the account currency
-            // console.log('accountSummaryEnd', { account, tag, value, });
+            // log('accountSummaryEnd', { account, tag, value, });
         });
 
         // Return values from here 
