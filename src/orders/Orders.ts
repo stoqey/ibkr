@@ -341,7 +341,7 @@ export class Orders {
     public placeOrder = async (stockOrder: OrderStock): Promise<any> => {
 
         let self = this;
-        const { getOpenOrders } = self;
+        const getOpenOrders = self.getOpenOrders;
 
         return new Promise((resolve, reject) => {
             const { exitTrade } = stockOrder;
@@ -391,13 +391,13 @@ export class Orders {
                     // Else existing trades are allowed
                 }
 
+                self.stockOrders.push(stockOrder);
 
                 setTimeout(() => {
                     console.log(chalk.red(`Order > placeOrder -> tickerId ${self.tickerId}`))
-                    self.stockOrders.push(stockOrder);
                     self.ib.reqIds(self.tickerId);
                     resolve({ tickerId: self.tickerId })
-                }, 1000);
+                }, 900);
 
             }
 
