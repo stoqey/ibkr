@@ -358,8 +358,10 @@ export class Orders {
                     // check if we have the same order from here
 
                     const findMatchingAction = checkExistingOrders.filter(
-                        exi => exi.action === stockOrder.action
-                            && exi.symbol === stockOrder.symbol);
+                        exi =>
+                            exi.action === stockOrder.action &&
+                            exi.symbol === stockOrder.symbol
+                    );
 
                     if (!isEmpty(findMatchingAction)) {
                         return console.log(chalk.red(`Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]} ${findMatchingAction[0].orderState.status}`))
@@ -370,22 +372,18 @@ export class Orders {
                 console.log(chalk.blue(`Existing portfolios are -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
 
                 // 2. Check existing portfolios
-                const foundExistingPortfolios = checkExistingPositions.filter(
-                    exi => exi.symbol === stockOrder.symbol);
+                const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
+                    exi => exi.symbol === stockOrder.symbol) : [];
 
                 console.log(chalk.blue(`foundExistingPortfolios are -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
 
-                if (!isEmpty(checkExistingPositions)) {
+                // Only if this is not exit
+                if (!isEmpty(foundExistingPortfolios)) {
 
-                    // Only if this is not exit
-                    if (!isEmpty(foundExistingPortfolios)) {
-
-                        if (!exitTrade) {
-                            return console.log(chalk.red(`*********************************Portfolio already exist and has position for ${stockOrder.action}, ${foundExistingPortfolios[0].symbol} ->  order@${stockOrder.parameters[0]} portfolio@${foundExistingPortfolios[0].position}`))
-                        }
-                        // Else existing trades are allowed
+                    if (!exitTrade) {
+                        return console.log(chalk.red(`*********************************Portfolio already exist and has position for ${stockOrder.action}, ${foundExistingPortfolios[0].symbol} ->  order@${stockOrder.parameters[0]} portfolio@${foundExistingPortfolios[0].position}`))
                     }
-
+                    // Else existing trades are allowed
                 }
 
                 self.stockOrders.push(stockOrder);

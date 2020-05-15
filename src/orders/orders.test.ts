@@ -12,8 +12,8 @@ const fsPromises = require('fs').promises
 
 let demoSymbolData;
 
-const symbol = "PECK";
-const orderParams = [2, "9999"]
+const symbol = "TSLA";
+const orderParams = [1]
 
 const stockOrderBuyIn: OrderStock = {
     symbol: symbol,
