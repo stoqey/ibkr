@@ -135,11 +135,6 @@ export class Portfolios {
             appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
 
             reqAccountUpdates();
-
-            // TIMEOUT after 5 seconds
-            setTimeout(() => {
-                handlePortfolios([])
-            }, 5000)
         })
 
     }

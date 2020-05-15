@@ -99,13 +99,13 @@ export class Orders {
                     }
                 });
 
-                log(chalk.black(`Orders > orderStatus`), {
-                    id,
-                    status,
-                    filled,
-                    remaining,
-                    symbol: currentOrder && currentOrder.symbol
-                })
+                // log(chalk.black(`Orders > orderStatus`), {
+                //     id,
+                //     status,
+                //     filled,
+                //     remaining,
+                //     symbol: currentOrder && currentOrder.symbol
+                // })
             });
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
@@ -289,12 +289,13 @@ export class Orders {
     /**
      *  reqAllOpenOrders
      */
-    public reqAllOpenOrders = (): void => {
-        console.log(`Orders > reqAllOpenOrders `)
+    private reqAllOpenOrders = (): void => {
+
         const that = this;
 
         setTimeout(() => {
             if (that.ib) {
+                console.log(`Orders > reqAllOpenOrders `)
                 that.ib.reqAllOpenOrders();
             }
         }, 1000)
@@ -306,7 +307,7 @@ export class Orders {
         const self = this;
         const reqAllOpenOrders = self.reqAllOpenOrders;
 
-        const openOrders = self && self.openOrders || {};
+        const openOrders = self && self.openOrders || null;
 
         return new Promise((resolve, reject) => {
 
@@ -321,16 +322,8 @@ export class Orders {
                 return resolve(allopenOrders)
             }
 
-
-
             ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
             reqAllOpenOrders(); // refresh orders
-
-
-            // TIMEOUT after 5 seconds
-            setTimeout(() => {
-                handleOpenOrders([])
-            }, 5000)
         })
     }
 
@@ -341,7 +334,6 @@ export class Orders {
     public placeOrder = async (stockOrder: OrderStock): Promise<any> => {
 
         let self = this;
-        const getOpenOrders = self.getOpenOrders;
 
         return new Promise((resolve, reject) => {
             const { exitTrade } = stockOrder;
@@ -354,7 +346,7 @@ export class Orders {
                 }
 
                 // TODO check if stock exist
-                const checkExistingOrders = await getOpenOrders();
+                const checkExistingOrders = await self.getOpenOrders();
 
                 console.log(chalk.blue(`Existing orders are -> ${checkExistingOrders.map(i => i.symbol)}`))
 
@@ -374,19 +366,20 @@ export class Orders {
                 }
 
                 const checkExistingPositions = await Portfolios.Instance.getPortfolios();
-                console.log(chalk.blue(`Existing portfolios are -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
+                console.log(chalk.blue(`Existing portfolios -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
 
                 // 2. Check existing portfolios
                 const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
                     exi => exi.symbol === stockOrder.symbol) : [];
 
-                console.log(chalk.blue(`foundExistingPortfolios are -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
+                console.log(chalk.blue(`foundExistingPortfolios -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
 
-                // Only if this is not exit
+
                 if (!isEmpty(foundExistingPortfolios)) {
 
+                    // Only if this is not exit
                     if (!exitTrade) {
-                        return console.log(chalk.red(`*********************************Portfolio already exist and has position for ${stockOrder.action}, ${foundExistingPortfolios[0].symbol} ->  order@${stockOrder.parameters[0]} portfolio@${foundExistingPortfolios[0].position}`))
+                        return console.log(chalk.red(`*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`))
                     }
                     // Else existing trades are allowed
                 }

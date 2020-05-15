@@ -13,6 +13,8 @@ const fsPromises = require('fs').promises
 let demoSymbolData;
 
 const symbol = "TSLA";
+const symbolX = "PECK";
+const symbolY = "ACHC"; // portfolio
 const orderParams = [1]
 
 const stockOrderBuyIn: OrderStock = {
@@ -25,21 +27,26 @@ const stockOrderBuyIn: OrderStock = {
     exitTrade: false
 }
 
-const stockOrderBuyOut: OrderStock = {
-    symbol: symbol,
+const stockOrderBuyInX: OrderStock = {
+    symbol: symbolX,
+    action: "BUY",
+    type: "market",
+    parameters: orderParams, // 'SELL', 1, 9999,
+    size: 3,
+    capital: 1000,
+    exitTrade: false
+}
+
+const stockOrderBuyInY: OrderStock = {
+    symbol: symbolY,
     action: "SELL",
     type: "market",
     parameters: orderParams, // 'SELL', 1, 9999,
     size: 3,
     capital: 1000,
-    exitTrade: true,
-    exitParams: {
-        entryTime: new Date(),
-        entryPrice: 0,
-        exitTime: new Date(),
-        exitPrice: 0
-    }
+    exitTrade: false
 }
+
 
 before((done) => {
     ibkr().then(started => {
@@ -57,7 +64,6 @@ describe('Orders', () => {
 
         const openOrders = Orders.Instance;
 
-        console.log('connected now, placing order now');
         const results = await openOrders.getOpenOrders();
         console.log('Open orders are', results && results.length)
 
@@ -66,7 +72,7 @@ describe('Orders', () => {
     });
 
 
-    it('Place Order', async () => {
+    it('Place Order', (done) => {
 
         let results = null;
 
@@ -83,19 +89,36 @@ describe('Orders', () => {
                 const { order, orderStatus } = data;
 
                 if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
+                    console.log('filled')
                     resolve(data);
                 }
 
             });
+            Orders.Instance.getOpenOrders();
         });
 
         const orderTrade = Orders.Instance;
 
-        await orderTrade.placeOrder(stockOrderBuyIn);
+        orderTrade.placeOrder(stockOrderBuyIn);
+        orderTrade.placeOrder(stockOrderBuyInX);
+        orderTrade.placeOrder(stockOrderBuyIn);
+        orderTrade.placeOrder(stockOrderBuyInY);
+        orderTrade.placeOrder(stockOrderBuyInY);
+        setTimeout(() => {
+            orderTrade.placeOrder(stockOrderBuyIn);
+            orderTrade.placeOrder(stockOrderBuyInX);
+            orderTrade.placeOrder(stockOrderBuyInY);
+        }, 9000)
+        setTimeout(() => {
+            orderTrade.placeOrder(stockOrderBuyIn);
+            orderTrade.placeOrder(stockOrderBuyInX);
+            orderTrade.placeOrder(stockOrderBuyInY);
+        }, 5000)
 
-        results = await getPlacedOrder();
 
-        expect(results).to.be.not.null;
+        getPlacedOrder();
+
+        // expect(results).to.be.not.null;
 
     });
 })
