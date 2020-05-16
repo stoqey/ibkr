@@ -5,6 +5,8 @@ import { onConnected } from '../connection/connection.utilities';
 import { OrderStock, OrderWithContract, OrderStatus, OrderStatusType } from './orders.interfaces';
 import { IbkrEvents, IBKREVENTS } from '../events';
 import ibkr from '..';
+import { log } from '../log';
+
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -57,9 +59,9 @@ describe('Orders', () => {
 
         const openOrders = Orders.Instance;
 
-        console.log('connected now, placing order now');
+        log('connected now, placing order now');
         const results = await openOrders.getOpenOrders();
-        console.log('Open orders are', results && results.length)
+        log('Open orders are', results && results.length)
 
         expect(results).to.be.not.null;
 

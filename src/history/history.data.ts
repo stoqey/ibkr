@@ -7,6 +7,7 @@ import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
 import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData, WhatToShow, BarSizeSetting } from './history.interfaces';
+import { log } from '../log';
 
 
 const appEvents = IbkrEvents.Instance;
@@ -118,7 +119,7 @@ export class HistoricalData {
         whatToShow = 'ASK'
       } = args;
 
-      console.log(`on history data ${symbol}`)
+      log(`on history data ${symbol}`)
 
       if (isEmpty(symbol)) {
         return;
@@ -151,7 +152,7 @@ export class HistoricalData {
       symbol
     } = args;
 
-    console.log(`HistoricalData.reqHistoryData`, `Request historyData ${symbol}`)
+    log(`HistoricalData.reqHistoryData`, `Request historyData ${symbol}`)
 
     // Save this symbol in this class
     this.symbolsWithTicker.push(args);

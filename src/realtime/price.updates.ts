@@ -1,11 +1,11 @@
 
-import chalk from 'chalk';
 import _ from 'lodash';
 import isEmpty from 'lodash/isEmpty';
 import { SymbolWithData, TickSize, TickPrice } from './price.interfaces';
 import { IBKRConnection } from '../connection';
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
 import { getRadomReqId } from '../_utils/text.utils';
+import { log } from '../log';
 
 const ibEvents = IbkrEvents.Instance;
 
@@ -72,7 +72,7 @@ export class PriceUpdates {
             const tickTypeWords = ib.util.tickTypeToString(tickType);
 
             if (isEmpty(currentSymbol)) {
-                console.log('PriceUpdates.tickPrice', chalk.red(`Symbol not found ${JSON.stringify(thisSymbol)}`))
+                log('PriceUpdates.tickPrice', `Symbol not found ${JSON.stringify(thisSymbol)}`);
                 return;
             }
 
@@ -80,10 +80,10 @@ export class PriceUpdates {
 
             // Matches as requested
             if (currentTickerType === tickTypeWords) {
-                console.log('PriceUpdates.tickPrice', chalk.dim(`${tickTypeWords}:PRICE ${chalk.bold(currentSymbol)} => $${price} tickerId = ${tickerId}`))
+                log('PriceUpdates.tickPrice', `${tickTypeWords}:PRICE ${currentSymbol} => $${price} tickerId = ${tickerId}`);
 
                 if (price === -1) {
-                    return console.log('PriceUpdates.tickPrice', chalk.red(`${tickTypeWords}:PRICE NULL ${chalk.bold(currentSymbol)} $${price}`))
+                    return log('PriceUpdates.tickPrice', `${tickTypeWords}:PRICE NULL ${currentSymbol} $${price}`);
                 }
 
                 const dataToPublish: {
@@ -120,16 +120,16 @@ export class PriceUpdates {
 
         // Check if symbol exist
         if (isEmpty(symbol)) {
-            return console.log('PriceUpdates.subscribe', chalk.dim(`Symbol cannot be null`));
+            return log('PriceUpdates.subscribe', `Symbol cannot be null`);
         }
 
         // Check if we already have the symbol
         if (this.subscribers[symbol]) {
             //  symbol is already subscribed
-            return console.log('PriceUpdates.subscribe', chalk.dim(`${symbol.toLocaleUpperCase()} is already subscribed`))
+            return log('PriceUpdates.subscribe', `${symbol.toLocaleUpperCase()} is already subscribed`);
         }
 
-        // Assign random numbe for symbol
+        // Assign random number for symbol
         this.subscribers[symbol] = getRadomReqId();
 
         // Add this symbol to subscribersTicker
@@ -141,7 +141,7 @@ export class PriceUpdates {
 
         setTimeout(() => {
             that.ib.reqMktData(that.subscribers[symbol], that.ib.contract.stock(symbol), '', false, false);
-            return console.log('PriceUpdates.subscribe', chalk.greenBright(`${symbol.toLocaleUpperCase()} is successfully subscribed`))
+            return log('PriceUpdates.subscribe', `${symbol.toLocaleUpperCase()} is successfully subscribed`);
         }, 900)
 
     }
@@ -152,7 +152,7 @@ export class PriceUpdates {
         setTimeout(() => {
             if (!isEmpty(that.subscribersWithTicker)) {
                 that.subscribersWithTicker.forEach((symbolTicker) => {
-                    console.log(chalk.dim(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`))
+                    log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
                     that.ib.cancelMktData(symbolTicker.tickerId);
                 });
             }

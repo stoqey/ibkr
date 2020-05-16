@@ -6,8 +6,6 @@ export const isDev = env.NODE_ENV !== 'production';
 
 export const isTest = env.NODE_ENV === 'test';
 
-export const forceLog = env.FORCE_LOG || false;
-
 if (isDev) {
     require('dotenv').config();
 }

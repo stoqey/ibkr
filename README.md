@@ -191,7 +191,10 @@ ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, (data) => {
 
 see any `.test.ts` file for examples
 
+## 3. Debug
 
+We use [debug](https://github.com/visionmedia/debug) library for logging.
+Run with `DEBUG=ibkr:*` to see all logs, or `DEBUG=ibkr:info` for less verbose logs.
 
 <div align="center" >
 <img style="background:#231f20;color:white; width:100%;padding:10px" src="./docs/logo_interactive-brokers_white.png"></img>
