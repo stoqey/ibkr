@@ -66,7 +66,7 @@
     "typescript": ">=2.0"
   },
   "dependencies": {
-    "@stoqey/ib": "^0.0.1",
+    "@stoqey/ib": "^0.0.2",
     "chalk": "^4.0.0",
     "dotenv": "^8.2.0",
     "lodash": "^4.17.15",

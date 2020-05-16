@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@stoqey/ib@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-0.0.1.tgz#4f2331e92b07652324423b7bfd422b1c41d388e9"
-  integrity sha512-a8tdTULFy65P0oTo9GsOkScuvDZEXJ2xuzpQBJq7yBtlNBH1mhqzG2mWiRaUhMN33O+VqVSXfoFxnGHulL8XOQ==
+"@stoqey/ib@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-0.0.2.tgz#3b1b904b68a0e875dd462ed755a6d2e3db5fed1a"
+  integrity sha512-s6zhAoRhShzfkWMA3JY4ieSaoCyBaTXovTKiEJx2VTt0AiXnLagmOq++RUuYrFyTq4CkdcduSpb/k4xitSAhWg==
   dependencies:
     chalk "^4.0.0"
     command-buffer "^0.1.0"
