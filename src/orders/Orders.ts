@@ -283,7 +283,7 @@ export class Orders {
             })
         }
 
-        return self.reqAllOpenOrders();
+
     }
 
     /**
