@@ -16,26 +16,19 @@ describe('Realtime', () => {
 
     PriceUpdates.Instance;
 
-    it('should get price updates for AAPL', async () => {
-        let results = null;
+    it('should get price updates for AAPL', (done) => {
 
-        const getMarketData = () => new Promise((resolve, reject) => {
+        const getMarketData = () => {
             const handleData = (data) => {
                 ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
-                if (data && data.price) {
-                    resolve(data)
-                }
+                done();
             };
             ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, handleData);
-        });
-
-        if (await onConnected()) {
 
             ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
-            results = await getMarketData();
+        };
 
-        }
-        expect(results).to.be.not.null;
+        getMarketData();
     });
 
 });

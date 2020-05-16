@@ -293,12 +293,12 @@ export class Orders {
 
         const that = this;
 
-        setTimeout(() => {
+        setImmediate(() => {
             if (that.ib) {
                 console.log(`Orders > reqAllOpenOrders `)
                 that.ib.reqAllOpenOrders();
             }
-        }, 1000)
+        })
 
     }
 

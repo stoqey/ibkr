@@ -139,10 +139,10 @@ export class PriceUpdates {
             tickType
         });
 
-        setTimeout(() => {
+        setImmediate(() => {
             that.ib.reqMktData(that.subscribers[symbol], that.ib.contract.stock(symbol), '', false, false);
-            return console.log('PriceUpdates.subscribe', chalk.greenBright(`${symbol.toLocaleUpperCase()} is successfully subscribed`))
-        }, 900)
+            console.log('PriceUpdates.subscribe', chalk.greenBright(`${symbol.toLocaleUpperCase()} is successfully subscribed`))
+        })
 
     }
 
