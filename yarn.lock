@@ -18,6 +18,18 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
+"@stoqey/ib@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-0.0.1.tgz#4f2331e92b07652324423b7bfd422b1c41d388e9"
+  integrity sha512-a8tdTULFy65P0oTo9GsOkScuvDZEXJ2xuzpQBJq7yBtlNBH1mhqzG2mWiRaUhMN33O+VqVSXfoFxnGHulL8XOQ==
+  dependencies:
+    chalk "^4.0.0"
+    command-buffer "^0.1.0"
+    dotenv "^8.2.0"
+    function-rate-limit "^1.1.0"
+    lodash "^4.17.15"
+    moment "^2.24.0"
+
 "@types/chai@^4.2.11":
   version "4.2.11"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.11.tgz#d3614d6c5f500142358e6ed24e1bf16657536c50"
@@ -466,15 +478,6 @@ he@1.2.0:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-ib@^0.2.7:
-  version "0.2.7"
-  resolved "https://registry.yarnpkg.com/ib/-/ib-0.2.7.tgz#284c10a7f6b28858ed995e4c29640d25a885079f"
-  integrity sha512-aQdVNbBPZ1eWqLduHHdcAEMyRD7BvTZ9y9tHPCZf5rk17klEXb+0C9TXJoJLLbT5p+C0ebY/eVMfIQgmapKaLQ==
-  dependencies:
-    command-buffer "^0.1.0"
-    function-rate-limit "^1.1.0"
-    lodash "^4.17.10"
-
 inflight@^1.0.4:
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/inflight/-/inflight-1.0.6.tgz#49bd6331d7d02d0c09bc910a1075ba8165b56df9"
@@ -577,7 +580,7 @@ locate-path@^3.0.0:
     p-locate "^3.0.0"
     path-exists "^3.0.0"
 
-lodash@^4.17.10, lodash@^4.17.15:
+lodash@^4.17.15:
   version "4.17.15"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
   integrity sha512-8xOcRHvCjnocdS5cpwXQXVzmmh5e5+saE2QGoeQmbKmRS6J3VQppPOIt0MnmE+4xlZoumy0GPG0D0MVIQbNA1A==
