@@ -101,19 +101,23 @@ describe('Orders', () => {
 
         orderTrade.placeOrder(stockOrderBuyIn);
         orderTrade.placeOrder(stockOrderBuyInX);
+        orderTrade.placeOrder(stockOrderBuyInX);
+        orderTrade.placeOrder(stockOrderBuyInX);
+        orderTrade.placeOrder(stockOrderBuyIn);
         orderTrade.placeOrder(stockOrderBuyIn);
         orderTrade.placeOrder(stockOrderBuyInY);
         orderTrade.placeOrder(stockOrderBuyInY);
-        setTimeout(() => {
-            orderTrade.placeOrder(stockOrderBuyIn);
-            orderTrade.placeOrder(stockOrderBuyInX);
-            orderTrade.placeOrder(stockOrderBuyInY);
-        }, 9000)
-        setTimeout(() => {
-            orderTrade.placeOrder(stockOrderBuyIn);
-            orderTrade.placeOrder(stockOrderBuyInX);
-            orderTrade.placeOrder(stockOrderBuyInY);
-        }, 5000)
+        orderTrade.placeOrder(stockOrderBuyInY);
+        // setTimeout(() => {
+        //     orderTrade.placeOrder(stockOrderBuyIn);
+        //     orderTrade.placeOrder(stockOrderBuyInX);
+        //     orderTrade.placeOrder(stockOrderBuyInY);
+        // }, 9000)
+        // setTimeout(() => {
+        //     orderTrade.placeOrder(stockOrderBuyIn);
+        //     orderTrade.placeOrder(stockOrderBuyInX);
+        //     orderTrade.placeOrder(stockOrderBuyInY);
+        // }, 5000)
 
 
         getPlacedOrder();
