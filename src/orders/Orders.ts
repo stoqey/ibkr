@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import random from 'lodash/random';
+import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
 import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus } from './orders.interfaces';
@@ -28,7 +29,7 @@ interface SymbolTickerOrder {
 
 export class Orders {
 
-    ib: any = null;
+    ib: IB = null;
 
     // StockOrders
     tickerId = 0;
@@ -345,6 +346,7 @@ export class Orders {
     public placeOrder = async (stockOrder: OrderStock): Promise<any> => {
 
         let self = this;
+        const checkExistingOrders = self.stockOrders;
 
         const { exitTrade } = stockOrder;
         console.log(chalk.magentaBright(`Place Order Request -> ${stockOrder.symbol.toLocaleUpperCase()} ${stockOrder.action} ${stockOrder.parameters[0]}`))
@@ -355,7 +357,7 @@ export class Orders {
 
         // TODO check if stock exist
         // const allOrders = self.stockOrders;
-        const checkExistingOrders = self.stockOrders;
+
 
         console.log(chalk.blue(`Existing orders are -> ${checkExistingOrders.map(i => i.symbol)}`))
 

@@ -171,7 +171,7 @@ export class IBKRConnection {
     /**
      * getIBKR instance
      */
-    public getIBKR = (): any => {
+    public getIBKR = (): ibkr => {
         return this.ib;
     }
 

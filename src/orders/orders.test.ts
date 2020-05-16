@@ -99,15 +99,15 @@ describe('Orders', () => {
 
         const orderTrade = Orders.Instance;
 
-        orderTrade.placeOrder(stockOrderBuyIn);
+        // orderTrade.placeOrder(stockOrderBuyIn);
         orderTrade.placeOrder(stockOrderBuyInX);
         orderTrade.placeOrder(stockOrderBuyInX);
         orderTrade.placeOrder(stockOrderBuyInX);
-        orderTrade.placeOrder(stockOrderBuyIn);
-        orderTrade.placeOrder(stockOrderBuyIn);
-        orderTrade.placeOrder(stockOrderBuyInY);
-        orderTrade.placeOrder(stockOrderBuyInY);
-        orderTrade.placeOrder(stockOrderBuyInY);
+        // orderTrade.placeOrder(stockOrderBuyIn);
+        // orderTrade.placeOrder(stockOrderBuyIn);
+        // orderTrade.placeOrder(stockOrderBuyInY);
+        // orderTrade.placeOrder(stockOrderBuyInY);
+        // orderTrade.placeOrder(stockOrderBuyInY);
         // setTimeout(() => {
         //     orderTrade.placeOrder(stockOrderBuyIn);
         //     orderTrade.placeOrder(stockOrderBuyInX);
