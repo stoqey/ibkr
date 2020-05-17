@@ -3,7 +3,7 @@ import random from 'lodash/random';
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import { getRadomReqId } from '../_utils/text.utils';
-import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus } from './orders.interfaces';
+import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus, OrderStatusType } from './orders.interfaces';
 
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
@@ -12,6 +12,7 @@ import { OrderStock } from './orders.interfaces';
 import { Portfolios } from '../portfolios';
 import { onConnected } from '../connection';
 import { log } from '../log';
+import includes from 'lodash/includes';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -24,7 +25,8 @@ interface SymbolTickerOrder {
     tickerId: number;
     orderPermId: number; // for reference when closing it
     symbol: string;
-    stockOrderRequest: OrderStock
+    stockOrderRequest: OrderStock;
+    orderStatus?: OrderStatusType;
 }
 
 export class Orders {
@@ -33,17 +35,32 @@ export class Orders {
 
     // StockOrders
     tickerId = 0;
+    processing = false;
+
+    /**
+     * Orders to be taken from nextValidId
+     * These are always deleted after order is submitted to IB
+     */
     stockOrders: OrderStock[] = [];
+
+    /**
+     * A ledger of orders that are being executed, 
+     * This is to avoid duplicate orders
+     * @unique 
+     * new order overrides old one
+     * only filled, canceled, error orders can be overridden
+     */
     symbolsTickerOrder: { [x: string]: SymbolTickerOrder } = {}
 
-    // NEW
-    validOrderIds: { [x: number]: OrderStock } = {}
 
+    /**
+     * Redundant orderIdNext recorded
+     */
     orderIdNext: number = null;
 
     // OPEN ORDERS
     public openOrders: { [x: string]: OrderWithContract } = {};
-    public receivedOrders: boolean = false;
+    public receivedOrders: boolean = false; // stopper 
 
     private static _instance: Orders;
 
@@ -167,7 +184,8 @@ export class Orders {
                     self.symbolsTickerOrder[thisOrderTicker.symbol] = {
                         ...(self.symbolsTickerOrder[thisOrderTicker.symbol] || null),
                         orderPermId: order.permId,
-                        symbol: thisOrderTicker.symbol
+                        symbol: thisOrderTicker.symbol,
+                        orderStatus: orderState.status, // update order state
                     };
 
                     const updatedSymbolTicker = self.symbolsTickerOrder[thisOrderTicker.symbol];
@@ -230,52 +248,6 @@ export class Orders {
 
             });
 
-            ib.on('nextValidId', (orderIdNext: number) => {
-
-                const tickerToUse = orderIdNext++;
-
-                const currentOrders = self.stockOrders;
-
-                if (isEmpty(currentOrders)) {
-                    return console.log(chalk.red(`Stock Orders are empty`));
-                }
-
-                // get order by it's tickerId
-                const stockOrder = self.stockOrders.shift();
-
-
-                if (isEmpty(stockOrder)) {
-                    return console.log(chalk.red(`First Stock Orders Item is empty`));
-                }
-
-                const { symbol } = stockOrder;
-
-                const orderCommand: Function = ib.order.market;
-
-                const args = stockOrder.parameters;
-
-                if (isEmpty(args)) {
-                    return Promise.reject(new Error(`Arguments cannot be null`))
-                }
-
-                // Just save tickerId and stockOrder
-                self.symbolsTickerOrder[symbol] = {
-                    ...(self.symbolsTickerOrder[symbol] || null),
-                    tickerId: tickerToUse,
-                    symbol,
-                    stockOrderRequest: stockOrder // for reference when closing trade
-                };
-
-                // Place order
-                ib.placeOrder(tickerToUse, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
-
-                self.orderIdNext = tickerToUse;
-                ib.reqAllOpenOrders(); // refresh orders
-
-                console.log(chalk.yellow(`Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`));
-
-            });
-
 
             // placeOrder event
             ibkrEvents.on(IBKREVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
@@ -305,16 +277,22 @@ export class Orders {
     public getOpenOrders = async (): Promise<OrderWithContract[]> => {
 
         const self = this;
+
         const reqAllOpenOrders = self.reqAllOpenOrders;
 
         const openOrders = self && self.openOrders || null;
 
         return new Promise((resolve, reject) => {
 
+            let done = false;
+
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
-                ibkrEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-                resolve(ordersData);
+                if (!done) {
+                    ibkrEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
+                    done = true;
+                    resolve(ordersData);
+                }
             }
 
             if (!isEmpty(openOrders)) {
@@ -331,79 +309,158 @@ export class Orders {
         return this.receivedOrders;
     }
 
-    public placeOrder = async (stockOrder: OrderStock): Promise<any> => {
+    public placeOrder = async (stockOrder: OrderStock): Promise<void | any> => {
 
         let self = this;
+        const ib = self.ib;
 
-        const checkExistingOrders = self.stockOrders;
-
-
-        return new Promise((resolve, reject) => {
-            const { exitTrade } = stockOrder;
-            console.log(chalk.magentaBright(`Place Order Request -> ${stockOrder.symbol.toLocaleUpperCase()} ${stockOrder.action} ${stockOrder.parameters[0]}`))
+        const { exitTrade, symbol } = stockOrder;
 
 
-            async function placingOrderNow() {
-                if (isEmpty(stockOrder.symbol)) {
-                    return reject(new Error("Please enter order"))
+        let handleRecursive;
+
+        // 1. Processing, or recursive
+        if (self.processing) {
+            handleRecursive = setInterval(
+                () => {
+                    console.log('retry in --------------------->', symbol)
+                    self.placeOrder(stockOrder)
                 }
+                , 2000)
+            return () => clearInterval(handleRecursive);
+        }
 
-                console.log(chalk.blue(`Existing orders are -> ${checkExistingOrders.map(i => i.symbol)}`))
+        // clear recursive
+        clearInterval(handleRecursive)
+        handleRecursive = 0;
 
-                // 1. Check existing open orders
-                if (!isEmpty(checkExistingOrders)) {
-                    // check if we have the same order from here
-
-                    const findMatchingAction = checkExistingOrders.filter(
-                        exi =>
-                            exi.action === stockOrder.action &&
-                            exi.symbol === stockOrder.symbol
-                    );
-
-                    if (!isEmpty(findMatchingAction)) {
-                        console.log(chalk.red(`Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`))
-                        return resolve({})
-                    }
-                }
-
-                const checkExistingPositions = await Portfolios.Instance.getPortfolios();
-                console.log(chalk.blue(`Existing portfolios -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
-
-                // 2. Check existing portfolios
-                const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
-                    exi => exi.symbol === stockOrder.symbol) : [];
-
-                console.log(chalk.blue(`foundExistingPortfolios -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
+        // Start -----------------------------
+        this.processing = true;
 
 
-                if (!isEmpty(foundExistingPortfolios)) {
-
-                    // Only if this is not exit
-                    if (!exitTrade) {
-                        console.log(chalk.red(`*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`))
-                        return resolve({})
-                    }
-                    // Else existing trades are allowed
-                }
+        const success = (): void => {
+            ib.off('nextValidId', handleOrderIdNext);
+            self.processing = false; // reset processing
+            return;
+        };
 
 
+        const handleOrderIdNext = (orderIdNext: number) => {
 
-                setImmediate(() => {
-                    self.tickerId = self.tickerId + 1;
-                    self.stockOrders = [...self.stockOrders, stockOrder];
-                    self.ib.reqIds(self.tickerId);
-                    console.log(chalk.green(`Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`))
-                    resolve({ tickerId: self.tickerId })
-                })
+            const tickerToUse = ++orderIdNext;
+
+            const currentOrders = self.stockOrders;
+
+            if (isEmpty(currentOrders)) {
+                console.log(chalk.red(`Stock Orders are empty`));
+                return success();
             }
 
-            placingOrderNow();
+            // get order by it's tickerId
+            const stockOrder = self.stockOrders.shift();
 
 
-        })
+            if (isEmpty(stockOrder)) {
+                console.log(chalk.red(`First Stock Orders Item is empty`));
+                return success();
+            }
+
+            const { symbol } = stockOrder;
+
+            const orderCommand: Function = ib.order[stockOrder.type];
+
+            const args = stockOrder.parameters;
+
+            if (isEmpty(args)) {
+                console.log(chalk.red(`Arguments cannot be null`));
+                return success();
+            }
+
+            // Just save tickerId and stockOrder
+            self.symbolsTickerOrder[symbol] = {
+                ...(self.symbolsTickerOrder[symbol] || null),
+                tickerId: tickerToUse,
+                symbol,
+                orderStatus: "PendingSubmit",
+                stockOrderRequest: stockOrder // for reference when closing trade,
+            };
+
+            // Place order
+            ib.placeOrder(tickerToUse, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
+
+            // self.orderIdNext = tickerToUse;
+            self.tickerId = tickerToUse;
+            ib.reqAllOpenOrders(); // refresh orders
+
+            console.log(chalk.yellow(`Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`));
+            return success();
+        }
 
 
+        async function placingOrderNow(): Promise<void> {
+            if (isEmpty(stockOrder.symbol)) {
+                return console.log(new Error("Please enter order"))
+            }
 
+            // 0. Pending orders
+            // Check active tickerSymbols
+            const pendingOrders = self.symbolsTickerOrder[symbol];
+            const pendingOrderStatus = pendingOrders && pendingOrders.orderStatus;
+            const isPending = ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(pendingOrderStatus);
+
+            if (isPending) {
+                console.log(chalk.red(`*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} pendingOrderStatus=${pendingOrderStatus || "NONE"} isPending=${isPending}`))
+                return success();
+            }
+
+
+            // 1. Check existing open orders
+            const checkExistingOrders = await self.getOpenOrders();
+            console.log(chalk.blue(`Existing orders in queue -> ${checkExistingOrders.map(i => i.symbol)}`))
+
+            if (!isEmpty(checkExistingOrders)) {
+                // check if we have the same order from here
+                const findMatchingAction = checkExistingOrders.filter(
+                    exi =>
+                        exi.action === stockOrder.action &&
+                        exi.symbol === stockOrder.symbol
+                );
+
+                if (!isEmpty(findMatchingAction)) {
+                    console.log(chalk.red(`Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`))
+                    return success();
+                }
+            }
+
+
+            // 2. Check existing portfolios
+            const checkExistingPositions = await Portfolios.Instance.getPortfolios();
+            console.log(chalk.blue(`Existing portfolios -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
+
+            const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
+                exi => exi.symbol === stockOrder.symbol) : [];
+
+            console.log(chalk.blue(`foundExistingPortfolios -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
+
+            if (!isEmpty(foundExistingPortfolios)) {
+
+                // Only if this is not exit
+                if (!exitTrade) {
+                    console.log(chalk.red(`*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`))
+                    return success();
+                }
+                // Else existing trades are allowed
+            }
+
+            self.stockOrders = [...self.stockOrders, stockOrder];
+            self.ib.reqIds(++self.orderIdNext);
+
+            console.log(chalk.green(`Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`))
+
+        }
+
+        ib.on('nextValidId', handleOrderIdNext); // start envs
+        return placingOrderNow();
     }
 }
 
