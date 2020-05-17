@@ -120,12 +120,16 @@ export class Portfolios {
      */
     public getPortfolios = async (): Promise<PortFolioUpdate[]> => {
         const { currentPortfolios, reqAccountUpdates } = this;
+        let done = false;
         return new Promise((resolve, reject) => {
 
             // listen for portfolios
             const handlePortfolios = (accountSummaryData) => {
-                appEvents.off(IBKREVENTS.PORTFOLIOS, handlePortfolios);
-                resolve(accountSummaryData);
+                if (!done) {
+                    done = true;
+                    appEvents.off(IBKREVENTS.PORTFOLIOS, handlePortfolios);
+                    resolve(accountSummaryData || currentPortfolios);
+                }
             }
 
             if (!isEmpty(currentPortfolios)) {
