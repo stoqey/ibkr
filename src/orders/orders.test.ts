@@ -101,16 +101,16 @@ describe('Orders', () => {
 
             const orders = [
                 orderTrade.placeOrder(stockOrderBuyInZ),
-                // orderTrade.placeOrder(stockOrderBuyInZ),
-                // orderTrade.placeOrder(stockOrderBuyInZ),
-                // orderTrade.placeOrder(stockOrderBuyInY),
-                // orderTrade.placeOrder(stockOrderBuyInY),
+                orderTrade.placeOrder(stockOrderBuyInZ),
+                orderTrade.placeOrder(stockOrderBuyInZ),
+                orderTrade.placeOrder(stockOrderBuyInY),
+                orderTrade.placeOrder(stockOrderBuyInY),
                 orderTrade.placeOrder(stockOrderBuyInY),
                 orderTrade.placeOrder(stockOrderBuyInX),
                 orderTrade.placeOrder(stockOrderBuyInX),
-                // orderTrade.placeOrder(stockOrderBuyInX),
-                // orderTrade.placeOrder(stockOrderBuyInX),
-                // orderTrade.placeOrder(stockOrderBuyInY)
+                orderTrade.placeOrder(stockOrderBuyInX),
+                orderTrade.placeOrder(stockOrderBuyInX),
+                orderTrade.placeOrder(stockOrderBuyInY)
             ];
 
             // for (const order of orders) {

@@ -309,6 +309,13 @@ export class Orders {
         return this.receivedOrders;
     }
 
+    /**
+     * Place Order
+     * Order is added to queue if is already processing one order
+     * @when Until IBKR releases a new OrderId, then order is placed and process can picker other orders
+     * @stockOrder
+     * @options ? {}
+     */
     public placeOrder = async (stockOrder: OrderStock, options?: { retryCounts?: number, retryTime?: number }): Promise<void | any> => {
 
         let self = this;
