@@ -13,7 +13,7 @@
   "reporter": "spec",
   "require": "ts-node/register",
   "slow": 75,
-  "timeout": 30000,
+  "timeout": 0,
   "ui": "bdd",
   "watch-files": [
     "src/**/*test.ts"

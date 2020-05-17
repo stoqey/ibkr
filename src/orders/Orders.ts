@@ -1,5 +1,7 @@
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
+import compact from 'lodash/compact';
+import { intervalCollection } from '@stoqey/timeout-manager';
 import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus, OrderStatusType } from './orders.interfaces';
 
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
@@ -37,6 +39,8 @@ export class Orders {
      * These are always deleted after order is submitted to IB
      */
     stockOrders: OrderStock[] = [];
+
+    timeoutRetries: { [x: string]: string[] } = {}
 
     /**
      * A ledger of orders that are being executed, 
@@ -317,37 +321,45 @@ export class Orders {
 
         const { exitTrade, symbol } = stockOrder;
 
-        let numberOfRetries = 3;
-        let retryDelayTime = 2000;
-        // options
-        if (options) {
-            numberOfRetries = options.retryCounts || numberOfRetries;
-            retryDelayTime = options.retryTime || retryDelayTime;
-        }
-
-
-        let handleRecursive;
+        const numberOfRetries = options && options.retryCounts || 3;
+        const retryDelayTime = options && options.retryTime || 2000;
 
         // 1. Processing, or recursive
         if (self.processing) {
-            handleRecursive = setInterval(
+            const handleRecursive = setInterval(
                 () => {
                     console.log('retry in --------------------->', symbol)
                     self.placeOrder(stockOrder)
                 }
-                , 2000)
-            return setTimeout(() => clearInterval(handleRecursive), numberOfRetries * retryDelayTime)
+                , 2000);
+
+            const handlerId = intervalCollection.get(handleRecursive);
+
+            // save the symbol with it's timeout
+            self.timeoutRetries[stockOrder.symbol] = compact([...(self.timeoutRetries[stockOrder.symbol] || []), handlerId && handlerId.uuid]);
+
+
+
+            setTimeout(() => { intervalCollection.remove(handleRecursive); }, numberOfRetries * retryDelayTime);
+            return;
         }
 
-        // clear recursive
-        clearInterval(handleRecursive)
-        handleRecursive = 0;
+        // Clear all by this symbol
+        (self.timeoutRetries[stockOrder.symbol] || []).forEach(uuid => {
+            intervalCollection.removeByUuid(uuid);
+        });
 
         // Start -----------------------------
         this.processing = true;
 
 
         const success = (): void => {
+            ib.off('nextValidId', handleOrderIdNext);
+            self.processing = false; // reset processing
+            return;
+        };
+
+        const erroredOut = (error?: Error): void => {
             ib.off('nextValidId', handleOrderIdNext);
             self.processing = false; // reset processing
             return;
@@ -362,7 +374,7 @@ export class Orders {
 
             if (isEmpty(currentOrders)) {
                 log('handleOrderIdNext', `Stock Orders are empty`);
-                return success();
+                return erroredOut();
             }
 
             // get order by it's tickerId
@@ -371,7 +383,7 @@ export class Orders {
 
             if (isEmpty(stockOrder)) {
                 log('handleOrderIdNext', `First Stock Orders Item is empty`);
-                return success();
+                return erroredOut();
             }
 
             const { symbol } = stockOrder;
@@ -382,7 +394,7 @@ export class Orders {
 
             if (isEmpty(args)) {
                 log('handleOrderIdNext', `Arguments cannot be null`);
-                return success();
+                return erroredOut();
             }
 
             // Just save tickerId and stockOrder
@@ -408,7 +420,7 @@ export class Orders {
 
         async function placingOrderNow(): Promise<void> {
             if (isEmpty(stockOrder.symbol)) {
-                return console.log(new Error("Please enter order"))
+                return erroredOut(new Error("Please enter order"))
             }
 
             // 0. Pending orders
@@ -419,7 +431,7 @@ export class Orders {
 
             if (isPending) {
                 log('placingOrderNow', `*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} pendingOrderStatus=${pendingOrderStatus || "NONE"} isPending=${isPending}`);
-                return success();
+                return erroredOut()
             }
 
 
@@ -438,14 +450,16 @@ export class Orders {
 
                 if (!isEmpty(findMatchingAction)) {
                     log('placingOrderNow', `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`)
-                    return success();
+                    return erroredOut()
                 }
             }
 
 
             // 2. Check existing portfolios
-            const checkExistingPositions = await Portfolios.Instance.getPortfolios();
-            verbose('placingOrderNow', `Existing portfolios -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`);
+            let checkExistingPositions = await Portfolios.Instance.getPortfolios();
+            checkExistingPositions = !isEmpty(checkExistingPositions) ? checkExistingPositions : [];
+
+            verbose('placingOrderNow', `Existing portfolios -> ${JSON.stringify(checkExistingPositions && checkExistingPositions.map(i => i.symbol))}`);
 
             const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
                 exi => exi.symbol === stockOrder.symbol) : [];
@@ -457,7 +471,7 @@ export class Orders {
                 // Only if this is not exit
                 if (!exitTrade) {
                     log('placingOrderNow', `*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`)
-                    return success();
+                    return erroredOut()
                 }
                 // Else existing trades are allowed
             }

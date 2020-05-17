@@ -68,6 +68,7 @@
   },
   "dependencies": {
     "@stoqey/ib": "^0.0.2",
+    "@stoqey/timeout-manager": "^0.0.1",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
     "lodash": "^4.17.15",
