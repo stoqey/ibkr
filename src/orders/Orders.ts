@@ -309,12 +309,20 @@ export class Orders {
         return this.receivedOrders;
     }
 
-    public placeOrder = async (stockOrder: OrderStock): Promise<void | any> => {
+    public placeOrder = async (stockOrder: OrderStock, options?: { retryCounts?: number, retryTime?: number }): Promise<void | any> => {
 
         let self = this;
         const ib = self.ib;
 
         const { exitTrade, symbol } = stockOrder;
+
+        let numberOfRetries = 3;
+        let retryDelayTime = 2000;
+        // options
+        if (options) {
+            numberOfRetries = options.retryCounts || numberOfRetries;
+            retryDelayTime = options.retryTime || retryDelayTime;
+        }
 
 
         let handleRecursive;
@@ -327,7 +335,7 @@ export class Orders {
                     self.placeOrder(stockOrder)
                 }
                 , 2000)
-            return () => clearInterval(handleRecursive);
+            return setTimeout(() => clearInterval(handleRecursive), numberOfRetries * retryDelayTime)
         }
 
         // clear recursive
