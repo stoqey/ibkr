@@ -283,6 +283,8 @@ export class Orders {
 
         const self = this;
 
+        let openedOrders = {};
+
         return new Promise((resolve, reject) => {
 
             let done = false;
@@ -290,14 +292,36 @@ export class Orders {
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 if (!done) {
-                    ibkrEvents.off(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
                     done = true;
                     resolve(ordersData);
                 }
             }
 
-            ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-            self.reqAllOpenOrders(); // refresh orders
+            self.ib.once('openOrderEnd', () => {
+                const openOrders = Object.keys(openedOrders).map(key => openedOrders[key]);
+                handleOpenOrders(openOrders)
+            })
+
+            self.ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
+                openedOrders = {
+                    ...openedOrders,
+                    [orderId]: {
+                        ...(openedOrders && openedOrders[orderId] || null),
+
+                        // OrderId + orderState
+                        orderId,
+                        orderState,
+
+                        // Add order
+                        ...order,
+                        // Add contract
+                        ...contract
+                    }
+                };
+
+            });
+
+            self.ib.reqAllOpenOrders(); // refresh orders
 
             return setTimeout(handleOpenOrders, timeout || 6000);
         })
