@@ -127,7 +127,7 @@ export class Orders {
             });
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-                log(`Order> openOrder`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
+                verbose(`Order> openOrder`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
 
 
                 // 1. Update OpenOrders
@@ -154,7 +154,13 @@ export class Orders {
                 };
                 //  Delete order from openOrders list
                 if (orderState.status === "Filled") {
-                    log(`Filled -----> DELETE FROM OPEN ORDERS -------> ${JSON.stringify(contract)}`);
+                    log(`Filled -----> DELETE FROM OPEN ORDERS -------> symbol=${contract && contract.symbol}`);
+                    delete self.openOrders[orderId];
+                }
+
+                //  Delete order from openOrders list
+                if (["PendingCancel", "Cancelled", "ApiCancelled"].includes(orderState.status)) {
+                    log(`${orderState.status} -----> DELETE FROM OPEN ORDERS -------> ${contract && contract.symbol}`);
                     delete self.openOrders[orderId];
                 }
 
@@ -269,13 +275,9 @@ export class Orders {
 
     }
 
-    public getOpenOrders = async (): Promise<OrderWithContract[]> => {
+    public getOpenOrders = async (timeout?: number): Promise<OrderWithContract[]> => {
 
         const self = this;
-
-        const reqAllOpenOrders = self.reqAllOpenOrders;
-
-        const openOrders = self && self.openOrders || null;
 
         return new Promise((resolve, reject) => {
 
@@ -290,13 +292,10 @@ export class Orders {
                 }
             }
 
-            if (!isEmpty(openOrders)) {
-                const allopenOrders = Object.keys(openOrders).map(key => openOrders[key])
-                return resolve(allopenOrders)
-            }
-
             ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-            reqAllOpenOrders(); // refresh orders
+            self.reqAllOpenOrders(); // refresh orders
+
+            return setTimeout(handleOpenOrders, timeout || 6000);
         })
     }
 
