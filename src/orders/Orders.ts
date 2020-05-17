@@ -269,13 +269,9 @@ export class Orders {
 
     }
 
-    public getOpenOrders = async (): Promise<OrderWithContract[]> => {
+    public getOpenOrders = async (timeout?: number): Promise<OrderWithContract[]> => {
 
         const self = this;
-
-        const reqAllOpenOrders = self.reqAllOpenOrders;
-
-        const openOrders = self && self.openOrders || null;
 
         return new Promise((resolve, reject) => {
 
@@ -290,13 +286,10 @@ export class Orders {
                 }
             }
 
-            if (!isEmpty(openOrders)) {
-                const allopenOrders = Object.keys(openOrders).map(key => openOrders[key])
-                return resolve(allopenOrders)
-            }
-
             ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, handleOpenOrders);
-            reqAllOpenOrders(); // refresh orders
+            self.reqAllOpenOrders(); // refresh orders
+
+            return setTimeout(handleOpenOrders, timeout || 6000);
         })
     }
 
