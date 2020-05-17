@@ -109,7 +109,10 @@ export class Portfolios {
      * reqAccountUpdates
      */
     public reqAccountUpdates = () => {
-        this.ib.reqAccountUpdates(true, this.accountSummary.AccountId);
+        let that = this;
+        setImmediate(() => {
+            that.ib.reqAccountUpdates(true, that.accountSummary.AccountId);
+        })
     }
 
     /**
@@ -132,11 +135,6 @@ export class Portfolios {
             appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
 
             reqAccountUpdates();
-
-            // TIMEOUT after 5 seconds
-            setTimeout(() => {
-                handlePortfolios([])
-            }, 5000)
         })
 
     }

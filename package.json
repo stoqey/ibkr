@@ -1,7 +1,7 @@
 {
   "name": "@stoqey/ibkr",
   "private": false,
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "NodeJS Interactive Brokers wrapper & utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -50,6 +50,7 @@
   "homepage": "https://github.com/stoqey/ibkr",
   "devDependencies": {
     "@types/chai": "^4.2.11",
+    "@types/debug": "^4.1.5",
     "@types/lodash": "^4.14.150",
     "@types/mocha": "^7.0.2",
     "@types/node": "^10.0.3",
@@ -66,10 +67,9 @@
     "typescript": ">=2.0"
   },
   "dependencies": {
-    "@types/debug": "^4.1.5",
+    "@stoqey/ib": "^0.0.2",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
-    "ib": "^0.2.7",
     "lodash": "^4.17.15",
     "moment": "^2.24.0"
   }

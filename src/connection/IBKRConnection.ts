@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import ibkr from 'ib';
+import ibkr from '@stoqey/ib';
 import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/IbkrEvents.publisher';
 import { IBKREVENTS, IbkrEvents } from '../events';
@@ -26,7 +26,7 @@ export class IBKRConnection {
     public IB_HOST: string = IB_HOST;
     private static _instance: IBKRConnection;
 
-    public ib: any;
+    public ib: ibkr;
 
     public static get Instance() {
         return this._instance || (this._instance = new this());
@@ -171,7 +171,7 @@ export class IBKRConnection {
     /**
      * getIBKR instance
      */
-    public getIBKR = (): any => {
+    public getIBKR = (): ibkr => {
         return this.ib;
     }
 
