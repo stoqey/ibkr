@@ -71,66 +71,59 @@ describe('Orders', () => {
     });
 
 
-    // it('Place Order', (done) => {
+    it('Place Order', (done) => {
 
-    //     let completed = false;
-    //     const orderTrade = Orders.Instance;
+        let completed = false;
+        const orderTrade = Orders.Instance;
 
-    //     const getPlacedOrder = async () => {
-    //         const handleData = (data) => {
-    //             ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
-    //             if (!completed) {
-    //                 done()
-    //                 completed = true;
-    //             }
-    //         };
-    //         // ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
-
-
-    //         // ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
-
-    //         //     const { order, orderStatus } = data;
-
-    //         //     if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
-    //         //         console.log('filled')
-    //         //         if (!completed) {
-    //         //             done()
-    //         //             completed = true;
-    //         //         }
-    //         //     }
-
-    //         // });
-    //         Orders.Instance.getOpenOrders();
-
-    //         const orders = [
-    //             orderTrade.placeOrder(stockOrderBuyInZ),
-    //             orderTrade.placeOrder(stockOrderBuyInZ),
-    //             orderTrade.placeOrder(stockOrderBuyInZ),
-    //             orderTrade.placeOrder(stockOrderBuyInY),
-    //             orderTrade.placeOrder(stockOrderBuyInY),
-    //             orderTrade.placeOrder(stockOrderBuyInY),
-    //             orderTrade.placeOrder(stockOrderBuyInX),
-    //             orderTrade.placeOrder(stockOrderBuyInX),
-    //             orderTrade.placeOrder(stockOrderBuyInX),
-    //             orderTrade.placeOrder(stockOrderBuyInX),
-    //             orderTrade.placeOrder(stockOrderBuyInY)
-    //         ];
-
-    //         for (const order of orders) {
-    //             await order;
-    //         }
-    //     };
+        const getPlacedOrder = async () => {
+            const handleData = (data) => {
+                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
+                if (!completed) {
+                    done()
+                    completed = true;
+                }
+            };
+            // ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
 
 
+            // ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
 
+            //     const { order, orderStatus } = data;
 
+            //     if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
+            //         console.log('filled')
+            //         if (!completed) {
+            //             done()
+            //             completed = true;
+            //         }
+            //     }
 
+            // });
+            Orders.Instance.getOpenOrders();
 
-    //     getPlacedOrder();
+            const orders = [
+                orderTrade.placeOrder(stockOrderBuyInZ),
+                orderTrade.placeOrder(stockOrderBuyInZ),
+                orderTrade.placeOrder(stockOrderBuyInZ),
+                orderTrade.placeOrder(stockOrderBuyInY),
+                orderTrade.placeOrder(stockOrderBuyInY),
+                orderTrade.placeOrder(stockOrderBuyInY),
+                orderTrade.placeOrder(stockOrderBuyInX),
+                orderTrade.placeOrder(stockOrderBuyInX),
+                orderTrade.placeOrder(stockOrderBuyInX),
+                orderTrade.placeOrder(stockOrderBuyInX),
+                orderTrade.placeOrder(stockOrderBuyInY)
+            ];
 
-    //     // expect(results).to.be.not.null;
+            for (const order of orders) {
+                await order;
+            }
+        };
 
-    // });
+        getPlacedOrder();
+
+    });
 })
 
 
