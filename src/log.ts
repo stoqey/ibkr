@@ -1,11 +1,13 @@
-import { isDev, forceLog } from './config';
-export const log = (logName: any, data?: any) => {
-    if (isDev || forceLog) {
-        if (data) {
-            return console.log(logName, data)
-        }
-        return console.log(logName)
+import debug from 'debug';
 
-    }
-}
+const libraryPrefix = 'ibkr';
 
+/**
+ * Use to log in general case
+ */
+export const log = debug(`${libraryPrefix}:info`);
+
+/**
+ * Use for verbose log
+ */
+export const verbose = debug(`${libraryPrefix}:verbose`);

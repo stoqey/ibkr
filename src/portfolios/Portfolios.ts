@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import chalk from 'chalk';
 import AccountSummary from '../account/AccountSummary';
 import { IBKREVENTS, IbkrEvents } from '../events';
 import { publishDataToTopic } from '../events/IbkrEvents.publisher';
@@ -8,6 +7,7 @@ import { PortFolioUpdate } from './portfolios.interfaces';
 import isEmpty from 'lodash/isEmpty';
 import { IBKRAccountSummary } from '../account/account-summary.interfaces';
 import { ORDER, OrderState } from '../orders';
+import { log } from '../log';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -21,11 +21,11 @@ const logPortfolio = ({ marketPrice, averageCost, position, symbol, conId }: Por
     const contractIdWithSymbol = `${symbol} ${conId}`
     if (Math.round(marketPrice) > Math.round(averageCost)) {
         // We are in profit
-        console.log(chalk.green(`logPortfolio:profit shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `, chalk.black(contractIdWithSymbol)))
+        log(`logPortfolio:profit shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `, contractIdWithSymbol);
     }
     else {
         // We are in loss
-        console.log(chalk.red(`logPortfolio:LOSS shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice}`, chalk.black(contractIdWithSymbol)))
+        log(`logPortfolio:LOSS shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice}`, contractIdWithSymbol)
     }
 }
 
@@ -58,7 +58,7 @@ export class Portfolios {
 
         ib.on('accountDownloadEnd', () => {
             const { currentPortfolios, portfoliosSnapshot } = self;
-            console.log('accountDownloadEnd', chalk.blueBright(`********************** Portfolios ${currentPortfolios.length}`))
+            log('accountDownloadEnd', `********************** Portfolios ${currentPortfolios.length}`);
 
             if (currentPortfolios !== portfoliosSnapshot) {
                 // update snapshot
@@ -78,7 +78,7 @@ export class Portfolios {
 
             // Position has to be greater than 0
             if (position === 0) {
-                return console.log(chalk.blue(`updatePortfolio: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `))
+                return log(`updatePortfolio: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `);
             }
 
             logPortfolio(thisPortfolio);
@@ -95,7 +95,7 @@ export class Portfolios {
 
         ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
             if (orderState.status === "Filled") {
-                console.log(`Portfolio > openOrder FILLED`, chalk.blue(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+                log(`Portfolio > openOrder FILLED`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
                 // refresh the portfolios
                 self.reqAccountUpdates();
             }

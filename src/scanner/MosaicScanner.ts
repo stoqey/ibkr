@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import IBKRConnection from "../connection/IBKRConnection";
 import { getRadomReqId } from '../_utils/text.utils';
 import { SCANCODE } from './scanner.interface';
@@ -61,12 +60,12 @@ class MosaicScanner {
             //     }
             // })
 
-            console.log(chalk.dim(`scannerData:${tickerId} -> ${rank}. ${(symbol).toLocaleUpperCase()}`))
+            // console.log(chalk.dim(`scannerData:${tickerId} -> ${rank}. ${(symbol).toLocaleUpperCase()}`))
 
         })
 
         self.ib.on('scannerDataEnd', (tickerId) => {
-            console.log(chalk.blue(`MOSAIC:SCANNER end ${tickerId}`))
+            // console.log(chalk.blue(`MOSAIC:SCANNER end ${tickerId}`))
         })
 
     }
@@ -79,7 +78,7 @@ class MosaicScanner {
 
         let randomTicker = getRadomReqId();
 
-        console.log(chalk.yellow(`MOSAIC:SCANNER start ${randomTicker}`))
+        // console.log(chalk.yellow(`MOSAIC:SCANNER start ${randomTicker}`))
 
         this.ib.reqScannerSubscription(randomTicker, {
             instrument,

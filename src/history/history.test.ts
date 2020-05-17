@@ -4,6 +4,7 @@ import { HistoricalData } from '.';
 import { onConnected } from '../connection/connection.utilities';
 import ibkr from '..';
 import { IbkrEvents, IBKREVENTS } from '../events';
+import { log } from '../log';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -29,7 +30,7 @@ describe('Historical Data', () => {
 
         ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
             await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
-            console.log(`Historical Data for ${symbol} ${data && data.length}`);
+            log(`Historical Data for ${symbol} ${data && data.length}`);
             done();
 
         })

@@ -1,5 +1,4 @@
 import * as _ from 'lodash';
-import chalk from 'chalk';
 import ibkr from '@stoqey/ib';
 import { IB_HOST, IB_PORT } from '../config'
 import { publishDataToTopic } from '../events/IbkrEvents.publisher';
@@ -9,6 +8,7 @@ import AccountSummary from '../account/AccountSummary';
 import { Portfolios } from '../portfolios';
 import Orders from '../orders/Orders';
 import includes from 'lodash/includes';
+import { log } from '../log';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -58,17 +58,17 @@ export class IBKRConnection {
 
         try {
             // 1. Account summary
-            console.log('1. Account summary')
+            log('1. Account summary')
             const accountSummary = AccountSummary.Instance;
             accountSummary.init();
             await accountSummary.getAccountSummary();
-            // 2. Portolios
-            console.log('2. Portolios')
+            // 2. Portfolios
+            log('2. Portfolios')
             const portfolio = Portfolios.Instance;
             await portfolio.init();
             await portfolio.getPortfolios();
 
-            console.log('3. Orders');
+            log('3. Orders');
             const openOrders = Orders.Instance;
             await openOrders.init();
             await openOrders.getOpenOrders();
@@ -77,7 +77,7 @@ export class IBKRConnection {
 
         }
         catch (error) {
-            console.log('error initialising IBKR', error);
+            log('error initialising IBKR', error);
             return false;
         }
 
@@ -96,7 +96,7 @@ export class IBKRConnection {
                 data: {}
             });
             self.status = IBKREVENTS.DISCONNECTED;
-            return console.error(IBKREVENTS.DISCONNECTED, chalk.red(`Error connecting client => ${clientId}`));
+            return log(IBKREVENTS.DISCONNECTED, `Error connecting client => ${clientId}`);
         }
 
         // Important listners
@@ -107,8 +107,8 @@ export class IBKRConnection {
                     return disconnectApp();
                 }
 
-                console.log(chalk.blue(`.................................................................`));
-                console.log(chalk.blue(`...... Connected client ${clientId}, initialising services ......`));
+                log(`.................................................................`);
+                log(`...... Connected client ${clientId}, initialising services ......`);
 
                 // initialise dependencies
                 const connected = await self.initialiseDep();
@@ -121,8 +121,8 @@ export class IBKRConnection {
                         }
                     });
                     self.status = IBKREVENTS.CONNECTED;
-                    console.log(chalk.blue(`...... Successfully running ${clientId}'s services ..`));
-                    return console.log(chalk.blue(`.....................................................`));
+                    log(`...... Successfully running ${clientId}'s services ..`);
+                    return log(`.....................................................`);
                 }
 
                 disconnectApp();
@@ -137,7 +137,7 @@ export class IBKRConnection {
 
             const message = err && err.message;
 
-            console.log(IBKREVENTS.ERROR, chalk.red(err && err.message));
+            log(IBKREVENTS.ERROR, err && err.message);
 
             if (includes(message, 'ECONNREFUSED') || err && err.code === 'ECONNREFUSED') {
                 return disconnectApp()
@@ -145,7 +145,7 @@ export class IBKRConnection {
         })
 
         this.ib.on(IBKREVENTS.DISCONNECTED, function (err: Error) {
-            console.log(IBKREVENTS.DISCONNECTED, chalk.red(`Connection disconnected => ${clientId}`));
+            log(IBKREVENTS.DISCONNECTED, `Connection disconnected => ${clientId}`);
             return disconnectApp();
         });
 
@@ -181,11 +181,11 @@ export class IBKRConnection {
     public disconnectIBKR(): void {
         this.status = IBKREVENTS.DISCONNECTED;
         try {
-            console.log(chalk.keyword("orange")(`IBKR Force shutdown ${clientId} 😴😴😴`));
+            log(`IBKR Force shutdown ${clientId} 😴😴😴`);
             this.ib.disconnect();
         }
         catch (error) {
-            console.log(IBKREVENTS.ERROR, chalk.red(error))
+            log(IBKREVENTS.ERROR, error);
         }
 
     }

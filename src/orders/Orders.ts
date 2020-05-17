@@ -1,8 +1,5 @@
-import chalk from 'chalk';
-import random from 'lodash/random';
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
-import { getRadomReqId } from '../_utils/text.utils';
 import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus, OrderStatusType } from './orders.interfaces';
 
 import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
@@ -10,9 +7,7 @@ import IBKRConnection from '../connection/IBKRConnection';
 import { OrderStock } from './orders.interfaces';
 
 import { Portfolios } from '../portfolios';
-import { onConnected } from '../connection';
-import { log } from '../log';
-import includes from 'lodash/includes';
+import { log, verbose } from '../log';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -91,7 +86,7 @@ export class Orders {
 
 
             ib.on('openOrderEnd', () => {
-                log(`Orders > init > openOrderEnd`, chalk.blue(` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`));
+                verbose(`Orders > init > openOrderEnd`, ` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`);
                 // Initialise OrderTrader
                 // OrderTrade.Instance.init();
 
@@ -122,17 +117,17 @@ export class Orders {
                     }
                 });
 
-                // log(chalk.black(`Orders > orderStatus`), {
-                //     id,
-                //     status,
-                //     filled,
-                //     remaining,
-                //     symbol: currentOrder && currentOrder.symbol
-                // })
+                log(`Orders > orderStatus`, {
+                    id,
+                    status,
+                    filled,
+                    remaining,
+                    symbol: currentOrder && currentOrder.symbol
+                })
             });
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-                console.log(`Order> openOrder`, chalk.red(` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+                log(`Order> openOrder`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
 
 
                 // 1. Update OpenOrders
@@ -159,12 +154,12 @@ export class Orders {
                 };
                 //  Delete order from openOrders list
                 if (orderState.status === "Filled") {
-                    log(chalk.black(`Filled -----> DELETE FROM OPEN ORDERS -------> ${JSON.stringify(contract)}`))
+                    log(`Filled -----> DELETE FROM OPEN ORDERS -------> ${JSON.stringify(contract)}`);
                     delete self.openOrders[orderId];
                 }
 
                 const openOrdersArr = Object.keys(self.openOrders).map(key => self.openOrders[key]);
-                log(chalk.black(`OPEN ORDERS ${openOrdersArr && openOrdersArr.length}`))
+                log(`OPEN ORDERS ${openOrdersArr && openOrdersArr.length}`);
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -222,7 +217,7 @@ export class Orders {
                                     profit: entryPrice - exitPrice
                                 };
 
-                                console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+                                log(`AccountOrderStock.openOrder`, `FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
 
                                 return publishDataToTopic({
                                     topic: IBKREVENTS.ORDER_FILLED,
@@ -230,7 +225,7 @@ export class Orders {
                                 })
                             }
 
-                            console.log(`AccountOrderStock.openOrder`, chalk.green(`FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`));
+                            log(`AccountOrderStock.openOrder`, `FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
 
                             publishDataToTopic({
                                 topic: IBKREVENTS.ORDER_FILLED,
@@ -367,7 +362,7 @@ export class Orders {
             const currentOrders = self.stockOrders;
 
             if (isEmpty(currentOrders)) {
-                console.log(chalk.red(`Stock Orders are empty`));
+                log('handleOrderIdNext', `Stock Orders are empty`);
                 return success();
             }
 
@@ -376,7 +371,7 @@ export class Orders {
 
 
             if (isEmpty(stockOrder)) {
-                console.log(chalk.red(`First Stock Orders Item is empty`));
+                log('handleOrderIdNext', `First Stock Orders Item is empty`);
                 return success();
             }
 
@@ -387,7 +382,7 @@ export class Orders {
             const args = stockOrder.parameters;
 
             if (isEmpty(args)) {
-                console.log(chalk.red(`Arguments cannot be null`));
+                log('handleOrderIdNext', `Arguments cannot be null`);
                 return success();
             }
 
@@ -407,7 +402,7 @@ export class Orders {
             self.tickerId = tickerToUse;
             ib.reqAllOpenOrders(); // refresh orders
 
-            console.log(chalk.yellow(`Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`));
+            log('handleOrderIdNext', `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`);
             return success();
         }
 
@@ -424,14 +419,15 @@ export class Orders {
             const isPending = ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(pendingOrderStatus);
 
             if (isPending) {
-                console.log(chalk.red(`*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} pendingOrderStatus=${pendingOrderStatus || "NONE"} isPending=${isPending}`))
+                log('placingOrderNow', `*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} pendingOrderStatus=${pendingOrderStatus || "NONE"} isPending=${isPending}`);
                 return success();
             }
 
 
             // 1. Check existing open orders
             const checkExistingOrders = await self.getOpenOrders();
-            console.log(chalk.blue(`Existing orders in queue -> ${checkExistingOrders.map(i => i.symbol)}`))
+
+            log('placingOrderNow', `Existing orders in queue -> ${checkExistingOrders.map(i => i.symbol)}`)
 
             if (!isEmpty(checkExistingOrders)) {
                 // check if we have the same order from here
@@ -442,7 +438,7 @@ export class Orders {
                 );
 
                 if (!isEmpty(findMatchingAction)) {
-                    console.log(chalk.red(`Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`))
+                    log('placingOrderNow', `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`)
                     return success();
                 }
             }
@@ -450,18 +446,18 @@ export class Orders {
 
             // 2. Check existing portfolios
             const checkExistingPositions = await Portfolios.Instance.getPortfolios();
-            console.log(chalk.blue(`Existing portfolios -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`));
+            verbose('placingOrderNow', `Existing portfolios -> ${JSON.stringify(checkExistingPositions.map(i => i.symbol))}`);
 
             const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
                 exi => exi.symbol === stockOrder.symbol) : [];
 
-            console.log(chalk.blue(`foundExistingPortfolios -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`));
+            verbose('placingOrderNow', `foundExistingPortfolios -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`);
 
             if (!isEmpty(foundExistingPortfolios)) {
 
                 // Only if this is not exit
                 if (!exitTrade) {
-                    console.log(chalk.red(`*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`))
+                    log('placingOrderNow', `*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`)
                     return success();
                 }
                 // Else existing trades are allowed
@@ -470,7 +466,7 @@ export class Orders {
             self.stockOrders = [...self.stockOrders, stockOrder];
             self.ib.reqIds(++self.orderIdNext);
 
-            console.log(chalk.green(`Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`))
+            verbose('placingOrderNow', `Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`)
 
         }
 
