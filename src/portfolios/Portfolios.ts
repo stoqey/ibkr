@@ -118,7 +118,7 @@ export class Portfolios {
     /**
      * getPortfolios
      */
-    public getPortfolios = async (timeout?: number): Promise<PortFolioUpdate[]> => {
+    public getPortfolios = async (): Promise<PortFolioUpdate[]> => {
         const { currentPortfolios, reqAccountUpdates } = this;
         let done = false;
         return new Promise((resolve, reject) => {
@@ -128,12 +128,17 @@ export class Portfolios {
                 if (!done) {
                     done = true;
                     appEvents.off(IBKREVENTS.PORTFOLIOS, handlePortfolios);
-                    resolve(accountSummaryData);
+                    resolve(accountSummaryData || currentPortfolios);
                 }
             }
+
+            if (!isEmpty(currentPortfolios)) {
+                return resolve(currentPortfolios);
+            }
+
             appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
+
             reqAccountUpdates();
-            return setTimeout(handlePortfolios, timeout || 6000)
         })
 
     }

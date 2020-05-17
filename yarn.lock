@@ -30,6 +30,11 @@
     lodash "^4.17.15"
     moment "^2.24.0"
 
+"@stoqey/timeout-manager@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@stoqey/timeout-manager/-/timeout-manager-0.0.2.tgz#af39dc509a7cdb6d6edf4be920adb0c2d760a7a1"
+  integrity sha512-/uRZ9osIf+yNq2nq/OcpH6A/h9Lva8HZ5KcDPiXhjAkwX+uQcRHq3GBQG/BHRPekdjvWzfpPnOVEdAJ+XiYALQ==
+
 "@types/chai@^4.2.11":
   version "4.2.11"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.11.tgz#d3614d6c5f500142358e6ed24e1bf16657536c50"

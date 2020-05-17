@@ -116,19 +116,12 @@ describe('Orders', () => {
                 orderTrade.placeOrder(stockOrderBuyInY)
             ];
 
-            // for (const order of orders) {
-            //     await order;
-            // }
+            for (const order of orders) {
+                await order;
+            }
         };
 
-
-
-
-
-
         getPlacedOrder();
-
-        // expect(results).to.be.not.null;
 
     });
 })
