@@ -1,3 +1,4 @@
+import ibkr from '@stoqey/ib'
 import IBKRConnection from "../connection/IBKRConnection";
 import { getRadomReqId } from '../_utils/text.utils';
 import { SCANCODE } from './scanner.interface';
@@ -29,64 +30,55 @@ interface SubscribeToScanner {
 }
 
 
-class MosaicScanner {
+export class MosaicScanner {
 
-    ib: any;
-    tickerId = getRadomReqId();
+    ib: ibkr;
 
-    private static _instance: MosaicScanner;
-
-    public static get Instance() {
-        return this._instance || (this._instance = new this());
-    }
-
-    private constructor() {
+    constructor() {
         if (this.ib) {
             return;
         }
 
         this.ib = IBKRConnection.Instance.getIBKR();
-
-        const self = this;
-
-        self.ib.on('scannerData', (tickerId, rank, contract, distance, benchmark, projection, legsStr) => {
-
-            const symbol = contract && contract.summary && contract.summary.symbol;
-
-            // publishDataToTopic({
-            //     topic: 'historicalData',
-            //     data: {
-            //         symbol
-            //     }
-            // })
-
-            // console.log(chalk.dim(`scannerData:${tickerId} -> ${rank}. ${(symbol).toLocaleUpperCase()}`))
-
-        })
-
-        self.ib.on('scannerDataEnd', (tickerId) => {
-            // console.log(chalk.blue(`MOSAIC:SCANNER end ${tickerId}`))
-        })
-
     }
 
     /**
      * scanMarket
      */
-    public scanMarket = (args?: SubscribeToScanner) => {
+    public scanMarket = (args?: SubscribeToScanner): Promise<any> => {
         const { instrument = "STK", locationCode, numberOfRows, scanCode, stockTypeFilter } = args;
+        const self = this;
 
         let randomTicker = getRadomReqId();
 
-        // console.log(chalk.yellow(`MOSAIC:SCANNER start ${randomTicker}`))
+        const scans = [];
 
-        this.ib.reqScannerSubscription(randomTicker, {
-            instrument,
-            locationCode,
-            numberOfRows,
-            scanCode,
-            stockTypeFilter,
-        });
+        return new Promise((resolve, reject) => {
+            self.ib.on('scannerData', (tickerId, rank, contract, distance, benchmark, projection, legsStr) => {
+
+                const symbol = contract && contract.summary && contract.summary.symbol;
+
+                scans.push({
+                    rank,
+                    ...(contract && contract.summary || {})
+                });
+
+            })
+
+            self.ib.once('scannerDataEnd', (tickerId) => {
+                resolve(scans)
+            })
+
+            self.ib.reqScannerSubscription(randomTicker, {
+                instrument,
+                locationCode,
+                numberOfRows,
+                scanCode,
+                stockTypeFilter,
+            });
+        })
+
+
 
     }
 }
