@@ -131,6 +131,10 @@ ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
   
 ### Contracts
 ```ts
+ const contractDetails = await getContractDetails(ib.contract.stock("AAPL"));
+
+//  or 
+
  const contractDetails = await getContractDetails('AAPL');
 ```
 
