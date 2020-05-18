@@ -1,9 +1,7 @@
 import 'mocha';
-import { expect } from 'chai';
 import MosaicScanner from './MosaicScanner';
 import { IbkrEvents, IBKREVENTS } from '../events';
 import ibkr from '..';
-import { log } from '../log';
 
 
 const ibkrEvents = IbkrEvents.Instance;

@@ -4,10 +4,6 @@ import { getRadomReqId } from '../_utils/text.utils';
 import { SCANCODE } from './scanner.interface';
 import { ContractObject } from '../contracts';
 
-/**
- * Not completed
- */
-
 interface MosaicScannerData extends ContractObject {
     rank: number; //0,
     marketName: string;
@@ -68,8 +64,6 @@ export class MosaicScanner {
                 stockTypeFilter,
             });
         })
-
-
 
     }
 }
