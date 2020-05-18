@@ -13,6 +13,7 @@
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
     "build": "rimraf dist && tsc",
+    "contract": "mocha src/contracts/*test.ts --exit",
     "connection": "mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",
     "history": "mocha src/history/*test.ts --exit",
