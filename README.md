@@ -21,15 +21,16 @@
 
 ### Run IBKR in style
 This is an event-based ibkr client for node
-|       | Feature                |
-| :---: | ---------------------- |
-|   ✅   | Accounts               |
-|   ✅   | Portfolios             |
-|   ✅   | Orders                 |
-|   ✅   | Historical Data        |
-|   ✅   | Realtime price updates |
-|   ✅   | Contracts              |
-|   ⬜️   | Mosaic Market scanner  |
+|       | Feature                                       |
+| :---: | --------------------------------------------- |
+|   ✅   | Accounts                                      |
+|   ✅   | Portfolios                                    |
+|   ✅   | Orders                                        |
+|   ✅   | Historical Data                               |
+|   ✅   | Realtime price updates                        |
+|   ✅   | Contracts (stocks/forex/options/index .e.t.c) |
+|   ✅   | Mosaic Market scanner                         |
+|   ⬜️   | News                                          |
 
 
 ## 1. Install
@@ -130,6 +131,10 @@ ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
   
 ### Contracts
 ```ts
+ const contractDetails = await getContractDetails(ib.contract.stock("AAPL"));
+
+//  or 
+
  const contractDetails = await getContractDetails('AAPL');
 ```
 
@@ -187,6 +192,20 @@ ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data) => {
 ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, (data) => {
 
 });
+```
+
+**Mosaic Scanner**
+```ts
+import { MosaicScanner } from '@stoqey/ibkr';
+const mosaicScanner = new MosaicScanner();
+
+const scannerData = await mosaicScanner.scanMarket({
+      instrument: 'STK',
+      locationCode: 'STK.US.MAJOR',
+      numberOfRows: 10,
+      scanCode: 'TOP_PERC_GAIN',
+      stockTypeFilter: 'ALL'
+})
 ```
 
 see any `.test.ts` file for examples

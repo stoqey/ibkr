@@ -1,25 +1,13 @@
-import _ from 'lodash';
-import { ContractDetails, ContractObject } from './contracts.interfaces';
+import ibkr from '@stoqey/ib';
+import { ContractDetails } from './contracts.interfaces';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { log } from '../log';
 
+export const getContractDetails = (contractArg: any): Promise<ContractDetails> => {
 
-interface ContactWithCost extends ContractObject {
-    pos?: number;
-    avgCost?: number;
-}
-
-interface Contacts {
-    [x: string]: ContactWithCost
-};
-
-
-export const getContractDetails = (symbol: string): Promise<ContractDetails> => {
 
     let contract: ContractDetails = {} as any;
-
-
 
     let reqId: number = getRadomReqId();
 
@@ -28,22 +16,23 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails> => 
 
             const ib = IBKRConnection.Instance.getIBKR();
 
-            const contractArg = ib.contract.stock(symbol);
+            // If string, create stock contract as default
 
-            ib.on('contractDetails', (reqIdX, contract) => {
-                reqId = reqIdX;
-                contract = contract;
-                const currentSymbol = contract && contract.summary && contract.summary.symbol;
-                if (currentSymbol === symbol) {
-                    log('Contract details', currentSymbol)
+            if (typeof contractArg === "string") {
+                contractArg = ib.contract.stock(contractArg);
+            };
+
+            const handleContract = (reqId, contractReceived) => {
+                contract = contractReceived;
+            };
+
+            ib.on('contractDetails', handleContract)
+
+            ib.once('contractDetailsEnd', (reqIdX) => {
+                if (reqId === reqIdX) {
+                    ib.off('contractDetails', handleContract);
                     resolve(contract);
                 }
-
-            })
-
-            ib.on('contractDetailsEnd', (reqId) => {
-                log('Contract details end')
-                resolve(contract)
             })
 
             ib.reqContractDetails(reqId, contractArg);

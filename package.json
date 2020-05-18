@@ -13,10 +13,12 @@
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
     "build": "rimraf dist && tsc",
+    "contract": "mocha src/contracts/*test.ts --exit",
     "connection": "mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",
     "history": "mocha src/history/*test.ts --exit",
     "order": "mocha src/orders/*test.ts --exit",
+    "scanner": "mocha src/scanner/*test.ts --exit",
     "unit-test": "mocha src/**/*test.ts --exit",
     "test": "mocha src/*test.ts --exit",
     "prepare": "npm run build",
