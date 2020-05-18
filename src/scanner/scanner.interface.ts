@@ -1,3 +1,5 @@
+import { ContractObject } from '../contracts';
+
 export type SCANCODE =
     "TOP_PERC_GAIN" |
     "TOP_PERC_LOSE" |
@@ -74,3 +76,20 @@ export type SCANCODE =
     "WSH_PREV_ANALYST_MEETING" |
     "WSH_PREV_EARNINGS" |
     "WSH_PREV_EVENT";
+
+export interface MosaicScannerData extends ContractObject {
+    rank: number; //0,
+    marketName: string;
+    distance: string; // "",
+    benchmark: string; // "",
+    projection: string; // "",
+    legsStr: string; //""
+}
+
+export interface ScanMarket {
+    instrument: string; // 'STK',
+    locationCode: string; // 'STK.NASDAQ.NMS',
+    numberOfRows: number; // 5,
+    scanCode: SCANCODE; // 'TOP_PERC_GAIN',
+    stockTypeFilter: string; //  'ALL'
+}

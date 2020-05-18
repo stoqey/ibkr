@@ -1,26 +1,7 @@
 import ibkr from '@stoqey/ib'
 import IBKRConnection from "../connection/IBKRConnection";
 import { getRadomReqId } from '../_utils/text.utils';
-import { SCANCODE } from './scanner.interface';
-import { ContractObject } from '../contracts';
-
-interface MosaicScannerData extends ContractObject {
-    rank: number; //0,
-    marketName: string;
-    distance: string; // "",
-    benchmark: string; // "",
-    projection: string; // "",
-    legsStr: string; //""
-}
-
-interface ScanMarket {
-    instrument: string; // 'STK',
-    locationCode: string; // 'STK.NASDAQ.NMS',
-    numberOfRows: number; // 5,
-    scanCode: SCANCODE; // 'TOP_PERC_GAIN',
-    stockTypeFilter: string; //  'ALL'
-}
-
+import { ScanMarket, MosaicScannerData } from './scanner.interface';
 
 export class MosaicScanner {
 

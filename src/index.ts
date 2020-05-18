@@ -36,5 +36,6 @@ export * from './history';
 export * from './orders';
 export * from './portfolios';
 export * from './realtime';
+export * from './scanner';
 
 export default ibkr;
