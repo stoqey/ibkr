@@ -27,7 +27,7 @@ describe('Mosaic Scanner', () => {
 
         mosaicScanner.scanMarket({
             instrument: 'STK',
-            locationCode: 'STK.NASDAQ.NMS',
+            locationCode: 'STK.US.MAJOR',
             numberOfRows: 10,
             scanCode: 'TOP_PERC_GAIN',
             stockTypeFilter: 'ALL'

@@ -8,20 +8,16 @@ import { ContractObject } from '../contracts';
  * Not completed
  */
 
-interface MosaicScannerData {
-    tickerId: number; // 12345,
+interface MosaicScannerData extends ContractObject {
     rank: number; //0,
-    contract: {
-        summary?: ContractObject;
-        marketName: string;
-    },
+    marketName: string;
     distance: string; // "",
     benchmark: string; // "",
     projection: string; // "",
     legsStr: string; //""
 }
 
-interface SubscribeToScanner {
+interface ScanMarket {
     instrument: string; // 'STK',
     locationCode: string; // 'STK.NASDAQ.NMS',
     numberOfRows: number; // 5,
@@ -35,41 +31,36 @@ export class MosaicScanner {
     ib: ibkr;
 
     constructor() {
-        if (this.ib) {
-            return;
-        }
-
-        this.ib = IBKRConnection.Instance.getIBKR();
     }
 
     /**
      * scanMarket
      */
-    public scanMarket = (args?: SubscribeToScanner): Promise<any> => {
+    public scanMarket = (args: ScanMarket): Promise<MosaicScannerData[]> => {
+        const ib = IBKRConnection.Instance.getIBKR();
         const { instrument = "STK", locationCode, numberOfRows, scanCode, stockTypeFilter } = args;
-        const self = this;
-
         let randomTicker = getRadomReqId();
 
-        const scans = [];
+        const scansedData: MosaicScannerData[] = [];
 
         return new Promise((resolve, reject) => {
-            self.ib.on('scannerData', (tickerId, rank, contract, distance, benchmark, projection, legsStr) => {
 
-                const symbol = contract && contract.summary && contract.summary.symbol;
+            const handleScannerData = (tickerId) => {
+                ib.off('scannerData', handleScannerData)
+                resolve(scansedData)
+            };
 
-                scans.push({
+            ib.on('scannerData', (tickerId, rank, contract, distance, benchmark, projection, legsStr) => {
+                scansedData.push({
                     rank,
-                    ...(contract && contract.summary || {})
+                    ...(contract && contract.summary || {}),
+                    distance, benchmark, projection, legsStr
                 });
-
             })
 
-            self.ib.once('scannerDataEnd', (tickerId) => {
-                resolve(scans)
-            })
+            ib.once('scannerDataEnd', handleScannerData)
 
-            self.ib.reqScannerSubscription(randomTicker, {
+            ib.reqScannerSubscription(randomTicker, {
                 instrument,
                 locationCode,
                 numberOfRows,
