@@ -1,9 +1,11 @@
+import ibkr from '@stoqey/ib';
 import { ContractDetails } from './contracts.interfaces';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { log } from '../log';
 
-export const getContractDetails = (symbol: string): Promise<ContractDetails> => {
+export const getContractDetails = (contractArg: any): Promise<ContractDetails> => {
+
 
     let contract: ContractDetails = {} as any;
 
@@ -14,7 +16,11 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails> => 
 
             const ib = IBKRConnection.Instance.getIBKR();
 
-            const contractArg = ib.contract.stock(symbol);
+            // If string, create stock contract as default
+
+            if (typeof contractArg === "string") {
+                contractArg = ib.contract.stock(contractArg);
+            };
 
             const handleContract = (reqId, contractReceived) => {
                 contract = contractReceived;
@@ -22,11 +28,9 @@ export const getContractDetails = (symbol: string): Promise<ContractDetails> => 
 
             ib.on('contractDetails', handleContract)
 
-            ib.once('contractDetailsEnd', (reqId) => {
-                const currentSymbol = contract && contract.summary && contract.summary.symbol;
-                if (currentSymbol === symbol) {
+            ib.once('contractDetailsEnd', (reqIdX) => {
+                if (reqId === reqIdX) {
                     ib.off('contractDetails', handleContract);
-                    log('Contract details', currentSymbol);
                     resolve(contract);
                 }
             })
