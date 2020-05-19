@@ -46,6 +46,7 @@ export class IBKRConnection {
                 port
             });
 
+            this.ib.setMaxListeners(1000)
             this.listen();
         }
     }
@@ -146,7 +147,8 @@ export class IBKRConnection {
 
         this.ib.on(IBKREVENTS.DISCONNECTED, function (err: Error) {
             log(IBKREVENTS.DISCONNECTED, `Connection disconnected => ${clientId}`);
-            return disconnectApp();
+            disconnectApp();
+            process.exit(1);
         });
 
         // connect the IBKR
