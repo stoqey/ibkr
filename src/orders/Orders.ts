@@ -511,7 +511,7 @@ export class Orders {
                 });
 
                 // Start -----------------------------
-                this.processing = true;
+                self.processing = true;
 
                 ib.on('nextValidId', handleOrderIdNext); // start envs
                 return placingOrderNow();
