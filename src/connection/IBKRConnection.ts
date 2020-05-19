@@ -46,7 +46,7 @@ export class IBKRConnection {
                 port
             });
 
-            this.ib.setMaxListeners(1000)
+            // this.ib.setMaxListeners(50)
             this.listen();
         }
     }

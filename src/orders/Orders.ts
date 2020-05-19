@@ -362,6 +362,14 @@ export class Orders {
         };
 
         const checkPending = async (): Promise<void | boolean> => {
+            // -1 Validate size
+            const orderSize = stockOrder.size;
+
+            if (Number.isNaN(orderSize)) {
+                log('placingOrderNow.checkPending', `*********************** orderSize is NaN size=${orderSize} action=${stockOrder.action} symbol=${symbol}`);
+                return erroredOut()
+            }
+
             // 0. Pending orders
             // Check active tickerSymbols
             const pendingOrders = self.symbolsTickerOrder[symbol];
@@ -438,7 +446,7 @@ export class Orders {
                 return erroredOut();
             }
 
-            const { symbol } = stockOrder;
+            const { symbol, size } = stockOrder;
 
             const orderCommand: Function = ib.order[stockOrder.type];
 
@@ -465,7 +473,7 @@ export class Orders {
             self.tickerId = tickerToUse;
             ib.reqAllOpenOrders(); // refresh orders
 
-            log('handleOrderIdNext', `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`);
+            log('handleOrderIdNext', `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} symbol=${symbol} size=${size}`);
             return success();
         }
 
