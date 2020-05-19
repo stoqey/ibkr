@@ -105,6 +105,9 @@ export class Portfolios {
                         ...contract,
                     });
                 }
+                else {
+                    self.currentPortfolios = self.currentPortfolios.filter(porto => porto.symbol !== contract.symbol)
+                }
 
                 log(`Portfolio > openOrder FILLED`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
                 verbose(`Portfolio > ALL PORTFOLIOS`, ` -> ${JSON.stringify(self.currentPortfolios.map(por => por.symbol))}`);
