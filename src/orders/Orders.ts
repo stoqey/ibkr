@@ -292,6 +292,7 @@ export class Orders {
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 if (!done) {
+                    self.ib.off('openOrder', handleOpenOrders)
                     done = true;
                     resolve(ordersData);
                 }
