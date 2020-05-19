@@ -348,34 +348,6 @@ export class Orders {
         const numberOfRetries = options && options.retryCounts || 3;
         const retryDelayTime = options && options.retryTime || 2000;
 
-        // 1. Processing, or recursive
-        if (self.processing) {
-            const handleRecursive = setInterval(
-                () => {
-                    console.log('retry in --------------------->', symbol)
-                    self.placeOrder(stockOrder)
-                }
-                , 2000);
-
-            const handlerId = intervalCollection.get(handleRecursive);
-
-            // save the symbol with it's timeout
-            self.timeoutRetries[stockOrder.symbol] = compact([...(self.timeoutRetries[stockOrder.symbol] || []), handlerId && handlerId.uuid]);
-
-
-
-            setTimeout(() => { intervalCollection.remove(handleRecursive); }, numberOfRetries * retryDelayTime);
-            return;
-        }
-
-        // Clear all by this symbol
-        (self.timeoutRetries[stockOrder.symbol] || []).forEach(uuid => {
-            intervalCollection.removeByUuid(uuid);
-        });
-
-        // Start -----------------------------
-        this.processing = true;
-
 
         const success = (): void => {
             ib.off('nextValidId', handleOrderIdNext);
@@ -389,64 +361,7 @@ export class Orders {
             return;
         };
 
-
-        const handleOrderIdNext = (orderIdNext: number) => {
-
-            const tickerToUse = ++orderIdNext;
-
-            const currentOrders = self.stockOrders;
-
-            if (isEmpty(currentOrders)) {
-                log('handleOrderIdNext', `Stock Orders are empty`);
-                return erroredOut();
-            }
-
-            // get order by it's tickerId
-            const stockOrder = self.stockOrders.shift();
-
-
-            if (isEmpty(stockOrder)) {
-                log('handleOrderIdNext', `First Stock Orders Item is empty`);
-                return erroredOut();
-            }
-
-            const { symbol } = stockOrder;
-
-            const orderCommand: Function = ib.order[stockOrder.type];
-
-            const args = stockOrder.parameters;
-
-            if (isEmpty(args)) {
-                log('handleOrderIdNext', `Arguments cannot be null`);
-                return erroredOut();
-            }
-
-            // Just save tickerId and stockOrder
-            self.symbolsTickerOrder[symbol] = {
-                ...(self.symbolsTickerOrder[symbol] || null),
-                tickerId: tickerToUse,
-                symbol,
-                orderStatus: "PendingSubmit",
-                stockOrderRequest: stockOrder // for reference when closing trade,
-            };
-
-            // Place order
-            ib.placeOrder(tickerToUse, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
-
-            // self.orderIdNext = tickerToUse;
-            self.tickerId = tickerToUse;
-            ib.reqAllOpenOrders(); // refresh orders
-
-            log('handleOrderIdNext', `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`);
-            return success();
-        }
-
-
-        async function placingOrderNow(): Promise<void> {
-            if (isEmpty(stockOrder.symbol)) {
-                return erroredOut(new Error("Please enter order"))
-            }
-
+        const checkPending = async (): Promise<void | boolean> => {
             // 0. Pending orders
             // Check active tickerSymbols
             const pendingOrders = self.symbolsTickerOrder[symbol];
@@ -500,15 +415,111 @@ export class Orders {
                 // Else existing trades are allowed
             }
 
-            self.stockOrders = [...self.stockOrders, stockOrder];
-            self.ib.reqIds(++self.orderIdNext);
-
-            verbose('placingOrderNow', `Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`)
-
+            return true;
         }
 
-        ib.on('nextValidId', handleOrderIdNext); // start envs
-        return placingOrderNow();
+        const handleOrderIdNext = (orderIdNext: number) => {
+
+            const tickerToUse = ++orderIdNext;
+
+            const currentOrders = self.stockOrders;
+
+            if (isEmpty(currentOrders)) {
+                log('handleOrderIdNext', `Stock Orders are empty`);
+                return erroredOut();
+            }
+
+            // get order by it's tickerId
+            const stockOrder = self.stockOrders.shift();
+
+
+            if (isEmpty(stockOrder)) {
+                log('handleOrderIdNext', `First Stock Orders Item is empty`);
+                return erroredOut();
+            }
+
+            const { symbol } = stockOrder;
+
+            const orderCommand: Function = ib.order[stockOrder.type];
+
+            const args = stockOrder.parameters;
+
+            if (isEmpty(args)) {
+                log('handleOrderIdNext', `Arguments cannot be null`);
+                return erroredOut();
+            }
+
+            // Just save tickerId and stockOrder
+            self.symbolsTickerOrder[symbol] = {
+                ...(self.symbolsTickerOrder[symbol] || null),
+                tickerId: tickerToUse,
+                symbol,
+                orderStatus: "PendingSubmit",
+                stockOrderRequest: stockOrder // for reference when closing trade,
+            };
+
+            // Place order
+            ib.placeOrder(tickerToUse, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
+
+            // self.orderIdNext = tickerToUse;
+            self.tickerId = tickerToUse;
+            ib.reqAllOpenOrders(); // refresh orders
+
+            log('handleOrderIdNext', `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} ${symbol}`);
+            return success();
+        }
+
+
+        function placingOrderNow(): void {
+            if (isEmpty(stockOrder.symbol)) {
+                return erroredOut(new Error("Please enter order"))
+            }
+
+            self.stockOrders = [...self.stockOrders, stockOrder];
+            self.ib.reqIds(++self.orderIdNext);
+            verbose('placingOrderNow', `Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`)
+        }
+
+        async function run(): Promise<void> {
+            const canProceed = await checkPending();
+
+            if (canProceed === true) {
+                // can proceed
+                // 1. Processing, or recursive
+                if (self.processing) {
+                    const handleRecursive = setInterval(
+                        () => {
+                            console.log('retry in --------------------->', symbol)
+                            self.placeOrder(stockOrder)
+                        }
+                        , 2000);
+
+                    const handlerId = intervalCollection.get(handleRecursive);
+
+                    // save the symbol with it's timeout
+                    self.timeoutRetries[stockOrder.symbol] = compact([...(self.timeoutRetries[stockOrder.symbol] || []), handlerId && handlerId.uuid]);
+
+
+
+                    setTimeout(() => { intervalCollection.remove(handleRecursive); }, numberOfRetries * retryDelayTime);
+                    return;
+                }
+
+                // Clear all by this symbol
+                (self.timeoutRetries[stockOrder.symbol] || []).forEach(uuid => {
+                    intervalCollection.removeByUuid(uuid);
+                });
+
+                // Start -----------------------------
+                this.processing = true;
+
+                ib.on('nextValidId', handleOrderIdNext); // start envs
+                return placingOrderNow();
+            }
+        }
+
+        run();
+
     }
 }
 
