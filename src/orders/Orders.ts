@@ -256,22 +256,6 @@ export class Orders {
 
     }
 
-    /**
-     *  reqAllOpenOrders
-     */
-    private reqAllOpenOrders = (): void => {
-
-        const that = this;
-
-        setImmediate(() => {
-            if (that.ib) {
-                console.log(`Orders > reqAllOpenOrders `)
-                that.ib.reqAllOpenOrders();
-            }
-        })
-
-    }
-
     public getOpenOrders = async (timeout?: number): Promise<OrderWithContract[]> => {
 
         const self = this;

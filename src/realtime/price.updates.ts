@@ -142,7 +142,7 @@ export class PriceUpdates {
         setImmediate(() => {
             that.ib.reqMktData(that.subscribers[symbol], that.ib.contract.stock(symbol), '', false, false);
             return log('PriceUpdates.subscribe', `${symbol.toLocaleUpperCase()} is successfully subscribed`);
-        }, 900)
+        })
 
     }
 
