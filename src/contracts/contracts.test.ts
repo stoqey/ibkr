@@ -15,7 +15,7 @@ describe('Contracts', () => {
     it('should get contract details by symbol', (done) => {
         async function getContractDetailsData() {
             const contractDetails = await getContractDetails(symbol);
-            if (contractDetails) {
+            if (!Array.isArray(contractDetails)) {
                 log('contract ', JSON.stringify(contractDetails))
                 return done();
             }
