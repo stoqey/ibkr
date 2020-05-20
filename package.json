@@ -1,7 +1,7 @@
 {
   "name": "@stoqey/ibkr",
   "private": false,
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "NodeJS Interactive Brokers wrapper & utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
