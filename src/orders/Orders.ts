@@ -90,7 +90,6 @@ export class Orders {
 
 
             ib.on('openOrderEnd', () => {
-                verbose(`Orders > init > openOrderEnd`, ` ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`);
                 // Initialise OrderTrader
                 // OrderTrade.Instance.init();
 
@@ -121,19 +120,16 @@ export class Orders {
                     }
                 });
 
-                log(`Orders > orderStatus`, {
+                verbose(`Orders > orderStatus ${currentOrder && currentOrder.symbol}`, JSON.stringify({
                     id,
                     status,
                     filled,
                     remaining,
                     symbol: currentOrder && currentOrder.symbol
-                })
+                }))
             });
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-                verbose(`Order> openOrder`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
-
-
                 // 1. Update OpenOrders
                 // Orders that need to be filled
                 // -----------------------------------------------------------------------------------

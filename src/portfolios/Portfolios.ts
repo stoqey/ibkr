@@ -97,8 +97,9 @@ export class Portfolios {
                 const symbol = contract && contract.symbol;
                 // Position has to be greater than 0
                 if (position === 0) {
-                    return verbose(`postion: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost}`);
-                }
+                    return;
+                };
+
                 portfolios[symbol] = thisPortfolio;
             };
 
