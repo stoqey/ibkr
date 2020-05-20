@@ -304,21 +304,26 @@ export class Orders {
             })
 
             self.ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-                openedOrders = {
-                    ...openedOrders,
-                    [orderId]: {
-                        ...(openedOrders && openedOrders[orderId] || null),
 
-                        // OrderId + orderState
-                        orderId,
-                        orderState,
+                // Only check pending orders
+                if (['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(orderState && orderState.status)) {
+                    openedOrders = {
+                        ...openedOrders,
+                        [orderId]: {
+                            ...(openedOrders && openedOrders[orderId] || null),
 
-                        // Add order
-                        ...order,
-                        // Add contract
-                        ...contract
-                    }
-                };
+                            // OrderId + orderState
+                            orderId,
+                            orderState,
+
+                            // Add order
+                            ...order,
+                            // Add contract
+                            ...contract
+                        }
+                    };
+                }
+
 
             });
 
