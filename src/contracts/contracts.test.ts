@@ -12,7 +12,7 @@ before((done) => {
 });
 
 describe('Contracts', () => {
-    it('should get contract details', (done) => {
+    it('should get contract details by symbol', (done) => {
         async function getContractDetailsData() {
             const contractDetails = await getContractDetails(symbol);
             if (contractDetails) {
@@ -23,4 +23,27 @@ describe('Contracts', () => {
         }
         getContractDetailsData();
     });
+
+    it('should get contract details by contract object', (done) => {
+        async function getContractDetailsData() {
+            const contractDetails = await getContractDetails({
+                currency: 'USD',
+                exchange: 'SMART',
+                //expiry: '202007',
+                multiplier: 100,
+                right: 'C',
+                secType: 'OPT',
+                strike: 300,
+                symbol: 'AAPL'
+            });
+            if (contractDetails) {
+                log('contract ', JSON.stringify(contractDetails))
+                return done();
+            }
+            done(new Error('Error getting symbol details'));
+        }
+        getContractDetailsData();
+    });
+
+
 })
