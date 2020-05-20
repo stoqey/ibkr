@@ -4,10 +4,10 @@ import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { log } from '../log';
 
-export const getContractDetails = (contractArg: any): Promise<ContractDetails> => {
+export const getContractDetails = (contractArg: any): Promise<ContractDetails[]> => {
 
 
-    let contract: ContractDetails = {} as any;
+    let contract: ContractDetails[] = [] as any;
 
     let reqId: number = getRadomReqId();
 
@@ -23,7 +23,7 @@ export const getContractDetails = (contractArg: any): Promise<ContractDetails> =
             };
 
             const handleContract = (reqId, contractReceived) => {
-                contract = contractReceived;
+                contract.push(contractReceived);
             };
 
             ib.on('contractDetails', handleContract)

@@ -131,10 +131,22 @@ ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
   
 ### Contracts
 ```ts
- const contractDetails = await getContractDetails(ib.contract.stock("AAPL"));
+ 
+const contractDetails = await getContractDetails(ib.contract.stock("AAPL"));
 
 //  or 
 
+const contractDetails = await getContractDetails({
+    currency: 'USD',
+    exchange: 'SMART',
+    multiplier: 100,
+    right: 'C',
+    secType: 'OPT',
+    strike: 300,
+    symbol: 'AAPL'
+});
+
+// or with just a symbol, defaults to stocks
  const contractDetails = await getContractDetails('AAPL');
 ```
 
