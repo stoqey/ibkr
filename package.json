@@ -17,6 +17,7 @@
     "connection": "mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",
     "history": "mocha src/history/*test.ts --exit",
+    "portfolios": "mocha src/portfolios/*test.ts --exit",
     "order": "mocha src/orders/*test.ts --exit",
     "scanner": "mocha src/scanner/*test.ts --exit",
     "unit-test": "mocha src/**/*test.ts --exit",

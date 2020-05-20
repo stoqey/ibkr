@@ -1,18 +1,30 @@
 import 'mocha';
-import { expect } from 'chai'
+import { expect } from 'chai';
+import ibkr from '..';
+import { log } from '../log';
 import Portfolios from './Portfolios';
-import { onConnected } from '../connection/connection.utilities';
 
 
-describe('Given IBKR with proper env, port, url', () => {
-
-    it('should be connected to ibkr', async () => {
-        let accountPortfolios = [];
-        if (await onConnected()) {
-            const portfolios = Portfolios.Instance;
-            accountPortfolios = await portfolios.getPortfolios();
+before((done) => {
+    ibkr().then(started => {
+        if (started) {
+            return done();
         }
-        expect(accountPortfolios).to.be.not.null;
+        done(new Error('error starting ibkr'))
+
+    })
+})
+
+describe('Portfolios', () => {
+
+    it('should get all portfolios', async () => {
+        const portfolios = Portfolios.Instance;
+        const results = await portfolios.getPortfolios();
+        log('All portfolios are', results && results.length)
+        expect(results).to.be.not.null;
+
     });
 
-});
+})
+
+

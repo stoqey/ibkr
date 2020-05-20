@@ -51,48 +51,9 @@ export class Portfolios {
     public init = async () => {
 
         const self = this;
-
         this.ib = IBKRConnection.Instance.getIBKR();
-        this.accountSummary = await AccountSummary.Instance.getAccountSummary();
 
         const ib = this.ib;
-
-        ib.on('accountDownloadEnd', () => {
-            const { currentPortfolios, portfoliosSnapshot } = self;
-            log('accountDownloadEnd', `********************** Portfolios ${currentPortfolios.length}`);
-
-            if (currentPortfolios !== portfoliosSnapshot) {
-                // update snapshot
-                self.portfoliosSnapshot = currentPortfolios;
-            }
-
-            // Emit empty portfolio/*  */
-            publishDataToTopic({
-                topic: IBKREVENTS.PORTFOLIOS,
-                data: currentPortfolios
-            });
-
-        })
-
-        ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
-            const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
-
-            // Position has to be greater than 0
-            if (position === 0) {
-                return log(`updatePortfolio: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `);
-            }
-
-            logPortfolio(thisPortfolio);
-
-            // Check if portfolio exists in currentPortfolios
-            const isPortFolioAlreadyExist = self.currentPortfolios.find(portfo => { portfo.symbol === thisPortfolio.symbol });
-
-            if (!isPortFolioAlreadyExist) {
-                //positions changed
-                self.currentPortfolios.push(thisPortfolio);
-                self.currentPortfolios = _.uniqBy(self.currentPortfolios, "symbol");
-            }
-        });
 
         ib.on('openOrder', function (orderId, contract: ContractObject, order: ORDER, orderState: OrderState) {
             if (orderState.status === "Filled") {
@@ -112,48 +73,58 @@ export class Portfolios {
                 log(`Portfolio > openOrder FILLED`, ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
                 verbose(`Portfolio > ALL PORTFOLIOS`, ` -> ${JSON.stringify(self.currentPortfolios.map(por => por.symbol))}`);
                 // refresh the portfolios
-                self.reqAccountUpdates();
+                self.getPortfolios();
             }
         });
 
-
-        this.reqAccountUpdates();
-    }
-
-    /**
-     * reqAccountUpdates
-     */
-    public reqAccountUpdates = () => {
-        let that = this;
-        setImmediate(() => {
-            that.ib.reqAccountUpdates(true, that.accountSummary.AccountId);
-        })
     }
 
     /**
      * getPortfolios
      */
     public getPortfolios = async (): Promise<PortFolioUpdate[]> => {
-        const { currentPortfolios, reqAccountUpdates } = this;
-        let done = false;
+        const self = this;
+        const ib = self.ib;
+
         return new Promise((resolve, reject) => {
 
-            // listen for portfolios
-            const handlePortfolios = (accountSummaryData) => {
+            let done = false;
+            const portfolios: { [x: string]: PortFolioUpdate } = {};
+
+            const handlePosition = (account, contract, position, averageCost) => {
+                const thisPortfolio = { ...contract, position, averageCost };
+
+                const symbol = contract && contract.symbol;
+                // Position has to be greater than 0
+                if (position === 0) {
+                    return verbose(`postion: positions are empty = ${contract && contract.symbol}, costPerShare -> ${averageCost}`);
+                }
+                portfolios[symbol] = thisPortfolio;
+            };
+
+            const handlePositionEnd = (portfoliosData: PortFolioUpdate[]) => {
                 if (!done) {
                     done = true;
-                    appEvents.off(IBKREVENTS.PORTFOLIOS, handlePortfolios);
-                    resolve(accountSummaryData || currentPortfolios);
+                    appEvents.off('position', handlePosition);
+
+                    self.currentPortfolios = portfoliosData;
+                    publishDataToTopic({
+                        topic: IBKREVENTS.PORTFOLIOS,
+                        data: portfoliosData
+                    });
+                    resolve(portfoliosData);
                 }
             }
 
-            if (!isEmpty(currentPortfolios)) {
-                return resolve(currentPortfolios);
-            }
+            ib.once('positionEnd', () => {
+                const portfoliosData = Object.keys(portfolios).map((portfolioKey => portfolios[portfolioKey]));
+                log('getPortfolios accountDownloadEnd', `********************** Portfolios = ${portfoliosData && portfoliosData.length}`);
+                handlePositionEnd(portfoliosData);
+            })
 
-            appEvents.on(IBKREVENTS.PORTFOLIOS, handlePortfolios);
+            ib.on('position', handlePosition);
 
-            reqAccountUpdates();
+            ib.reqPositions();
         })
 
     }
