@@ -27,10 +27,10 @@ describe('Mosaic Scanner', () => {
             instrument: 'STK',
             locationCode: 'STK.US.MAJOR',
             numberOfRows: 10,
-            scanCode: 'TOP_PERC_GAIN',
+            scanCode: 'TOP_PERC_LOSE',
             stockTypeFilter: 'ALL'
         }).then(data => {
-            console.log('data is ', JSON.stringify(data));
+            console.log('data is ', JSON.stringify(data.map(f => f.symbol)));
             done();
         })
 
