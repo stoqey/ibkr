@@ -1,15 +1,16 @@
 import _ from 'lodash';
+import ibkr from '@stoqey/ib';
+import isEmpty from 'lodash/isEmpty';
 import AccountSummary from '../account/AccountSummary';
 import { IBKREVENTS, IbkrEvents } from '../events';
 import { publishDataToTopic } from '../events/IbkrEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
-import isEmpty from 'lodash/isEmpty';
 import { IBKRAccountSummary } from '../account/account-summary.interfaces';
 import { ORDER, OrderState } from '../orders';
 import { log, verbose } from '../log';
 import { ContractObject } from '../contracts';
-import ibkr from '@stoqey/ib';
+
 
 const appEvents = IbkrEvents.Instance;
 
