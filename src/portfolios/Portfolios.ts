@@ -1,14 +1,16 @@
 import _ from 'lodash';
+import ibkr from '@stoqey/ib';
+import isEmpty from 'lodash/isEmpty';
 import AccountSummary from '../account/AccountSummary';
 import { IBKREVENTS, IbkrEvents } from '../events';
 import { publishDataToTopic } from '../events/IbkrEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import { PortFolioUpdate } from './portfolios.interfaces';
-import isEmpty from 'lodash/isEmpty';
 import { IBKRAccountSummary } from '../account/account-summary.interfaces';
 import { ORDER, OrderState } from '../orders';
 import { log, verbose } from '../log';
 import { ContractObject } from '../contracts';
+
 
 const appEvents = IbkrEvents.Instance;
 
@@ -33,7 +35,7 @@ const logPortfolio = ({ marketPrice, averageCost, position, symbol, conId }: Por
 
 export class Portfolios {
 
-    ib: any;
+    ib: ibkr;
 
     accountSummary: IBKRAccountSummary;
 
@@ -52,8 +54,15 @@ export class Portfolios {
 
         const self = this;
         this.ib = IBKRConnection.Instance.getIBKR();
+        const accountId = AccountSummary.Instance.AccountId;
 
         const ib = this.ib;
+
+        ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
+            const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
+            logPortfolio(thisPortfolio);
+            self.getPortfolios(); // refresh portfolios
+        });
 
         ib.on('openOrder', function (orderId, contract: ContractObject, order: ORDER, orderState: OrderState) {
             if (orderState.status === "Filled") {
@@ -76,6 +85,10 @@ export class Portfolios {
                 self.getPortfolios();
             }
         });
+
+        log('AccountID', accountId);
+
+        ib.reqAccountUpdates(true, accountId);
 
     }
 
@@ -119,7 +132,7 @@ export class Portfolios {
 
             ib.once('positionEnd', () => {
                 const portfoliosData = Object.keys(portfolios).map((portfolioKey => portfolios[portfolioKey]));
-                log('getPortfolios accountDownloadEnd', `********************** Portfolios = ${portfoliosData && portfoliosData.length}`);
+                log('getPortfolios positionEnd', `********************** = ${portfoliosData && portfoliosData.length}`);
                 handlePositionEnd(portfoliosData);
             })
 
