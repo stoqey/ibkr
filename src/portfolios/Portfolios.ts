@@ -9,6 +9,7 @@ import { IBKRAccountSummary } from '../account/account-summary.interfaces';
 import { ORDER, OrderState } from '../orders';
 import { log, verbose } from '../log';
 import { ContractObject } from '../contracts';
+import ibkr from '@stoqey/ib';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -33,7 +34,7 @@ const logPortfolio = ({ marketPrice, averageCost, position, symbol, conId }: Por
 
 export class Portfolios {
 
-    ib: any;
+    ib: ibkr;
 
     accountSummary: IBKRAccountSummary;
 
@@ -52,8 +53,15 @@ export class Portfolios {
 
         const self = this;
         this.ib = IBKRConnection.Instance.getIBKR();
+        const accountId = AccountSummary.Instance.AccountId;
 
         const ib = this.ib;
+
+        ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
+            const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
+            logPortfolio(thisPortfolio);
+            self.getPortfolios(); // refresh portfolios
+        });
 
         ib.on('openOrder', function (orderId, contract: ContractObject, order: ORDER, orderState: OrderState) {
             if (orderState.status === "Filled") {
@@ -76,6 +84,10 @@ export class Portfolios {
                 self.getPortfolios();
             }
         });
+
+        log('AccountID', accountId);
+
+        ib.reqAccountUpdates(true, accountId);
 
     }
 
@@ -119,7 +131,7 @@ export class Portfolios {
 
             ib.once('positionEnd', () => {
                 const portfoliosData = Object.keys(portfolios).map((portfolioKey => portfolios[portfolioKey]));
-                log('getPortfolios accountDownloadEnd', `********************** Portfolios = ${portfoliosData && portfoliosData.length}`);
+                log('getPortfolios positionEnd', `********************** = ${portfoliosData && portfoliosData.length}`);
                 handlePositionEnd(portfoliosData);
             })
 
