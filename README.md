@@ -227,6 +227,8 @@ see any `.test.ts` file for examples
 We use [debug](https://github.com/visionmedia/debug) library for logging.
 Run with `DEBUG=ibkr:*` to see all logs, or `DEBUG=ibkr:info` for less verbose logs.
 
+### [See change log for updates](/docs/changelog/README.md)
+
 <div align="center" >
 <img style="background:#231f20;color:white; width:100%;padding:10px" src="./docs/logo_interactive-brokers_white.png"></img>
 <h3>Stoqey Inc<h3>
