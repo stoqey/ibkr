@@ -60,6 +60,7 @@ export class Portfolios {
 
         ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
             const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
+            log('contract', contract);
             logPortfolio(thisPortfolio);
             self.getPortfolios(); // refresh portfolios
         });
@@ -104,10 +105,16 @@ export class Portfolios {
             let done = false;
             const portfolios: { [x: string]: PortFolioUpdate } = {};
 
-            const handlePosition = (account, contract, position, averageCost) => {
+            const handlePosition = (account, contract: ContractObject, position, averageCost) => {
                 const thisPortfolio = { ...contract, position, averageCost };
 
-                const symbol = contract && contract.symbol;
+                let symbol = contract && contract.symbol;
+
+                // If forex use localSymbol
+                if (contract.secType === "CASH") {
+                    symbol = contract && contract.localSymbol;
+                }
+
                 // Position has to be greater than 0
                 if (position === 0) {
                     return;
@@ -132,7 +139,8 @@ export class Portfolios {
 
             ib.once('positionEnd', () => {
                 const portfoliosData = Object.keys(portfolios).map((portfolioKey => portfolios[portfolioKey]));
-                log('getPortfolios positionEnd', `********************** = ${portfoliosData && portfoliosData.length}`);
+                log('getPortfolios positionEnd', `********************** =`);
+                log('getPortfolios positionEnd', `********************** ${portfoliosData && portfoliosData.length} symbols=${portfoliosData.map(u => u.localSymbol)}`);
                 handlePositionEnd(portfoliosData);
             })
 
