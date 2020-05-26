@@ -24,12 +24,16 @@ before((done) => {
 
 describe('Historical Data', () => {
     it('should get market data', (done) => {
-        const symbol = "PECK";
+        const symbol = "AAPL";
 
-        HistoricalData.Instance.getHistoricalData({ symbol, whatToShow: "BID" });
+        HistoricalData.Instance.getHistoricalData({
+            symbol, whatToShow: "BID",
+            durationStr: '1800 S',
+            barSizeSetting: '1 secs',
+        });
 
         ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
-            await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+            // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
             log(`Historical Data for ${symbol} ${data && data.length}`);
             done();
 
