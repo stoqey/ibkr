@@ -195,7 +195,7 @@ export class HistoricalData {
   /**
    * ReqHistoricalData Async Promise
    */
-  public reqHistoricalData = (args: GetMarketData): Promise<any> => {
+  public reqHistoricalData = (args: GetMarketData): Promise<HistoryData[]> => {
 
     const self = this;
     const ib = self.ib;
