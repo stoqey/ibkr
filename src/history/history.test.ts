@@ -5,6 +5,7 @@ import { onConnected } from '../connection/connection.utilities';
 import ibkr from '..';
 import { IbkrEvents, IBKREVENTS } from '../events';
 import { log } from '../log';
+import { IBKRConnection } from '../connection';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -23,9 +24,11 @@ before((done) => {
 })
 
 describe('Historical Data', () => {
+
     it('should get market data', (done) => {
         const symbol = "AAPL";
 
+        let complete = false;
         HistoricalData.Instance.getHistoricalData({
             symbol, whatToShow: "BID",
             durationStr: '1800 S',
@@ -35,10 +38,40 @@ describe('Historical Data', () => {
         ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
             // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
             log(`Historical Data for ${symbol} ${data && data.length}`);
-            done();
-
+            if (!complete) {
+                complete = true;
+                done();
+            }
         })
+    });
 
+    it('should get market data with contract object', (done) => {
+        const symbol = "AAPL";
+
+        const ib = IBKRConnection.Instance.getIBKR();
+
+        let complete = false;
+
+        setTimeout(() => {
+            // To avoid violation pace
+            HistoricalData.Instance.getHistoricalData({
+                contract: ib.contract.stock("AAPL"),
+                symbol,
+                whatToShow: "BID",
+                durationStr: '1800 S',
+                barSizeSetting: '1 secs',
+            });
+        }, 3000);
+
+
+        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
+            // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+            log(`Historical Data for ${symbol} ${data && data.length}`);
+            if (!complete) {
+                complete = true;
+                done();
+            }
+        })
     });
 
     it('should get market data async mode', (done) => {
@@ -47,6 +80,31 @@ describe('Historical Data', () => {
         async function getMarketData() {
             const data = await HistoricalData.Instance.reqHistoricalData({
                 symbol, whatToShow: "BID",
+                durationStr: '1800 S',
+                barSizeSetting: '1 secs',
+            });
+
+            log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
+        }
+
+        setTimeout(() => {
+            getMarketData();
+        }, 3000);
+
+
+    });
+
+    it('should get market data async mode with contract object', (done) => {
+        const symbol = "AAPL";
+
+        const ib = IBKRConnection.Instance.getIBKR();
+
+        async function getMarketData() {
+            const data = await HistoricalData.Instance.reqHistoricalData({
+                symbol,
+                whatToShow: "BID",
+                contract: ib.contract.stock("AAPL"),
                 durationStr: '1800 S',
                 barSizeSetting: '1 secs',
             });
