@@ -252,7 +252,7 @@ export class HistoricalData {
 
       ib.on('historicalData', onHistoricalData);
 
-      //                   tickerId, contract,                    endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
+      //                   tickerId, contract, endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
       ib.reqHistoricalData(tickerId, contract, endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
 
     })
