@@ -3,6 +3,7 @@ import includes from 'lodash/includes';
 import reverse from 'lodash/reverse';
 import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
+import ibkr from '@stoqey/ib';
 import { getRadomReqId } from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
@@ -14,7 +15,7 @@ const appEvents = IbkrEvents.Instance;
 
 interface GetMarketData {
   symbol: string;
-  contract?: any[],
+  contract?: object | string;
   endDateTime?: string;
   durationStr?: string;
   barSizeSetting?: BarSizeSetting;
@@ -23,7 +24,7 @@ interface GetMarketData {
 
 export class HistoricalData {
 
-  ib: any;
+  ib: ibkr;
   historyData: { [x: string]: HistoryData[] } = {};
   historyDataDump: { [x: string]: { data: any[] } } = {};
 
@@ -112,7 +113,7 @@ export class HistoricalData {
 
       const {
         symbol,
-        contract = [symbol, 'SMART', 'USD'],
+        // contract = [symbol, 'SMART', 'USD'],
         endDateTime = '',
         durationStr = '1 D',
         barSizeSetting = '1 min',
@@ -123,6 +124,14 @@ export class HistoricalData {
 
       if (isEmpty(symbol)) {
         return;
+      }
+
+      // parse contract
+      const ogContract = args.contract;
+      let contract = ogContract;
+      if (typeof ogContract === 'string' || !ogContract) {
+        // make it a stock by default
+        contract = ib.contract.stock(symbol, 'SMART', 'USD');
       }
 
 
@@ -165,17 +174,91 @@ export class HistoricalData {
       whatToShow } = params;
 
     //                   tickerId, contract,                    endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
-    this.ib.reqHistoricalData(tickerId, this.ib.contract.stock(...contract), endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
+    this.ib.reqHistoricalData(tickerId, contract, endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
 
   }
 
+  /**
+   * Get historical data using events
+   */
   public getHistoricalData = (args: GetMarketData): void => {
     publishDataToTopic({
       topic: IBKREVENTS.GET_MARKET_DATA,
       data: args
     });
-
   }
+
+  /**
+   * 
+   */
+
+  /**
+   * ReqHistoricalData Async Promise
+   */
+  public reqHistoricalData = (args: GetMarketData): Promise<any> => {
+
+    const self = this;
+    const ib = self.ib;
+    const tickerId = getRadomReqId();
+
+    return new Promise((resolve, reject) => {
+      let done = false;
+
+      const marketData: HistoryData[] = [];
+
+      const {
+        symbol,
+        endDateTime = '',
+        durationStr = '1 D',
+        barSizeSetting = '1 min',
+        whatToShow = 'ASK'
+      } = args;
+
+
+      // parse contract
+      const ogContract = args.contract;
+      let contract = ogContract;
+      if (typeof ogContract === 'string' || !ogContract) {
+        // make it a stock by default
+        contract = ib.contract.stock(symbol, 'SMART', 'USD');
+      }
+
+      const endhistoricalData = (tickerId) => {
+        if (!done) {
+          done = true;
+          ib.off('historicalData', onHistoricalData)
+          ib.cancelHistoricalData(tickerId);  // tickerId
+          const collectedData = reverse(marketData);
+          resolve(collectedData);
+        }
+      }
+
+      const onHistoricalData = (reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps) => {
+        if (includes([-1], open)) {
+          endhistoricalData(reqId);
+        } else {
+          const currentSymbol = tickerId === reqId;
+          const dateFormat = "YYYYMMDD hh:mm:ss";
+
+          const newEntry: HistoryData = {
+            reqId, date: moment(date, dateFormat).toDate(), open, high, low, close, volume, barCount, WAP, hasGaps
+          };
+
+          if (currentSymbol) {
+            marketData.push(newEntry);
+          }
+        }
+      };
+
+      ib.on('historicalData', onHistoricalData);
+
+      //                   tickerId, contract, endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
+      ib.reqHistoricalData(tickerId, contract, endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
+
+    })
+  }
+
+
 
 }
 
