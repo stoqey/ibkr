@@ -120,6 +120,8 @@ export class Portfolios {
                     return;
                 };
 
+                thisPortfolio.symbol = symbol; // override symbol name
+
                 portfolios[symbol] = thisPortfolio;
             };
 
