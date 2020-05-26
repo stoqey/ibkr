@@ -59,8 +59,7 @@ export class HistoricalData {
       const allCollectedData = this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || [];
 
       // sort data by date
-
-      const collectedData = !isEmpty(allCollectedData) ? sortedMarketData(allCollectedData) : allCollectedData;
+      const collectedData = sortedMarketData(allCollectedData);
 
       this.historyData = {
         ...this.historyData,
