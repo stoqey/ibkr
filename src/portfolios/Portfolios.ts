@@ -60,7 +60,6 @@ export class Portfolios {
 
         ib.on('updatePortfolio', (contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName) => {
             const thisPortfolio = { ...contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName };
-            log('contract', contract);
             logPortfolio(thisPortfolio);
             self.getPortfolios(); // refresh portfolios
         });
