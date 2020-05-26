@@ -40,6 +40,27 @@ describe('Historical Data', () => {
         })
 
     });
+
+    it('should get market data async mode', (done) => {
+        const symbol = "AAPL";
+
+        async function getMarketData() {
+            const data = await HistoricalData.Instance.reqHistoricalData({
+                symbol, whatToShow: "BID",
+                durationStr: '1800 S',
+                barSizeSetting: '1 secs',
+            });
+
+            log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
+        }
+
+        setTimeout(() => {
+            getMarketData();
+        }, 3000);
+
+
+    });
 })
 
 

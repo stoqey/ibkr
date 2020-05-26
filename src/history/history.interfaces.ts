@@ -16,7 +16,7 @@ export interface HistoryData {
 }
 
 export interface ReqHistoricalData {
-    contract: string[], // "IFRX", "SMART", "USD",
+    contract: string[] | object | string // "IFRX", "SMART", "USD",
     endDateTime: string; // "20190308 12:00:00",
     durationStr: string; // "1800 S"
     barSizeSetting: BarSizeSetting; // "1 secs"

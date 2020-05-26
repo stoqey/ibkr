@@ -15,7 +15,7 @@ const appEvents = IbkrEvents.Instance;
 
 interface GetMarketData {
   symbol: string;
-  contract: object | string;
+  contract?: object | string;
   endDateTime?: string;
   durationStr?: string;
   barSizeSetting?: BarSizeSetting;
@@ -113,7 +113,7 @@ export class HistoricalData {
 
       const {
         symbol,
-        contract = [symbol, 'SMART', 'USD'],
+        // contract = [symbol, 'SMART', 'USD'],
         endDateTime = '',
         durationStr = '1 D',
         barSizeSetting = '1 min',
@@ -124,6 +124,14 @@ export class HistoricalData {
 
       if (isEmpty(symbol)) {
         return;
+      }
+
+      // parse contract
+      const ogContract = args.contract;
+      let contract = ogContract;
+      if (typeof ogContract === 'string' || !ogContract) {
+        // make it a stock by default
+        contract = ib.contract.stock(symbol, 'SMART', 'USD');
       }
 
 
@@ -166,7 +174,7 @@ export class HistoricalData {
       whatToShow } = params;
 
     //                   tickerId, contract,                    endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
-    this.ib.reqHistoricalData(tickerId, this.ib.contract.stock(...contract), endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
+    this.ib.reqHistoricalData(tickerId, contract, endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
 
   }
 
@@ -210,7 +218,7 @@ export class HistoricalData {
       // parse contract
       const ogContract = args.contract;
       let contract = ogContract;
-      if (typeof ogContract === 'string') {
+      if (typeof ogContract === 'string' || !ogContract) {
         // make it a stock by default
         contract = ib.contract.stock(symbol, 'SMART', 'USD');
       }
