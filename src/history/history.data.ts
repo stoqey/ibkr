@@ -9,6 +9,7 @@ import IBKRConnection from '../connection/IBKRConnection';
 import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
 import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData, WhatToShow, BarSizeSetting } from './history.interfaces';
 import { log } from '../log';
+import { sortedMarketData } from './history.utils';
 
 
 const appEvents = IbkrEvents.Instance;
@@ -55,7 +56,11 @@ export class HistoricalData {
         return null;
       }
 
-      const collectedData = reverse(this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || []);
+      const allCollectedData = this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || [];
+
+      // sort data by date
+
+      const collectedData = !isEmpty(allCollectedData) ? sortedMarketData(allCollectedData) : allCollectedData;
 
       this.historyData = {
         ...this.historyData,
@@ -228,7 +233,7 @@ export class HistoricalData {
           done = true;
           ib.off('historicalData', onHistoricalData)
           ib.cancelHistoricalData(tickerId);  // tickerId
-          const collectedData = reverse(marketData);
+          const collectedData = sortedMarketData(marketData);
           resolve(collectedData);
         }
       }

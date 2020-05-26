@@ -30,14 +30,18 @@ describe('Historical Data', () => {
 
         let complete = false;
         HistoricalData.Instance.getHistoricalData({
-            symbol, whatToShow: "BID",
-            durationStr: '1800 S',
-            barSizeSetting: '1 secs',
+            endDateTime: '20200521 15:00:00',
+            symbol,
+            whatToShow: "BID",
+            durationStr: '3600 S',
+            barSizeSetting: '5 secs',
         });
 
-        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
+        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }: { symbol: string; marketData: any[] }) => {
             // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
             log(`Historical Data for ${symbol} ${data && data.length}`);
+            log(`Start ----> ${symbol} ${data.shift().date}`);
+            log(`End ----> ${symbol} ${data.pop().date}`);
             if (!complete) {
                 complete = true;
                 done();
@@ -45,80 +49,85 @@ describe('Historical Data', () => {
         })
     });
 
-    it('should get market data with contract object', (done) => {
-        const symbol = "AAPL";
+    // it('should get market data with contract object', (done) => {
+    //     const symbol = "AAPL";
 
-        const ib = IBKRConnection.Instance.getIBKR();
+    //     const ib = IBKRConnection.Instance.getIBKR();
 
-        let complete = false;
+    //     let complete = false;
 
-        setTimeout(() => {
-            // To avoid violation pace
-            HistoricalData.Instance.getHistoricalData({
-                contract: ib.contract.stock("AAPL"),
-                symbol,
-                whatToShow: "BID",
-                durationStr: '1800 S',
-                barSizeSetting: '1 secs',
-            });
-        }, 3000);
+    //     setTimeout(() => {
+    //         // To avoid violation pace
+    //         HistoricalData.Instance.getHistoricalData({
+
+    //             contract: ib.contract.stock("AAPL"),
+    //             symbol,
+    //             whatToShow: "BID",
+    //             durationStr: '1800 S',
+    //             barSizeSetting: '1 secs',
+    //         });
+    //     }, 3000);
 
 
-        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
-            // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
-            log(`Historical Data for ${symbol} ${data && data.length}`);
-            if (!complete) {
-                complete = true;
-                done();
-            }
-        })
-    });
+    //     ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
+    //         // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+    //         log(`Historical Data for ${symbol} ${data && data.length}`);
+    //         if (!complete) {
+    //             complete = true;
+    //             done();
+    //         }
+    //     })
+    // });
 
     it('should get market data async mode', (done) => {
         const symbol = "AAPL";
 
         async function getMarketData() {
             const data = await HistoricalData.Instance.reqHistoricalData({
+                endDateTime: '20200521 15:00:00',
                 symbol, whatToShow: "BID",
                 durationStr: '1800 S',
                 barSizeSetting: '1 secs',
             });
 
             log(`Historical Data for ${symbol} ${data && data.length}`);
+            log(`Start ----> ${symbol} ${data.shift().date}`);
+            log(`End ----> ${symbol} ${data.pop().date}`);
+
             done();
         }
 
         setTimeout(() => {
             getMarketData();
-        }, 3000);
+        }, 1000);
 
 
     });
 
-    it('should get market data async mode with contract object', (done) => {
-        const symbol = "AAPL";
+    // it('should get market data async mode with contract object', (done) => {
+    //     const symbol = "AAPL";
 
-        const ib = IBKRConnection.Instance.getIBKR();
+    //     const ib = IBKRConnection.Instance.getIBKR();
 
-        async function getMarketData() {
-            const data = await HistoricalData.Instance.reqHistoricalData({
-                symbol,
-                whatToShow: "BID",
-                contract: ib.contract.stock("AAPL"),
-                durationStr: '1800 S',
-                barSizeSetting: '1 secs',
-            });
+    //     async function getMarketData() {
+    //         const data = await HistoricalData.Instance.reqHistoricalData({
+    //             symbol,
+    //             whatToShow: "BID",
+    //             contract: ib.contract.stock("AAPL"),
+    //             durationStr: '1800 S',
+    //             barSizeSetting: '1 secs',
+    //         });
 
-            log(`Historical Data for ${symbol} ${data && data.length}`);
-            done();
-        }
+    //         log(`Historical Data for ${symbol} ${data && data.length}`);
+    //         done();
+    //     }
 
-        setTimeout(() => {
-            getMarketData();
-        }, 3000);
+    //     setTimeout(() => {
+    //         getMarketData();
+    //     }, 3000);
 
 
-    });
+    // });
 })
 
 
