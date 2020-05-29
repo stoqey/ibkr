@@ -9,6 +9,8 @@ import IBKRConnection from '../connection/IBKRConnection';
 import { IbkrEvents, publishDataToTopic, IBKREVENTS } from '../events';
 import { HistoryData, SymbolWithTicker, ReqHistoricalData, SymbolWithMarketData, WhatToShow, BarSizeSetting } from './history.interfaces';
 import { log } from '../log';
+import { sortedMarketData } from './history.utils';
+import { handleEventfulError } from '../events/HandleError';
 
 
 const appEvents = IbkrEvents.Instance;
@@ -47,15 +49,16 @@ export class HistoricalData {
 
       ib.cancelHistoricalData(tickerId);  // tickerId
 
-
-
       const currentSymbol = this.symbolsWithTicker.find(y => y.tickerId === tickerId);
 
       if (isEmpty(currentSymbol)) {
         return null;
       }
 
-      const collectedData = reverse(this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || []);
+      const allCollectedData = this.historyDataDump[tickerId] && this.historyDataDump[tickerId].data || [];
+
+      // sort data by date
+      const collectedData = sortedMarketData(allCollectedData);
 
       this.historyData = {
         ...this.historyData,
@@ -189,10 +192,6 @@ export class HistoricalData {
   }
 
   /**
-   * 
-   */
-
-  /**
    * ReqHistoricalData Async Promise
    */
   public reqHistoricalData = (args: GetMarketData): Promise<HistoryData[]> => {
@@ -225,10 +224,17 @@ export class HistoricalData {
 
       const endhistoricalData = (tickerId) => {
         if (!done) {
+
           done = true;
+
+          // remove listeners 
           ib.off('historicalData', onHistoricalData)
-          ib.cancelHistoricalData(tickerId);  // tickerId
-          const collectedData = reverse(marketData);
+          eventfulError(); // close eventful errors
+
+          // cancel market data
+          tickerId && ib.cancelHistoricalData(tickerId);  // tickerId
+
+          const collectedData = sortedMarketData(marketData);
           resolve(collectedData);
         }
       }
@@ -251,6 +257,10 @@ export class HistoricalData {
       };
 
       ib.on('historicalData', onHistoricalData);
+
+      // TODO all more error messages
+      // handleError
+      const eventfulError = handleEventfulError([`No historical market data for ${symbol}`], endhistoricalData);
 
       //                   tickerId, contract, endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
       ib.reqHistoricalData(tickerId, contract, endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
