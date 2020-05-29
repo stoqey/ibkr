@@ -1,5 +1,6 @@
 import { IBKRConnection } from "../connection";
 import isEmpty from "lodash/isEmpty";
+import { verbose } from "../log";
 
 /**
  * Assuming IBKR returns predictable errors
@@ -28,7 +29,7 @@ export function handleEventfulError(targetErrors: string[], catchError: Function
         const isError = targetErrors.some(tError => errorMessage.includes(tError));
 
         if (isError) {
-            console.log('error message', errorMessage);
+            verbose('handleEventfulError > handleError.errorMessage', errorMessage);
             catchError();
         }
     };
