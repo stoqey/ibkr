@@ -25,29 +25,29 @@ before((done) => {
 
 describe('Historical Data', () => {
 
-    it('should get market data', (done) => {
-        const symbol = "AAPL";
+    // it('should get market data', (done) => {
+    //     const symbol = "AAPL";
 
-        let complete = false;
-        HistoricalData.Instance.getHistoricalData({
-            endDateTime: '20200521 15:00:00',
-            symbol,
-            whatToShow: "BID",
-            durationStr: '3600 S',
-            barSizeSetting: '5 secs',
-        });
+    //     let complete = false;
+    //     HistoricalData.Instance.getHistoricalData({
+    //         endDateTime: '20200521 15:00:00',
+    //         symbol,
+    //         whatToShow: "BID",
+    //         durationStr: '3600 S',
+    //         barSizeSetting: '5 secs',
+    //     });
 
-        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }: { symbol: string; marketData: any[] }) => {
-            // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
-            log(`Historical Data for ${symbol} ${data && data.length}`);
-            log(`Start ----> ${symbol} ${data.shift().date}`);
-            log(`End ----> ${symbol} ${data.pop().date}`);
-            if (!complete) {
-                complete = true;
-                done();
-            }
-        })
-    });
+    //     ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }: { symbol: string; marketData: any[] }) => {
+    //         // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+    //         log(`Historical Data for ${symbol} ${data && data.length}`);
+    //         log(`Start ----> ${symbol} ${data.shift().date}`);
+    //         log(`End ----> ${symbol} ${data.pop().date}`);
+    //         if (!complete) {
+    //             complete = true;
+    //             done();
+    //         }
+    //     })
+    // });
 
     // it('should get market data with contract object', (done) => {
     //     const symbol = "AAPL";
@@ -79,30 +79,30 @@ describe('Historical Data', () => {
     //     })
     // });
 
-    it('should get market data async mode', (done) => {
-        const symbol = "AAPL";
+    // it('should get market data async mode', (done) => {
+    //     const symbol = "AAPL";
 
-        async function getMarketData() {
-            const data = await HistoricalData.Instance.reqHistoricalData({
-                endDateTime: '20200521 15:00:00',
-                symbol, whatToShow: "BID",
-                durationStr: '1800 S',
-                barSizeSetting: '1 secs',
-            });
+    //     async function getMarketData() {
+    //         const data = await HistoricalData.Instance.reqHistoricalData({
+    //             endDateTime: '20200521 15:00:00',
+    //             symbol, whatToShow: "BID",
+    //             durationStr: '1800 S',
+    //             barSizeSetting: '1 secs',
+    //         });
 
-            log(`Historical Data for ${symbol} ${data && data.length}`);
-            log(`Start ----> ${symbol} ${data.shift().date}`);
-            log(`End ----> ${symbol} ${data.pop().date}`);
+    //         log(`Historical Data for ${symbol} ${data && data.length}`);
+    //         log(`Start ----> ${symbol} ${data.shift().date}`);
+    //         log(`End ----> ${symbol} ${data.pop().date}`);
 
-            done();
-        }
+    //         done();
+    //     }
 
-        setTimeout(() => {
-            getMarketData();
-        }, 1000);
+    //     setTimeout(() => {
+    //         getMarketData();
+    //     }, 1000);
 
 
-    });
+    // });
 
     // it('should get market data async mode with contract object', (done) => {
     //     const symbol = "AAPL";
@@ -128,6 +128,28 @@ describe('Historical Data', () => {
 
 
     // });
+
+    it('should get empty market data contract object is invalid', (done) => {
+        const symbol = "AAPL";
+
+        async function getMarketData() {
+            const data = await HistoricalData.Instance.reqHistoricalData({
+                symbol,
+                durationStr: '1 W',
+                barSizeSetting: '1 day',
+                whatToShow: 'YIELD_BID'
+            });
+
+            log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
+        }
+
+        setTimeout(() => {
+            getMarketData();
+        }, 3000);
+
+
+    });
 })
 
 
