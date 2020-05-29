@@ -46,6 +46,10 @@ import ibkr, { AccountSummary, IBKREVENTS, IbkrEvents, PortFolioUpdate, getContr
 
 const ibkrEvents = IbkrEvents.Instance;
 
+
+// 0. Using env process.env.IB_PORT and process.env.IB_HOST
+await ibkr();
+
 // 1. Async 
 await ibkr({ port: IB_PORT, host: IB_HOST });
 
@@ -230,7 +234,7 @@ see any `.test.ts` file for examples
 We use [debug](https://github.com/visionmedia/debug) library for logging.
 Run with `DEBUG=ibkr:*` to see all logs, or `DEBUG=ibkr:info` for less verbose logs.
 
-### [See change log for updates](/docs/changelog/README.md)
+#### [See change log for updates](/docs/changelog/README.md)
 
 <div align="center" >
 <img style="background:#231f20;color:white; width:100%;padding:10px" src="./docs/logo_interactive-brokers_white.png"></img>
