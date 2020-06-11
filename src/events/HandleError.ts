@@ -11,7 +11,7 @@ import { verbose } from "../log";
  * @returns () => void // remove listener function
  * @important always call the returned function to remove listeners and avoid memory leaks
  */
-export function handleEventfulError(targetErrors: string[], catchError: Function): () => void {
+export function handleEventfulError(reqId: number, targetErrors: string[], catchError: Function): () => void {
 
     if (isEmpty(targetErrors)) {
         return () => { };
@@ -22,7 +22,15 @@ export function handleEventfulError(targetErrors: string[], catchError: Function
 
     const ib = IBKRConnection.Instance.getIBKR();
 
-    const handleError = (error) => {
+    const handleError = (error, errorData) => {
+
+        const reqIdFromError = errorData && errorData.id;
+
+        if (reqIdFromError === reqId) {
+            verbose('handleEventfulError > handleError.reqIdFromError', reqId);
+            catchError();
+        }
+
         // message to lower case
         const errorMessage = (error && error.message || "").toLowerCase();
 

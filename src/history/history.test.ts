@@ -173,6 +173,29 @@ describe('Historical Data', () => {
 
 
     });
+
+    it('should get empty market data when symbol is invalid', (done) => {
+        const symbol = 'xxx_symbol'
+
+        async function getMarketData() {
+            const data = await HistoricalData.Instance.reqHistoricalData({
+                symbol,
+                endDateTime: '',
+                durationStr: '1 W',
+                barSizeSetting: '1 day',
+                whatToShow: 'TRADES',
+            });
+
+            log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
+        }
+
+        setTimeout(() => {
+            getMarketData();
+        }, 3000);
+
+
+    });
 })
 
 
