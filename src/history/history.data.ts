@@ -260,7 +260,12 @@ export class HistoricalData {
 
       // TODO all more error messages
       // handleError
-      const eventfulError = handleEventfulError(tickerId, [`No historical market data for ${symbol}`, `The contract description specified for ${symbol} is ambiguous.`], endhistoricalData);
+      const eventfulError = handleEventfulError(tickerId,
+        [
+          `Historical data request pacing violation`,
+          `No historical market data for ${symbol}`,
+          `The contract description specified for ${symbol} is ambiguous.`
+        ], endhistoricalData);
 
       //                   tickerId, contract, endDateTime, durationStr,             barSizeSetting,             whatToShow,             useRTH, formatDate, keepUpToDate
       ib.reqHistoricalData(tickerId, contract, endDateTime, durationStr || '1800 S', barSizeSetting || '1 secs', whatToShow || 'TRADES', 1, 1, false);
