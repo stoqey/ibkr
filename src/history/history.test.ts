@@ -129,7 +129,7 @@ describe('Historical Data', () => {
 
     });
 
-    it('should get empty market data contract object is invalid', (done) => {
+    it('should get empty market data when contract object is invalid', (done) => {
         const symbol = "AAPL";
 
         async function getMarketData() {
@@ -138,6 +138,29 @@ describe('Historical Data', () => {
                 durationStr: '1 W',
                 barSizeSetting: '1 day',
                 whatToShow: 'YIELD_BID'
+            });
+
+            log(`Historical Data for ${symbol} ${data && data.length}`);
+            done();
+        }
+
+        setTimeout(() => {
+            getMarketData();
+        }, 3000);
+
+
+    });
+
+    it('should get empty market data when contract is invalid/ambiguous', (done) => {
+        const symbol = 'csco'
+
+        async function getMarketData() {
+            const data = await HistoricalData.Instance.reqHistoricalData({
+                symbol,
+                endDateTime: '',
+                durationStr: '1 W',
+                barSizeSetting: '1 day',
+                whatToShow: 'TRADES',
             });
 
             log(`Historical Data for ${symbol} ${data && data.length}`);
