@@ -18,7 +18,8 @@ export class MosaicScanner {
 
         const scansedData: MosaicScannerData[] = [];
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const handleScannerData = (tickerId) => {
                 ib.off('scannerData', handleScannerData);
                 resolve(scansedData);

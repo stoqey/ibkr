@@ -1,6 +1,5 @@
-import _ from 'lodash';
 import isEmpty from 'lodash/isEmpty';
-import {SymbolWithData, TickSize, TickPrice} from './price.interfaces';
+import {TickPrice} from './price.interfaces';
 import {IBKRConnection} from '../connection';
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import {getRadomReqId} from '../_utils/text.utils';
@@ -31,7 +30,7 @@ export class PriceUpdates {
 
     private static _instance: PriceUpdates;
 
-    public static get Instance() {
+    public static get Instance(): PriceUpdates {
         return this._instance || (this._instance = new this());
     }
 
@@ -49,7 +48,7 @@ export class PriceUpdates {
     /**
      * init
      */
-    public init() {
+    public init(): void {
         const ib = IBKRConnection.Instance.getIBKR();
 
         this.ib = ib;
@@ -57,7 +56,8 @@ export class PriceUpdates {
 
         ib.on(
             'tickPrice',
-            (tickerId: number, tickType: TickPrice, price: number, canAutoExecute: boolean) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
                 const thisSymbol = that.subscribersWithTicker.find(
                     (symbol) => symbol.tickerId === tickerId
                 );
@@ -155,7 +155,7 @@ export class PriceUpdates {
         });
     }
 
-    public unsubscribeAllSymbols() {
+    public unsubscribeAllSymbols(): void {
         const that = this;
 
         setTimeout(() => {

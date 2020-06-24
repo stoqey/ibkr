@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import ibkr from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import AccountSummary from '../account/AccountSummary';
@@ -44,13 +43,13 @@ export class Portfolios {
     currentPortfolios: PortFolioUpdate[] = [];
     portfoliosSnapshot: PortFolioUpdate[] = [];
 
-    public static get Instance() {
+    public static get Instance(): Portfolios {
         return this._instance || (this._instance = new this());
     }
 
     private constructor() {}
 
-    public init = async () => {
+    public init = async (): Promise<void> => {
         const self = this;
         this.ib = IBKRConnection.Instance.getIBKR();
         const accountId = AccountSummary.Instance.AccountId;
@@ -132,7 +131,7 @@ export class Portfolios {
         const self = this;
         const ib = self.ib;
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let done = false;
             const portfolios: {[x: string]: PortFolioUpdate} = {};
 

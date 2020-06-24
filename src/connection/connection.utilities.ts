@@ -9,7 +9,7 @@ export const onConnected = (): Promise<boolean> => {
     const appEvents = IbkrEvents.Instance;
     const ibkr = IBKRConnection.Instance;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (ibkr.status === IBKREVENTS.CONNECTED) {
             return resolve(true);
         }

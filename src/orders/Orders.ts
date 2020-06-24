@@ -66,7 +66,7 @@ export class Orders {
 
     private static _instance: Orders;
 
-    public static get Instance() {
+    public static get Instance(): Orders {
         return this._instance || (this._instance = new this());
     }
 
@@ -74,7 +74,7 @@ export class Orders {
         const self = this;
 
         // only when connected createSale
-        ibkrEvents.on(IBKREVENTS.CONNECTED, async (sale: CreateSale) => {
+        ibkrEvents.on(IBKREVENTS.CONNECTED, async () => {
             self.init();
         });
 
@@ -297,7 +297,7 @@ export class Orders {
 
         let openedOrders = {};
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let done = false;
 
             // listen for account summary
@@ -379,6 +379,7 @@ export class Orders {
             return;
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const erroredOut = (error?: Error): void => {
             ib.off('nextValidId', handleOrderIdNext);
             self.processing = false; // reset processing
@@ -499,6 +500,7 @@ export class Orders {
 
             const {symbol, size} = stockOrder;
 
+            // eslint-disable-next-line @typescript-eslint/ban-types
             const orderCommand: Function = ib.order[stockOrder.type];
 
             const args = stockOrder.parameters;

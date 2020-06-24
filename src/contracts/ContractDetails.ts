@@ -1,8 +1,6 @@
-import ibkr from '@stoqey/ib';
 import {ContractDetails} from './contracts.interfaces';
 import {getRadomReqId} from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
-import {log} from '../log';
 
 export const getContractDetails = (
     contract: string | any
@@ -12,7 +10,7 @@ export const getContractDetails = (
 
     const reqId: number = getRadomReqId();
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const ib = IBKRConnection.Instance.getIBKR();
 
         // If string, create stock contract as default

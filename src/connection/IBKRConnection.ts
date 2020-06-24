@@ -27,7 +27,7 @@ export class IBKRConnection {
 
     public ib: ibkr;
 
-    public static get Instance() {
+    public static get Instance(): IBKRConnection {
         return this._instance || (this._instance = new this());
     }
 
@@ -36,7 +36,7 @@ export class IBKRConnection {
     /**
      * init
      */
-    public init = (host: string, port: number) => {
+    public init = (host: string, port: number): void => {
         if (!this.ib) {
             this.ib = new ibkr({
                 clientId,
@@ -134,7 +134,7 @@ export class IBKRConnection {
         });
 
         this.ib.on(IBKREVENTS.DISCONNECTED, function (err: Error) {
-            log(IBKREVENTS.DISCONNECTED, `Connection disconnected => ${clientId}`);
+            log(IBKREVENTS.DISCONNECTED, `${clientId} Connection disconnected error => ${err}`);
             disconnectApp();
             process.exit(1);
         });

@@ -1,5 +1,4 @@
 import includes from 'lodash/includes';
-import reverse from 'lodash/reverse';
 import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
 import ibkr from '@stoqey/ib';
@@ -10,7 +9,6 @@ import {
     HistoryData,
     SymbolWithTicker,
     ReqHistoricalData,
-    SymbolWithMarketData,
     WhatToShow,
     BarSizeSetting,
 } from './history.interfaces';
@@ -22,7 +20,7 @@ const appEvents = IbkrEvents.Instance;
 
 interface GetMarketData {
     symbol: string;
-    contract?: object | string;
+    contract?: Record<string, any> | string;
     endDateTime?: string;
     durationStr?: string;
     barSizeSetting?: BarSizeSetting;
@@ -38,7 +36,7 @@ export class HistoricalData {
 
     private static _instance: HistoricalData;
 
-    public static get Instance() {
+    public static get Instance(): HistoricalData {
         return this._instance || (this._instance = new this());
     }
 
@@ -212,7 +210,7 @@ export class HistoricalData {
         const ib = self.ib;
         const tickerId = getRadomReqId();
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let done = false;
 
             const marketData: HistoryData[] = [];

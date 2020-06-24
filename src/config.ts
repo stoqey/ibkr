@@ -1,4 +1,5 @@
-import os from 'os';
+import dotenv from 'dotenv';
+
 const {env} = process;
 
 // Envs
@@ -7,7 +8,7 @@ export const isDev = env.NODE_ENV !== 'production';
 export const isTest = env.NODE_ENV === 'test';
 
 if (isDev) {
-    require('dotenv').config();
+    dotenv.config();
 }
 
 export const IB_PORT: number = +(env.IB_PORT || 7496);

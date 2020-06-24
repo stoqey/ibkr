@@ -27,7 +27,6 @@ export class AccountSummary {
     }
 
     public init(): void {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
 
         const ib = IBKRConnection.Instance.getIBKR();
@@ -66,7 +65,7 @@ export class AccountSummary {
     /**
      * reqAccountSummary
      */
-    public reqAccountSummary = () => {
+    public reqAccountSummary = (): void => {
         // Request Account summary from here
         this.ib.reqAccountSummary(this.tickerId, 'All', [
             'AccountType',
@@ -104,7 +103,7 @@ export class AccountSummary {
     /**
      * initialiseDep
      */
-    public initialiseDep() {
+    public initialiseDep(): void {
         Portfolios.Instance /*  */;
     } /*  */
 
@@ -121,7 +120,7 @@ export class AccountSummary {
      */
     public getAccountSummary(): Promise<IBKRAccountSummary> {
         const {accountSummary, reqAccountSummary} = this;
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             if (!isEmpty(accountSummary)) {
                 return resolve(accountSummary);
             }

@@ -14,7 +14,7 @@ import {verbose} from '../log';
 export function handleEventfulError(
     reqId: number,
     targetErrors: string[],
-    catchError: Function
+    catchError: () => any
 ): () => void {
     if (isEmpty(targetErrors)) {
         return () => {};
