@@ -1,18 +1,18 @@
 import includes from 'lodash/includes';
-import { getRadomReqId } from '../_utils/text.utils';
-import { publishDataToTopic, IBKREVENTS, IbkrEvents } from '../events';
-import { IBKRAccountSummary } from './account-summary.interfaces'
-import { log } from '../log';
+import {getRadomReqId} from '../_utils/text.utils';
+import {publishDataToTopic, IBKREVENTS, IbkrEvents} from '../events';
+import {IBKRAccountSummary} from './account-summary.interfaces';
+import {log} from '../log';
 import IBKRConnection from '../connection/IBKRConnection';
-import { LIVE_ACCOUNT_IDS } from '../config';
+import {LIVE_ACCOUNT_IDS} from '../config';
 import isEmpty from 'lodash/isEmpty';
-import { Portfolios } from '../portfolios';
+import {Portfolios} from '../portfolios';
 
 const appEvents = IbkrEvents.Instance;
 
 export class AccountSummary {
     ib: any;
-    accountReady: boolean = false;
+    accountReady = false;
     tickerId = getRadomReqId();
     AccountId;
     accountSummary: IBKRAccountSummary = {} as any;
@@ -29,7 +29,6 @@ export class AccountSummary {
     public init() {
         const self = this;
 
-
         const ib = IBKRConnection.Instance.getIBKR();
 
         self.ib = ib;
@@ -44,27 +43,23 @@ export class AccountSummary {
             // log('accountSummaryEnd', { account, tag, value, });
         });
 
-        // Return values from here 
+        // Return values from here
         ib.once('accountSummaryEnd', () => {
-            const { AccountId = 'unknown', tickerId, accountReady, accountSummary } = self;
+            const {AccountId = 'unknown', tickerId, accountReady, accountSummary} = self;
 
-            log('accountSummaryEnd', { AccountId, tickerId, accountReady });
-
+            log('accountSummaryEnd', {AccountId, tickerId, accountReady});
 
             ib.cancelAccountSummary(tickerId);
 
-
             publishDataToTopic({
                 topic: IBKREVENTS.ON_ACCOUNT_SUMMARY,
-                data: accountSummary
+                data: accountSummary,
             });
 
             self.accountReady = true;
-
         });
 
         self.reqAccountSummary();
-
     }
 
     /**
@@ -101,32 +96,31 @@ export class AccountSummary {
             'LookAheadExcessLiquidity',
             'HighestSeverity',
             'DayTradesRemaining',
-            'Leverage'
+            'Leverage',
         ]);
-    }
+    };
 
     /**
- * initialiseDep
- */
+     * initialiseDep
+     */
     public initialiseDep() {
-        Portfolios.Instance/*  */;
-    }/*  */
+        Portfolios.Instance /*  */;
+    } /*  */
 
     /**
      * isLiveAccount
      * Check whether this is the live account
      */
     public isLiveAccount(): boolean {
-        return includes(LIVE_ACCOUNT_IDS, this.AccountId)
+        return includes(LIVE_ACCOUNT_IDS, this.AccountId);
     }
 
     /**
      * getAccountSummary
      */
     public getAccountSummary(): Promise<IBKRAccountSummary> {
-        const { accountSummary, reqAccountSummary } = this;
+        const {accountSummary, reqAccountSummary} = this;
         return new Promise((resolve, reject) => {
-
             if (!isEmpty(accountSummary)) {
                 return resolve(accountSummary);
             }
@@ -135,12 +129,11 @@ export class AccountSummary {
             const handleAccountSummary = (accountSummaryData) => {
                 appEvents.off(IBKREVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
                 resolve(accountSummaryData);
-            }
+            };
             appEvents.on(IBKREVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
 
             reqAccountSummary();
-        })
-
+        });
     }
 }
 

@@ -1,5 +1,5 @@
 import os from 'os';
-const { env } = process;
+const {env} = process;
 
 // Envs
 export const isDev = env.NODE_ENV !== 'production';
@@ -15,4 +15,3 @@ export const IB_HOST: string = env.IB_HOST || '127.0.0.1';
 
 // Live account ids for live trading
 export const LIVE_ACCOUNT_IDS: string = env.LIVE_ACCOUNT_IDS || '';
-

@@ -1,4 +1,4 @@
-import { onConnected, IBKRConnection } from './connection';
+import {onConnected, IBKRConnection} from './connection';
 
 interface IBKR {
     host: string;
@@ -6,11 +6,10 @@ interface IBKR {
 }
 // Export main
 const ibkr = (args?: IBKR): Promise<boolean> => {
-
     // Default from these envs
-    const { IB_PORT = 4003, IB_HOST = 'localhost' } = process.env || {};
+    const {IB_PORT = 4003, IB_HOST = 'localhost'} = process.env || {};
 
-    const { host = IB_HOST, port = IB_PORT } = args || {};
+    const {host = IB_HOST, port = IB_PORT} = args || {};
 
     IBKRConnection.Instance.init(host, +port);
 
@@ -18,14 +17,14 @@ const ibkr = (args?: IBKR): Promise<boolean> => {
         async function runIbkrApp() {
             const connection = await onConnected();
             if (connection) {
-                return resolve(true)
+                return resolve(true);
             }
-            reject('Failed to connect IBKR, please try again')
+            reject('Failed to connect IBKR, please try again');
         }
 
         runIbkrApp();
     });
-}
+};
 
 // Export all modules
 export * from './account';

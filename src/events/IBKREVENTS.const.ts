@@ -1,81 +1,71 @@
-
 export enum IBKREVENTS {
+    READY = 'READY',
 
-  READY = 'READY',
+    // Connections
+    PING = 'ping',
+    DISCONNECTED = 'disconnected',
+    CONNECTED = 'connected',
+    ERROR = 'error',
 
-  // Connections
-  PING = 'ping',
-  DISCONNECTED = 'disconnected',
-  CONNECTED = 'connected',
-  ERROR = 'error',
+    /**
+     * @interface IBKRAccountSummary
+     */
+    ON_ACCOUNT_SUMMARY = 'on_account_summary',
 
-  /**
- * @interface IBKRAccountSummary
- */
-  ON_ACCOUNT_SUMMARY = 'on_account_summary',
+    // Orders portfolios, historicalData,
 
+    // --------------------------------------------------------------------------------------
+    // --------------------------------------------ORDERS------------------------------------
+    /**
+     * [OrderWithContract]
+     */
+    OPEN_ORDERS = 'open_orders',
 
-  // Orders portfolios, historicalData, 
+    /**
+     * OrderStock
+     */
+    PLACE_ORDER = 'place_order',
 
-  // --------------------------------------------------------------------------------------
-  // --------------------------------------------ORDERS------------------------------------
-  /**
-   * [OrderWithContract]
-   */
-  OPEN_ORDERS = 'open_orders',
+    /**
+     * { orderStatus: OrderStatus, order: OrderWithContract }
+     */
+    ORDER_STATUS = 'order_status',
 
-  /**
-   * OrderStock
-   */
-  PLACE_ORDER = 'place_order',
+    /**
+     * { sale: CreateSale, order: OrderWithContract }
+     */
+    ORDER_FILLED = 'order_filled',
 
-  /**
-   * { orderStatus: OrderStatus, order: OrderWithContract }
-  */
-  ORDER_STATUS = 'order_status',
+    CREATE_SALE = 'create_sale',
 
-  /**
-   * { sale: CreateSale, order: OrderWithContract }
-   */
-  ORDER_FILLED = 'order_filled',
+    // --------------------------------------------------------------------------------------
+    // ---------------------------------------------PORTFOLIOS-------------------------------
 
-  CREATE_SALE = 'create_sale',
+    /**
+     * [PortFolioUpdate]
+     */
+    PORTFOLIOS = 'portfolios',
 
-  // --------------------------------------------------------------------------------------
-  // ---------------------------------------------PORTFOLIOS-------------------------------
+    // --------------------------------------------------------------------------------------
+    // ---------------------------------------------MARKETDATA-------------------------------
 
-  /**
-   * [PortFolioUpdate]
-   */
-  PORTFOLIOS = 'portfolios',
-
-  // --------------------------------------------------------------------------------------
-  // ---------------------------------------------MARKETDATA-------------------------------
-
-
-  /**
+    /**
    * @interface SymbolWithMarketData 
    * {    symbol: string,
           marketData: HistoryData[]
      }
    */
-  ON_MARKET_DATA = 'on_market_data',
+    ON_MARKET_DATA = 'on_market_data',
 
-  GET_MARKET_DATA = 'get_market_data',
+    GET_MARKET_DATA = 'get_market_data',
 
+    /**
+     * { symbol, tickType?: 'ASK' | 'BID' | 'CLOSE' }
+     */
+    SUBSCRIBE_PRICE_UPDATES = 'subscribe_price_updates',
 
-  /**
-   * { symbol, tickType?: 'ASK' | 'BID' | 'CLOSE' }
-   */
-  SUBSCRIBE_PRICE_UPDATES = 'subscribe_price_updates',
-
-  /**
-   * { symbol: string; date: Date; close: number; }
-   */
-  ON_PRICE_UPDATES = 'subscribe_price_updates',
-
-
-
-
-
+    /**
+     * { symbol: string; date: Date; close: number; }
+     */
+    ON_PRICE_UPDATES = 'subscribe_price_updates',
 }
