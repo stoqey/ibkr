@@ -28,7 +28,7 @@
     "eslint": "eslint ./src --fix --ext=ts"
   },
   "lint-staged": {
-    "./src/*.{ts}": [
+    "./**/*.{ts}": [
       "yarn eslint"
     ]
   },
