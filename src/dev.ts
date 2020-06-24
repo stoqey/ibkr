@@ -1,5 +1,5 @@
 import 'mocha';
-import {expect} from 'chai';
+import { expect } from 'chai';
 import ibkr from '.';
 
 const main = async () => {
