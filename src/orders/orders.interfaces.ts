@@ -1,10 +1,10 @@
-import { ContractObject } from "../contracts";
+import {ContractObject} from '../contracts';
 
 export type action = 'BUY' | 'SELL';
 
 // https://interactivebrokers.github.io/tws-api/interfaceIBApi_1_1EWrapper.html#a17f2a02d6449710b6394d0266a353313
 export type OrderStatusType =
-    'PendingSubmit' // indicates that you have transmitted the order, but have not yet received confirmation that it has been accepted by the order destination.
+    | 'PendingSubmit' // indicates that you have transmitted the order, but have not yet received confirmation that it has been accepted by the order destination.
     | 'PendingCancel' // PendingCancel - indicates that you have sent a request to cancel the order but have not yet received cancel confirmation from the order destination. At this point, your order is not confirmed canceled. It is not guaranteed that the cancellation will be successful.
     | 'PreSubmitted' //
     | 'Submitted' //
@@ -90,13 +90,12 @@ export interface ORDER {
 }
 
 export interface OrderWithContract extends ORDER, ContractObject {
-    orderId: number,
-    orderState: OrderState,
-};
-
+    orderId: number;
+    orderState: OrderState;
+}
 
 export interface OrderStatus {
-    status: OrderStatusType
+    status: OrderStatusType;
     filled: number;
     remaining: number;
     avgFillPrice: number;
@@ -119,17 +118,16 @@ export interface OrderState {
     warningText: string;
 }
 
-
 // ORDER TRADE
 export type OrderAction = 'BUY' | 'SELL';
 
 export type OrderType =
-    'limit' // ib.order.limit('SELL', 1, 9999)
+    | 'limit' // ib.order.limit('SELL', 1, 9999)
     | 'market' // .order.market(action, quantity, transmitOrder, goodAfterTime, goodTillDate)
     | 'marketClose' // .order.marketClose(action, quantity, price, transmitOrder)
     | 'stop' // .order.stop(action, quantity, price, transmitOrder, parentId, tif)
     | 'stopLimit' // .order.stopLimit(action, quantity, limitPrice, stopPrice, transmitOrder, parentId, tif)
-    | 'trailingStop' // .order.trailingStop(action, quantity, auxPrice, tif, transmitOrder, parentId)
+    | 'trailingStop'; // .order.trailingStop(action, quantity, auxPrice, tif, transmitOrder, parentId)
 
 export interface OrderStock {
     symbol: string;
@@ -148,9 +146,8 @@ export interface OrderStock {
         entryPrice: number;
         exitTime: Date;
         exitPrice: number;
-    },
+    };
 }
-
 
 // CREATE Sale
 export interface CreateSale {

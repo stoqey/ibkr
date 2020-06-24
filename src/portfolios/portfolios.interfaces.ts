@@ -1,4 +1,4 @@
-import { ContractObject } from '../contracts/contracts.interfaces';
+import {ContractObject} from '../contracts/contracts.interfaces';
 
 /**
  * A.K.A Contract with it's position
@@ -11,4 +11,4 @@ export interface PortFolioUpdate extends ContractObject {
     unrealizedPNL?: number; // 365.37,
     realizedPNL?: number; // 4279.43,
     accountName?: number; // "DU1731307"
-};
+}

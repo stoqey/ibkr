@@ -1,22 +1,27 @@
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import compact from 'lodash/compact';
-import { intervalCollection } from '@stoqey/timeout-manager';
-import { ORDER, OrderState, CreateSale, OrderWithContract, OrderStatus, OrderStatusType } from './orders.interfaces';
+import {intervalCollection} from '@stoqey/timeout-manager';
+import {
+    ORDER,
+    OrderState,
+    CreateSale,
+    OrderWithContract,
+    OrderStatus,
+    OrderStatusType,
+    OrderStock,
+} from './orders.interfaces';
 
-import { publishDataToTopic, IbkrEvents, IBKREVENTS } from '../events';
+import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
-import { OrderStock } from './orders.interfaces';
 
-import { Portfolios } from '../portfolios';
-import { log, verbose } from '../log';
+import {Portfolios} from '../portfolios';
+import {log, verbose} from '../log';
 
 const ibkrEvents = IbkrEvents.Instance;
 
-
 // Place Order + Cancel Order
 // Get Filled open orders
-
 
 interface SymbolTickerOrder {
     tickerId: number;
@@ -27,7 +32,6 @@ interface SymbolTickerOrder {
 }
 
 export class Orders {
-
     ib: IB = null;
 
     // StockOrders
@@ -40,17 +44,16 @@ export class Orders {
      */
     stockOrders: OrderStock[] = [];
 
-    timeoutRetries: { [x: string]: string[] } = {}
+    timeoutRetries: {[x: string]: string[]} = {};
 
     /**
-     * A ledger of orders that are being executed, 
+     * A ledger of orders that are being executed,
      * This is to avoid duplicate orders
-     * @unique 
+     * @unique
      * new order overrides old one
      * only filled, canceled, error orders can be overridden
      */
-    symbolsTickerOrder: { [x: string]: SymbolTickerOrder } = {}
-
+    symbolsTickerOrder: {[x: string]: SymbolTickerOrder} = {};
 
     /**
      * Redundant orderIdNext recorded
@@ -58,12 +61,12 @@ export class Orders {
     orderIdNext: number = null;
 
     // OPEN ORDERS
-    public openOrders: { [x: string]: OrderWithContract } = {};
-    public receivedOrders: boolean = false; // stopper 
+    public openOrders: {[x: string]: OrderWithContract} = {};
+    public receivedOrders = false; // stopper
 
     private static _instance: Orders;
 
-    public static get Instance() {
+    public static get Instance(): Orders {
         return this._instance || (this._instance = new this());
     }
 
@@ -71,7 +74,7 @@ export class Orders {
         const self = this;
 
         // only when connected createSale
-        ibkrEvents.on(IBKREVENTS.CONNECTED, async (sale: CreateSale) => {
+        ibkrEvents.on(IBKREVENTS.CONNECTED, async () => {
             self.init();
         });
 
@@ -82,52 +85,72 @@ export class Orders {
      * init
      */
     public init = async (): Promise<void> => {
-        let self = this;
+        const self = this;
 
         if (!self.ib) {
             const ib = IBKRConnection.Instance.getIBKR();
             self.ib = ib;
 
-
             ib.on('openOrderEnd', () => {
                 // Initialise OrderTrader
                 // OrderTrade.Instance.init();
 
-                const openOrders = Object.keys(self.openOrders).map(key => self.openOrders[key]);
+                const openOrders = Object.keys(self.openOrders).map((key) => self.openOrders[key]);
 
                 publishDataToTopic({
                     topic: IBKREVENTS.OPEN_ORDERS,
                     data: openOrders,
                 });
+            });
 
-            })
-
-            ib.on('orderStatus', (id, status, filled, remaining, avgFillPrice, permId,
-                parentId, lastFillPrice, clientId, whyHeld) => {
-
-                const currentOrder = self.openOrders[id];
-
-                const orderStatus: OrderStatus = {
-                    status, filled, remaining, avgFillPrice, permId,
-                    parentId, lastFillPrice, clientId, whyHeld
-                }
-
-                publishDataToTopic({
-                    topic: IBKREVENTS.ORDER_STATUS, //push to topic below,
-                    data: {
-                        order: currentOrder,
-                        orderStatus
-                    }
-                });
-
-                verbose(`Orders > orderStatus ${currentOrder && currentOrder.symbol}`, JSON.stringify({
+            ib.on(
+                'orderStatus',
+                (
                     id,
                     status,
                     filled,
                     remaining,
-                    symbol: currentOrder && currentOrder.symbol
-                }))
-            });
+                    avgFillPrice,
+                    permId,
+                    parentId,
+                    lastFillPrice,
+                    clientId,
+                    whyHeld
+                ) => {
+                    const currentOrder = self.openOrders[id];
+
+                    const orderStatus: OrderStatus = {
+                        status,
+                        filled,
+                        remaining,
+                        avgFillPrice,
+                        permId,
+                        parentId,
+                        lastFillPrice,
+                        clientId,
+                        whyHeld,
+                    };
+
+                    publishDataToTopic({
+                        topic: IBKREVENTS.ORDER_STATUS, //push to topic below,
+                        data: {
+                            order: currentOrder,
+                            orderStatus,
+                        },
+                    });
+
+                    verbose(
+                        `Orders > orderStatus ${currentOrder && currentOrder.symbol}`,
+                        JSON.stringify({
+                            id,
+                            status,
+                            filled,
+                            remaining,
+                            symbol: currentOrder && currentOrder.symbol,
+                        })
+                    );
+                }
+            );
 
             ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
                 // 1. Update OpenOrders
@@ -135,12 +158,12 @@ export class Orders {
                 // -----------------------------------------------------------------------------------
                 self.receivedOrders = true;
 
-                let openOrders = self.openOrders;
+                const openOrders = self.openOrders;
 
                 self.openOrders = {
                     ...openOrders,
                     [orderId]: {
-                        ...(openOrders && openOrders[orderId] || null),
+                        ...((openOrders && openOrders[orderId]) || null),
 
                         // OrderId + orderState
                         orderId,
@@ -149,38 +172,50 @@ export class Orders {
                         // Add order
                         ...order,
                         // Add contract
-                        ...contract
-                    }
+                        ...contract,
+                    },
                 };
                 //  Delete order from openOrders list
-                if (orderState.status === "Filled") {
-                    log(`Filled -----> DELETE FROM OPEN ORDERS -------> symbol=${contract && contract.symbol}`);
+                if (orderState.status === 'Filled') {
+                    log(
+                        `Filled -----> DELETE FROM OPEN ORDERS -------> symbol=${
+                            contract && contract.symbol
+                        }`
+                    );
                     delete self.openOrders[orderId];
                 }
 
                 //  Delete order from openOrders list
-                if (["PendingCancel", "Cancelled", "ApiCancelled"].includes(orderState.status)) {
-                    log(`${orderState.status} -----> DELETE FROM OPEN ORDERS -------> ${contract && contract.symbol}`);
+                if (['PendingCancel', 'Cancelled', 'ApiCancelled'].includes(orderState.status)) {
+                    log(
+                        `${orderState.status} -----> DELETE FROM OPEN ORDERS -------> ${
+                            contract && contract.symbol
+                        }`
+                    );
                     delete self.openOrders[orderId];
                 }
 
-                const openOrdersArr = Object.keys(self.openOrders).map(key => self.openOrders[key]);
+                const openOrdersArr = Object.keys(self.openOrders).map(
+                    (key) => self.openOrders[key]
+                );
                 log(`OPEN ORDERS ${openOrdersArr && openOrdersArr.length}`);
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
                 // 2. Update OrderStocks
                 // Orders requests to send to transmit
                 // Using ticker Ids
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                const allTickerOrder: SymbolTickerOrder[] = Object.keys(self.symbolsTickerOrder).map(key => self.symbolsTickerOrder[key]);
+                const allTickerOrder: SymbolTickerOrder[] = Object.keys(
+                    self.symbolsTickerOrder
+                ).map((key) => self.symbolsTickerOrder[key]);
 
-                const thisOrderTicker = allTickerOrder.find(tickerOrder => tickerOrder.tickerId === orderId);
+                const thisOrderTicker = allTickerOrder.find(
+                    (tickerOrder) => tickerOrder.tickerId === orderId
+                );
 
                 // Add permId to orderTickObject
                 if (!isEmpty(thisOrderTicker)) {
-
                     // update this symbolTickerOrder
                     self.symbolsTickerOrder[thisOrderTicker.symbol] = {
                         ...(self.symbolsTickerOrder[thisOrderTicker.symbol] || null),
@@ -192,25 +227,24 @@ export class Orders {
                     const updatedSymbolTicker = self.symbolsTickerOrder[thisOrderTicker.symbol];
 
                     // create sale if order is filled
-                    if (orderState.status === "Filled") {
+                    if (orderState.status === 'Filled') {
                         // Order is filled we can record it
                         // Check if we can create new trade
                         // on if stockOrderRequest is present
                         // that.symbolsTickerOrder[thisOrderTicker.symbol]
                         if (!isEmpty(updatedSymbolTicker.stockOrderRequest)) {
-
-                            const { stockOrderRequest } = updatedSymbolTicker;
-                            const { exitTrade, exitParams, symbol, capital } = stockOrderRequest;
+                            const {stockOrderRequest} = updatedSymbolTicker;
+                            const {exitTrade, exitParams, symbol, capital} = stockOrderRequest;
 
                             const dataSaleSymbolOrder: OrderWithContract = {
                                 ...order,
                                 ...contract,
                                 orderState,
-                                orderId
-                            }
+                                orderId,
+                            };
 
                             if (exitTrade) {
-                                const { exitPrice, exitTime, entryTime, entryPrice } = exitParams;
+                                const {exitPrice, exitTime, entryTime, entryPrice} = exitParams;
                                 // If this trade is for exiting then record the sale
                                 // create sale now
                                 const newSale: CreateSale = {
@@ -220,74 +254,82 @@ export class Orders {
                                     entryTime,
                                     entryPrice,
                                     symbol,
-                                    profit: entryPrice - exitPrice
+                                    profit: entryPrice - exitPrice,
                                 };
 
-                                log(`AccountOrderStock.openOrder`, `FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
+                                log(
+                                    `AccountOrderStock.openOrder`,
+                                    `FILLED, TO CREATE SALE -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`
+                                );
 
                                 return publishDataToTopic({
                                     topic: IBKREVENTS.ORDER_FILLED,
-                                    data: { sale: newSale, order: dataSaleSymbolOrder }
-                                })
+                                    data: {sale: newSale, order: dataSaleSymbolOrder},
+                                });
                             }
 
-                            log(`AccountOrderStock.openOrder`, `FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`);
+                            log(
+                                `AccountOrderStock.openOrder`,
+                                `FILLED, but no sale created -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`
+                            );
 
                             publishDataToTopic({
                                 topic: IBKREVENTS.ORDER_FILLED,
-                                data: { sale: null, order: dataSaleSymbolOrder }
-                            })
-
+                                data: {sale: null, order: dataSaleSymbolOrder},
+                            });
                         }
                     }
-
-
                 }
-
             });
 
-
             // placeOrder event
-            ibkrEvents.on(IBKREVENTS.PLACE_ORDER, async ({ stockOrder }: { stockOrder: OrderStock }) => {
-                await self.placeOrder(stockOrder);
-            })
+            ibkrEvents.on(
+                IBKREVENTS.PLACE_ORDER,
+                async ({stockOrder}: {stockOrder: OrderStock}) => {
+                    await self.placeOrder(stockOrder);
+                }
+            );
         }
-
-
-    }
+    };
 
     public getOpenOrders = async (timeout?: number): Promise<OrderWithContract[]> => {
-
         const self = this;
 
         let openedOrders = {};
 
-        return new Promise((resolve, reject) => {
-
+        return new Promise((resolve) => {
             let done = false;
 
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 if (!done) {
-                    self.ib.off('openOrder', handleOpenOrders)
+                    self.ib.off('openOrder', handleOpenOrders);
                     done = true;
                     resolve(ordersData);
                 }
-            }
+            };
 
             self.ib.once('openOrderEnd', () => {
-                const openOrders = Object.keys(openedOrders).map(key => openedOrders[key]);
-                handleOpenOrders(openOrders)
-            })
+                const openOrders = Object.keys(openedOrders).map((key) => openedOrders[key]);
+                handleOpenOrders(openOrders);
+            });
 
-            self.ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
-
+            self.ib.on('openOrder', function (
+                orderId,
+                contract,
+                order: ORDER,
+                orderState: OrderState
+            ) {
                 // Only check pending orders
-                if (['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(orderState && orderState.status)) {
+                if (
+                    ['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(
+                        orderState && orderState.status
+                    )
+                ) {
                     openedOrders = {
                         ...openedOrders,
                         [orderId]: {
-                            ...(openedOrders && openedOrders[orderId] || null),
+                            ...((openedOrders && openedOrders[orderId]) || null),
 
                             // OrderId + orderState
                             orderId,
@@ -296,23 +338,21 @@ export class Orders {
                             // Add order
                             ...order,
                             // Add contract
-                            ...contract
-                        }
+                            ...contract,
+                        },
                     };
                 }
-
-
             });
 
             self.ib.reqAllOpenOrders(); // refresh orders
 
             return setTimeout(handleOpenOrders, timeout || 6000);
-        })
-    }
+        });
+    };
 
     public isActive = (): boolean => {
         return this.receivedOrders;
-    }
+    };
 
     /**
      * Place Order
@@ -321,16 +361,17 @@ export class Orders {
      * @options ? {}
      * @when Until IBKR releases a new OrderId, then order is placed and process can pick other orders
      */
-    public placeOrder = async (stockOrder: OrderStock, options?: { retryCounts?: number, retryTime?: number }): Promise<void | any> => {
-
-        let self = this;
+    public placeOrder = async (
+        stockOrder: OrderStock,
+        options?: {retryCounts?: number; retryTime?: number}
+    ): Promise<void | any> => {
+        const self = this;
         const ib = self.ib;
 
-        const { exitTrade, symbol } = stockOrder;
+        const {exitTrade, symbol} = stockOrder;
 
-        const numberOfRetries = options && options.retryCounts || 3;
-        const retryDelayTime = options && options.retryTime || 2000;
-
+        const numberOfRetries = (options && options.retryCounts) || 3;
+        const retryDelayTime = (options && options.retryTime) || 2000;
 
         const success = (): void => {
             ib.off('nextValidId', handleOrderIdNext);
@@ -338,6 +379,7 @@ export class Orders {
             return;
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const erroredOut = (error?: Error): void => {
             ib.off('nextValidId', handleOrderIdNext);
             self.processing = false; // reset processing
@@ -349,68 +391,96 @@ export class Orders {
             const orderSize = stockOrder.size;
 
             if (Number.isNaN(orderSize)) {
-                log('placingOrderNow.checkPending', `*********************** orderSize is NaN size=${orderSize} action=${stockOrder.action} symbol=${symbol}`);
-                return erroredOut()
+                log(
+                    'placingOrderNow.checkPending',
+                    `*********************** orderSize is NaN size=${orderSize} action=${stockOrder.action} symbol=${symbol}`
+                );
+                return erroredOut();
             }
 
             // 0. Pending orders
             // Check active tickerSymbols
             const pendingOrders = self.symbolsTickerOrder[symbol];
             const pendingOrderStatus = pendingOrders && pendingOrders.orderStatus;
-            const isPending = ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(pendingOrderStatus);
+            const isPending = ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(
+                pendingOrderStatus
+            );
 
             if (isPending) {
-                log('placingOrderNow', `*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} pendingOrderStatus=${pendingOrderStatus || "NONE"} isPending=${isPending}`);
-                return erroredOut()
+                log(
+                    'placingOrderNow',
+                    `*********************** Order is already being processed for ${
+                        stockOrder.action
+                    } symbol=${symbol} pendingOrderStatus=${
+                        pendingOrderStatus || 'NONE'
+                    } isPending=${isPending}`
+                );
+                return erroredOut();
             }
-
 
             // 1. Check existing open orders
             const checkExistingOrders = await self.getOpenOrders();
 
-            log('placingOrderNow', `Existing orders in queue -> ${checkExistingOrders.map(i => i.symbol)}`)
+            log(
+                'placingOrderNow',
+                `Existing orders in queue -> ${checkExistingOrders.map((i) => i.symbol)}`
+            );
 
             if (!isEmpty(checkExistingOrders)) {
                 // check if we have the same order from here
                 const findMatchingAction = checkExistingOrders.filter(
-                    exi =>
-                        exi.action === stockOrder.action &&
-                        exi.symbol === stockOrder.symbol
+                    (exi) => exi.action === stockOrder.action && exi.symbol === stockOrder.symbol
                 );
 
                 if (!isEmpty(findMatchingAction)) {
-                    log('placingOrderNow', `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`)
-                    return erroredOut()
+                    log(
+                        'placingOrderNow',
+                        `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`
+                    );
+                    return erroredOut();
                 }
             }
-
 
             // 2. Check existing portfolios
             let checkExistingPositions = await Portfolios.Instance.getPortfolios();
             checkExistingPositions = !isEmpty(checkExistingPositions) ? checkExistingPositions : [];
 
-            verbose('placingOrderNow', `Existing portfolios -> ${JSON.stringify(checkExistingPositions && checkExistingPositions.map(i => i.symbol))}`);
+            verbose(
+                'placingOrderNow',
+                `Existing portfolios -> ${JSON.stringify(
+                    checkExistingPositions && checkExistingPositions.map((i) => i.symbol)
+                )}`
+            );
 
-            const foundExistingPortfolios = !isEmpty(checkExistingPositions) ? checkExistingPositions.filter(
-                exi => exi.symbol === stockOrder.symbol) : [];
+            const foundExistingPortfolios = !isEmpty(checkExistingPositions)
+                ? checkExistingPositions.filter((exi) => exi.symbol === stockOrder.symbol)
+                : [];
 
-            verbose('placingOrderNow', `foundExistingPortfolios -> ${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`);
+            verbose(
+                'placingOrderNow',
+                `foundExistingPortfolios -> ${JSON.stringify(
+                    foundExistingPortfolios.map((i) => i.symbol)
+                )}`
+            );
 
             if (!isEmpty(foundExistingPortfolios)) {
-
                 // Only if this is not exit
                 if (!exitTrade) {
-                    log('placingOrderNow', `*********************** Portfolio already exist and has position for ${stockOrder.action}, order=${JSON.stringify(foundExistingPortfolios.map(i => i.symbol))}`)
-                    return erroredOut()
+                    log(
+                        'placingOrderNow',
+                        `*********************** Portfolio already exist and has position for ${
+                            stockOrder.action
+                        }, order=${JSON.stringify(foundExistingPortfolios.map((i) => i.symbol))}`
+                    );
+                    return erroredOut();
                 }
                 // Else existing trades are allowed
             }
 
             return true;
-        }
+        };
 
         const handleOrderIdNext = (orderIdNext: number) => {
-
             const tickerToUse = ++orderIdNext;
 
             const currentOrders = self.stockOrders;
@@ -423,14 +493,14 @@ export class Orders {
             // get order by it's tickerId
             const stockOrder = self.stockOrders.shift();
 
-
             if (isEmpty(stockOrder)) {
                 log('handleOrderIdNext', `First Stock Orders Item is empty`);
                 return erroredOut();
             }
 
-            const { symbol, size } = stockOrder;
+            const {symbol, size} = stockOrder;
 
+            // eslint-disable-next-line @typescript-eslint/ban-types
             const orderCommand: Function = ib.order[stockOrder.type];
 
             const args = stockOrder.parameters;
@@ -445,30 +515,39 @@ export class Orders {
                 ...(self.symbolsTickerOrder[symbol] || null),
                 tickerId: tickerToUse,
                 symbol,
-                orderStatus: "PendingSubmit",
-                stockOrderRequest: stockOrder // for reference when closing trade,
+                orderStatus: 'PendingSubmit',
+                stockOrderRequest: stockOrder, // for reference when closing trade,
             };
 
             // Place order
-            ib.placeOrder(tickerToUse, ib.contract.stock(stockOrder.symbol), orderCommand(stockOrder.action, ...args));
+            ib.placeOrder(
+                tickerToUse,
+                ib.contract.stock(stockOrder.symbol),
+                orderCommand(stockOrder.action, ...args)
+            );
 
             // self.orderIdNext = tickerToUse;
             self.tickerId = tickerToUse;
             ib.reqAllOpenOrders(); // refresh orders
 
-            log('handleOrderIdNext', `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} symbol=${symbol} size=${size}`);
+            log(
+                'handleOrderIdNext',
+                `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} symbol=${symbol} size=${size}`
+            );
             return success();
-        }
-
+        };
 
         function placingOrderNow(): void {
             if (isEmpty(stockOrder.symbol)) {
-                return erroredOut(new Error("Please enter order"))
+                return erroredOut(new Error('Please enter order'));
             }
 
             self.stockOrders = [...self.stockOrders, stockOrder];
             self.ib.reqIds(++self.orderIdNext);
-            verbose('placingOrderNow', `Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`)
+            verbose(
+                'placingOrderNow',
+                `Order > placeOrder -> tickerId=${self.tickerId} symbol=${stockOrder.symbol}`
+            );
         }
 
         async function run(): Promise<void> {
@@ -478,26 +557,27 @@ export class Orders {
                 // can proceed
                 // 1. Processing, or recursive
                 if (self.processing) {
-                    const handleRecursive = setInterval(
-                        () => {
-                            console.log('retry in --------------------->', symbol)
-                            self.placeOrder(stockOrder)
-                        }
-                        , 2000);
+                    const handleRecursive = setInterval(() => {
+                        console.log('retry in --------------------->', symbol);
+                        self.placeOrder(stockOrder);
+                    }, 2000);
 
                     const handlerId = intervalCollection.get(handleRecursive);
 
                     // save the symbol with it's timeout
-                    self.timeoutRetries[stockOrder.symbol] = compact([...(self.timeoutRetries[stockOrder.symbol] || []), handlerId && handlerId.uuid]);
+                    self.timeoutRetries[stockOrder.symbol] = compact([
+                        ...(self.timeoutRetries[stockOrder.symbol] || []),
+                        handlerId && handlerId.uuid,
+                    ]);
 
-
-
-                    setTimeout(() => { intervalCollection.remove(handleRecursive); }, numberOfRetries * retryDelayTime);
+                    setTimeout(() => {
+                        intervalCollection.remove(handleRecursive);
+                    }, numberOfRetries * retryDelayTime);
                     return;
                 }
 
                 // Clear all by this symbol
-                (self.timeoutRetries[stockOrder.symbol] || []).forEach(uuid => {
+                (self.timeoutRetries[stockOrder.symbol] || []).forEach((uuid) => {
                     intervalCollection.removeByUuid(uuid);
                 });
 
@@ -510,8 +590,7 @@ export class Orders {
         }
 
         run();
-
-    }
+    };
 }
 
 export default Orders;

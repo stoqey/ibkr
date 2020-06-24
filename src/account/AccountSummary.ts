@@ -1,24 +1,24 @@
 import includes from 'lodash/includes';
-import { getRadomReqId } from '../_utils/text.utils';
-import { publishDataToTopic, IBKREVENTS, IbkrEvents } from '../events';
-import { IBKRAccountSummary } from './account-summary.interfaces'
-import { log } from '../log';
-import IBKRConnection from '../connection/IBKRConnection';
-import { LIVE_ACCOUNT_IDS } from '../config';
 import isEmpty from 'lodash/isEmpty';
-import { Portfolios } from '../portfolios';
+import {LIVE_ACCOUNT_IDS} from '../config';
+import IBKRConnection from '../connection/IBKRConnection';
+import {IBKREVENTS, IbkrEvents, publishDataToTopic} from '../events';
+import {log} from '../log';
+import {Portfolios} from '../portfolios';
+import {getRadomReqId} from '../_utils/text.utils';
+import {IBKRAccountSummary} from './account-summary.interfaces';
 
 const appEvents = IbkrEvents.Instance;
 
 export class AccountSummary {
     ib: any;
-    accountReady: boolean = false;
+    accountReady = false;
     tickerId = getRadomReqId();
     AccountId;
     accountSummary: IBKRAccountSummary = {} as any;
     private static _instance: AccountSummary;
 
-    public static get Instance() {
+    public static get Instance(): AccountSummary {
         return this._instance || (this._instance = new this());
     }
 
@@ -26,9 +26,8 @@ export class AccountSummary {
         this.ib = IBKRConnection.Instance.getIBKR();
     }
 
-    public init() {
+    public init(): void {
         const self = this;
-
 
         const ib = IBKRConnection.Instance.getIBKR();
 
@@ -44,33 +43,29 @@ export class AccountSummary {
             // log('accountSummaryEnd', { account, tag, value, });
         });
 
-        // Return values from here 
+        // Return values from here
         ib.once('accountSummaryEnd', () => {
-            const { AccountId = 'unknown', tickerId, accountReady, accountSummary } = self;
+            const {AccountId = 'unknown', tickerId, accountReady, accountSummary} = self;
 
-            log('accountSummaryEnd', { AccountId, tickerId, accountReady });
-
+            log('accountSummaryEnd', {AccountId, tickerId, accountReady});
 
             ib.cancelAccountSummary(tickerId);
 
-
             publishDataToTopic({
                 topic: IBKREVENTS.ON_ACCOUNT_SUMMARY,
-                data: accountSummary
+                data: accountSummary,
             });
 
             self.accountReady = true;
-
         });
 
         self.reqAccountSummary();
-
     }
 
     /**
      * reqAccountSummary
      */
-    public reqAccountSummary = () => {
+    public reqAccountSummary = (): void => {
         // Request Account summary from here
         this.ib.reqAccountSummary(this.tickerId, 'All', [
             'AccountType',
@@ -101,32 +96,31 @@ export class AccountSummary {
             'LookAheadExcessLiquidity',
             'HighestSeverity',
             'DayTradesRemaining',
-            'Leverage'
+            'Leverage',
         ]);
-    }
+    };
 
     /**
- * initialiseDep
- */
-    public initialiseDep() {
-        Portfolios.Instance/*  */;
-    }/*  */
+     * initialiseDep
+     */
+    public initialiseDep(): void {
+        Portfolios.Instance /*  */;
+    } /*  */
 
     /**
      * isLiveAccount
      * Check whether this is the live account
      */
     public isLiveAccount(): boolean {
-        return includes(LIVE_ACCOUNT_IDS, this.AccountId)
+        return includes(LIVE_ACCOUNT_IDS, this.AccountId);
     }
 
     /**
      * getAccountSummary
      */
     public getAccountSummary(): Promise<IBKRAccountSummary> {
-        const { accountSummary, reqAccountSummary } = this;
-        return new Promise((resolve, reject) => {
-
+        const {accountSummary, reqAccountSummary} = this;
+        return new Promise((resolve) => {
             if (!isEmpty(accountSummary)) {
                 return resolve(accountSummary);
             }
@@ -135,12 +129,11 @@ export class AccountSummary {
             const handleAccountSummary = (accountSummaryData) => {
                 appEvents.off(IBKREVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
                 resolve(accountSummaryData);
-            }
+            };
             appEvents.on(IBKREVENTS.ON_ACCOUNT_SUMMARY, handleAccountSummary);
 
             reqAccountSummary();
-        })
-
+        });
     }
 }
 

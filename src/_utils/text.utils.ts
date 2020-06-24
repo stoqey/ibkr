@@ -1,5 +1,5 @@
-import random = require("lodash/random");
+import random = require('lodash/random');
 
-export const getRadomReqId = () => {
+export const getRadomReqId = (): number => {
     return random(100, 100000);
-}
+};

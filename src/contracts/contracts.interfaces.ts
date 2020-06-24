@@ -13,7 +13,6 @@ export interface ContractObject {
     comboLegsDescrip: string;
 }
 
-
 interface ContractsSummary extends ContractObject {
     primaryExch: string;
 }
@@ -37,4 +36,3 @@ export interface ContractDetails {
     evRule: string;
     evMultiplier?: any;
 }
-
