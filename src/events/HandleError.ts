@@ -14,7 +14,8 @@ import {verbose} from '../log';
 export function handleEventfulError(
     reqId: number,
     targetErrors: string[],
-    catchError: () => any
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    catchError: Function
 ): () => void {
     if (isEmpty(targetErrors)) {
         return () => {};

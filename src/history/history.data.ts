@@ -231,7 +231,7 @@ export class HistoricalData {
                 contract = ib.contract.stock(symbol, 'SMART', 'USD');
             }
 
-            const endhistoricalData = (tickerId) => {
+            const endhistoricalData = (tickerId): void => {
                 if (!done) {
                     done = true;
 
