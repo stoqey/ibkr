@@ -1,12 +1,12 @@
 import includes from 'lodash/includes';
-import {getRadomReqId} from '../_utils/text.utils';
-import {publishDataToTopic, IBKREVENTS, IbkrEvents} from '../events';
-import {IBKRAccountSummary} from './account-summary.interfaces';
-import {log} from '../log';
-import IBKRConnection from '../connection/IBKRConnection';
-import {LIVE_ACCOUNT_IDS} from '../config';
 import isEmpty from 'lodash/isEmpty';
+import {LIVE_ACCOUNT_IDS} from '../config';
+import IBKRConnection from '../connection/IBKRConnection';
+import {IBKREVENTS, IbkrEvents, publishDataToTopic} from '../events';
+import {log} from '../log';
 import {Portfolios} from '../portfolios';
+import {getRadomReqId} from '../_utils/text.utils';
+import {IBKRAccountSummary} from './account-summary.interfaces';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -18,7 +18,7 @@ export class AccountSummary {
     accountSummary: IBKRAccountSummary = {} as any;
     private static _instance: AccountSummary;
 
-    public static get Instance() {
+    public static get Instance(): AccountSummary {
         return this._instance || (this._instance = new this());
     }
 
@@ -26,7 +26,8 @@ export class AccountSummary {
         this.ib = IBKRConnection.Instance.getIBKR();
     }
 
-    public init() {
+    public init(): void {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
 
         const ib = IBKRConnection.Instance.getIBKR();
