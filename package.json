@@ -23,8 +23,7 @@
     "scanner": "mocha src/scanner/*test.ts --exit",
     "unit-test": "mocha src/**/*test.ts --exit",
     "test": "mocha src/*test.ts --exit",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test",
+    "prepublishOnly": "npm run build",
     "eslint": "eslint ./src --fix --ext=ts"
   },
   "lint-staged": {
