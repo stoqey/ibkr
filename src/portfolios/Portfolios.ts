@@ -152,7 +152,16 @@ export class Portfolios {
 
                 thisPortfolio.symbol = symbol; // override symbol name
 
-                portfolios[symbol] = thisPortfolio;
+                if (portfolios[symbol]) {
+                    if (Array.isArray(portfolios[symbol])) {
+                        portfolios[symbol] = [...portfolios[symbol], thisPortfolio];
+                    } else {
+                        portfolios[symbol] = [portfolios[symbol], thisPortfolio];
+                    }
+
+                } else {
+                    portfolios[symbol] = thisPortfolio;
+                }
             };
 
             const handlePositionEnd = (portfoliosData: PortFolioUpdate[]) => {
