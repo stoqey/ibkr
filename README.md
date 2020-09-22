@@ -174,11 +174,8 @@ const placedOrder = await orderTrade.placeOrder(myStockOrder);
 const stockOrderBuyOut: OrderStock = {
     symbol: symbol,
     action: "SELL",
-    type: "market",
+    type: "limit",
     parameters: ["1", "9999"], // 'SELL', 1, 9999,
-    size: 3,
-    capital: 1000,
-    exitTrade: false,
 }
 ```
 

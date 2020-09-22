@@ -134,9 +134,9 @@ export interface OrderStock {
     action: OrderAction;
     type: OrderType;
     parameters: any[]; // 'SELL', 1, 9999,
-    size?: number;
-    capital?: number;
-    exitTrade: boolean;
+    size?: number; // optional
+    capital?: number; // optional
+    exitTrade?: boolean; // optional
     exitParams?: {
         /**
          * When exiting a trade
