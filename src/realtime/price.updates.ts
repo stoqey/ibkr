@@ -4,6 +4,7 @@ import {IBKRConnection} from '../connection';
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import {getRadomReqId} from '../_utils/text.utils';
 import {log} from '../log';
+import {ContractObject, getContractDetails} from '../contracts';
 
 const ibEvents = IbkrEvents.Instance;
 
@@ -17,7 +18,7 @@ interface SymbolWithTicker {
     tickType?: TickPrice;
 }
 
-interface ReqPriceUpdates {
+interface ReqPriceUpdates extends ContractObject {
     symbol: string;
     tickType?: TickPrice;
 }
@@ -109,8 +110,18 @@ export class PriceUpdates {
         );
     }
 
-    private subscribe({symbol, tickType = 'ASK'}: ReqPriceUpdates) {
+    private async subscribe(args: ReqPriceUpdates) {
+        const {symbol: symbolOg, tickType = 'ASK'} = args;
         const that = this;
+
+        let symbol = symbolOg; // default
+        let contract = that.ib.contract.stock(symbol); // default to stocks
+
+        const includesForexOrOpt = ['CASH', 'OPT'].includes(args?.secType || '');
+        if (includesForexOrOpt) {
+            contract = await getContractDetails(args);
+            symbol = contract && contract.localSymbol;
+        }
 
         if (!that.ib) {
             that.init();
@@ -138,16 +149,11 @@ export class PriceUpdates {
             symbol,
             tickerId: that.subscribers[symbol],
             tickType,
+            ...contract,
         });
 
         setImmediate(() => {
-            that.ib.reqMktData(
-                that.subscribers[symbol],
-                that.ib.contract.stock(symbol),
-                '',
-                false,
-                false
-            );
+            that.ib.reqMktData(that.subscribers[symbol], contract, '', false, false);
             return log(
                 'PriceUpdates.subscribe',
                 `${symbol.toLocaleUpperCase()} is successfully subscribed`
