@@ -116,15 +116,26 @@ export class PriceUpdates {
     }
 
     private async subscribe(args: ISubScribe) {
+        const ib = IBKRConnection.Instance.getIBKR();
         const opt = args && args.opt;
-        const contractArg = args && args.contract;
+        let contractArg = args && args.contract;
+
+        if (isEmpty(contractArg)) {
+            return verbose('contract is not defined', contractArg);
+        }
+
+        // If string, create stock contract as default
+        if (typeof contractArg === 'string') {
+            contractArg = ib.contract.stock(contractArg);
+        }
 
         const tickType = (args && args.tickType) || (opt && opt.tickType) || 'ASK';
         const that = this;
 
         let symbol = (contractArg && contractArg.symbol) || contractArg;
 
-        console.log('contract before getting Detaiuls', contractArg);
+        log('contract before getting details', contractArg);
+
         const contractObj: any = await getContractDetails(contractArg);
 
         let contract: any = contractObj;

@@ -18,36 +18,35 @@ describe('Realtime', () => {
 
     PriceUpdates.Instance;
 
-    // it('should get price updates for AAPL', (done) => {
+    it('should get price updates for AAPL', (done) => {
 
-    //     const symbol = 'AAPL';
+        const symbol = 'AAPL';
 
-    //     const getMarketData = () => {
-    //         const handleData = (data) => {
-    //             // ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
-    //             // done();
-    //         };
-    //         ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, handleData);
+        const getMarketData = () => {
+            const handleData = (data) => {
+                // ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
+                // done();
+            };
+            ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, handleData);
 
-    //         ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { contract: symbol, opt: { tickType: 'ASK'} });
+            ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { contract: symbol, opt: { tickType: 'ASK'} });
 
-    //         return setTimeout(() => {
-    //             ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
-    //             done();
-    //         }, 5000);
-    //     };
+            return setTimeout(() => {
+                ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
+                done();
+            }, 5000);
+        };
 
-    //     getMarketData();
-    // });
+        getMarketData();
+    });
 
-    it('should get price updates for forex', (done) => {
+    it('should get price updates for forex updates ASK', (done) => {
 
-        const ib = IBKRConnection.Instance.getIBKR();
-
-        // @ts-ignore
-        const contract = ib.contract.forex('GBP.USD') as any
-        
-        // const ib = IBKRConnection.Instance.getIBKR();
+        const contract = {
+            "symbol":"GBP",
+            "secType":"CASH",
+            "currency":"USD",
+        };
 
         const getMarketData = () => {
             const handleData = (data) => {
@@ -57,6 +56,32 @@ describe('Realtime', () => {
             ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, handleData);
 
             ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, {contract, opt: { tickType: 'ASK' }});
+
+            return setTimeout(() => {
+                ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
+                done();
+            }, 5000);
+        };
+
+        getMarketData();
+    });
+
+    it('should get price updates for forex updates BID', (done) => {
+
+        const contract = {
+            "symbol":"GBP",
+            "secType":"CASH",
+            "currency":"USD",
+        };
+        
+        const getMarketData = () => {
+            const handleData = (data) => {
+                // ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
+                // done();
+            };
+            ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, handleData);
+
+            ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, {contract, opt: { tickType: 'BID' }});
 
             return setTimeout(() => {
                 ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
