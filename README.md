@@ -141,8 +141,7 @@ ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
  
 const contractDetails = await getContractDetails(ib.contract.stock("AAPL"));
 
-//  or 
-
+//  or e.g options
 const contractDetails = await getContractDetails({
     currency: 'USD',
     exchange: 'SMART',
@@ -152,6 +151,15 @@ const contractDetails = await getContractDetails({
     strike: 300,
     symbol: 'AAPL'
 });
+
+// e.g forex
+const contractDetails = await getContractDetails({
+    "symbol":"GBP",
+    "secType":"CASH",
+    "currency":"USD",
+     // "localSymbol":"GBP.USD",
+});
+
 
 // or with just a symbol, defaults to stocks
  const contractDetails = await getContractDetails('AAPL');

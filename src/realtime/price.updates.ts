@@ -3,8 +3,9 @@ import {TickPrice} from './price.interfaces';
 import {IBKRConnection} from '../connection';
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import {getRadomReqId} from '../_utils/text.utils';
-import {log} from '../log';
-import {ContractObject, getContractDetails} from '../contracts';
+import {log, verbose} from '../log';
+import {getContractDetails} from '../contracts';
+import {isArray} from 'lodash';
 
 const ibEvents = IbkrEvents.Instance;
 
@@ -18,10 +19,14 @@ interface SymbolWithTicker {
     tickType?: TickPrice;
 }
 
-interface ReqPriceUpdates extends ContractObject {
-    symbol: string;
+interface ReqPriceUpdates {
     tickType?: TickPrice;
 }
+
+type ISubScribe = Record<any, any> & {
+    contract: any;
+    opt: ReqPriceUpdates;
+};
 
 export class PriceUpdates {
     ib: any;
@@ -41,7 +46,7 @@ export class PriceUpdates {
          * When request to subscribe to market data
          * IBKREVENTS.SUBSCRIBE_PRICE_UPDATES
          */
-        ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, (data: ReqPriceUpdates) => {
+        ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, (data: any) => {
             that.subscribe(data);
         });
     }
@@ -110,16 +115,39 @@ export class PriceUpdates {
         );
     }
 
-    private async subscribe(args: ReqPriceUpdates) {
-        const {symbol: symbolOg, tickType = 'ASK'} = args;
+    private async subscribe(args: ISubScribe) {
+        const ib = IBKRConnection.Instance.getIBKR();
+        const opt = args && args.opt;
+        let contractArg = args && args.contract;
+
+        if (isEmpty(contractArg)) {
+            return verbose('contract is not defined', contractArg);
+        }
+
+        // If string, create stock contract as default
+        if (typeof contractArg === 'string') {
+            contractArg = ib.contract.stock(contractArg);
+        }
+
+        const tickType = (args && args.tickType) || (opt && opt.tickType) || 'ASK';
         const that = this;
 
-        let symbol = symbolOg; // default
-        let contract = that.ib.contract.stock(symbol); // default to stocks
+        let symbol = (contractArg && contractArg.symbol) || contractArg;
 
-        const includesForexOrOpt = ['CASH', 'OPT'].includes(args?.secType || '');
+        log('contract before getting details', contractArg);
+
+        const contractObj: any = await getContractDetails(contractArg);
+
+        let contract: any = contractObj;
+
+        if (!isArray(contractObj)) {
+            contract = contractObj?.summary || contractArg;
+        } else {
+            contract = contractObj[0]?.summary || contractArg;
+        }
+
+        const includesForexOrOpt = ['CASH', 'OPT'].includes(contract?.secType || '');
         if (includesForexOrOpt) {
-            contract = await getContractDetails(args);
             symbol = contract && contract.localSymbol;
         }
 
@@ -135,7 +163,7 @@ export class PriceUpdates {
         // Check if we already have the symbol
         if (this.subscribers[symbol]) {
             //  symbol is already subscribed
-            return log(
+            return verbose(
                 'PriceUpdates.subscribe',
                 `${symbol.toLocaleUpperCase()} is already subscribed`
             );
