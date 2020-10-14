@@ -30,7 +30,10 @@ describe('Realtime', () => {
             ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, handleData);
 
             ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { contract: symbol, opt: { tickType: 'ASK'} });
-            ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { contract: 'TSLA', opt: { tickType: 'ASK'} });
+            setTimeout(() => {
+                ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { contract: 'EVGN', opt: { tickType: 'ASK'} });
+            }, 1000);
+            
 
             return setTimeout(() => {
                 ibkrEvents.off(IBKREVENTS.ON_PRICE_UPDATES, handleData);
