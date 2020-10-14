@@ -135,6 +135,11 @@ ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, (priceUpdates) => {
 //  Request price updates
 ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
 ```
+
+```ts
+// Unsubscribe from price updates
+ibkrEvents.emit(IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES, symbol);
+```
   
 ### Contracts
 ```ts

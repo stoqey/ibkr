@@ -40,6 +40,21 @@ describe('Realtime', () => {
         getMarketData();
     });
 
+    it('should unsubscribe from updates for AAPL', (done) => {
+
+        const symbol = 'AAPL';
+
+        const getMarketData = () => {
+            ibkrEvents.emit(IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES, symbol);
+
+            return setTimeout(() => {
+                done();
+            }, 5000);
+        };
+
+        getMarketData();
+    });
+
     it('should get price updates for forex updates ASK', (done) => {
 
         const contract = {
