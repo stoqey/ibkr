@@ -95,7 +95,7 @@
     "typescript": ">=2.0"
   },
   "dependencies": {
-    "@stoqey/ib": "^0.1.0",
+    "@stoqey/ib": "^0.1.1",
     "@stoqey/timeout-manager": "^0.0.2",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",

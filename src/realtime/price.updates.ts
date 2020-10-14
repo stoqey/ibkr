@@ -1,4 +1,5 @@
 import isEmpty from 'lodash/isEmpty';
+import find from 'lodash/find';
 import {TickPrice} from './price.interfaces';
 import {IBKRConnection} from '../connection';
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
@@ -64,16 +65,22 @@ export class PriceUpdates {
      */
     public init(): void {
         const ib = IBKRConnection.Instance.getIBKR();
-
         this.ib = ib;
+
         const that = this;
 
         ib.on(
             'tickPrice',
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
-                const thisSymbol = that.subscribersWithTicker.find(
-                    (symbol) => symbol.tickerId === tickerId
+                const thisSymbol = find(that.subscribersWithTicker, {tickerId});
+
+                log(
+                    'PriceUpdates.tickPrice',
+                    `tickerId=${tickerId}, price=${price} ${JSON.stringify({
+                        s: thisSymbol.symbol,
+                        ticker: thisSymbol.tickerId,
+                    })}`
                 );
 
                 const currentTickerType = thisSymbol.tickType;
@@ -178,18 +185,19 @@ export class PriceUpdates {
         }
 
         // Assign random number for symbol
-        this.subscribers[symbol] = getRadomReqId();
+        const tickerIdToUse = getRadomReqId();
+        that.subscribers[symbol] = tickerIdToUse;
 
         // Add this symbol to subscribersTicker
-        this.subscribersWithTicker.push({
+        that.subscribersWithTicker.push({
             ...contract,
             symbol,
-            tickerId: that.subscribers[symbol],
+            tickerId: tickerIdToUse,
             tickType,
         });
 
         setImmediate(() => {
-            that.ib.reqMktData(that.subscribers[symbol], contract, '', false, false);
+            that.ib.reqMktData(tickerIdToUse, contract, '', false, false);
             return log(
                 'PriceUpdates.subscribe',
                 `${symbol.toLocaleUpperCase()} is successfully subscribed`
