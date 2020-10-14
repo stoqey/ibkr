@@ -49,6 +49,14 @@ export class PriceUpdates {
         ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, (data: any) => {
             that.subscribe(data);
         });
+
+        /**
+         * When request to unsubscribe to market data
+         * IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES
+         */
+        ibEvents.on(IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES, (data: any) => {
+            that.unsubscribe(data);
+        });
     }
 
     /**
@@ -198,6 +206,28 @@ export class PriceUpdates {
                     log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
                     that.ib.cancelMktData(symbolTicker.tickerId);
                 });
+            }
+            return;
+        }, 1000);
+    }
+
+    /**
+     * unsubscribe
+     */
+    public unsubscribe(symbol: string): void {
+        const that = this;
+
+        if (isEmpty(symbol)) {
+            return;
+        }
+
+        setTimeout(() => {
+            if (!isEmpty(that.subscribersWithTicker)) {
+                const symbolTicker = that.subscribersWithTicker.find((st) => st.symbol === symbol);
+                if (symbolTicker) {
+                    log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
+                    that.ib.cancelMktData(symbolTicker.tickerId);
+                }
             }
             return;
         }, 1000);

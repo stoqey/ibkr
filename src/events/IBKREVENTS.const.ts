@@ -65,6 +65,11 @@ export enum IBKREVENTS {
     SUBSCRIBE_PRICE_UPDATES = 'subscribe_price_updates',
 
     /**
+     * symbol
+     */
+    UNSUBSCRIBE_PRICE_UPDATES = 'unsubscribe_price_updates',
+
+    /**
      * { symbol: string; date: Date; close: number; }
      */
     ON_PRICE_UPDATES = 'subscribe_price_updates',
