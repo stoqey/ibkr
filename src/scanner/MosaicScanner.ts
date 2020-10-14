@@ -39,7 +39,7 @@ export class MosaicScanner {
                 }
             );
 
-            ib.once('scannerDataEnd', handleScannerData);
+            ib.on('scannerDataEnd', handleScannerData);
 
             ib.reqScannerSubscription(randomTicker, {
                 instrument,

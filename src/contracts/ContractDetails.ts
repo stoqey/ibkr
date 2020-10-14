@@ -25,7 +25,7 @@ export const getContractDetails = (
 
         ib.on('contractDetails', handleContract);
 
-        ib.once('contractDetailsEnd', (reqIdX) => {
+        ib.on('contractDetailsEnd', (reqIdX) => {
             if (reqId === reqIdX) {
                 ib.off('contractDetails', handleContract);
                 if (typeof contract === 'string') {

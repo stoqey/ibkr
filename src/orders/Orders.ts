@@ -309,7 +309,7 @@ export class Orders {
                 }
             };
 
-            self.ib.once('openOrderEnd', () => {
+            self.ib.on('openOrderEnd', () => {
                 const openOrders = Object.keys(openedOrders).map((key) => openedOrders[key]);
                 handleOpenOrders(openOrders);
             });

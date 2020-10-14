@@ -46,16 +46,16 @@ export class PriceUpdates {
          * When request to subscribe to market data
          * IBKREVENTS.SUBSCRIBE_PRICE_UPDATES
          */
-        ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, (data: any) => {
-            that.subscribe(data);
+        ibEvents.on(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, async (data: any) => {
+            return that.subscribe(data);
         });
 
         /**
          * When request to unsubscribe to market data
          * IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES
          */
-        ibEvents.on(IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES, (data: any) => {
-            that.unsubscribe(data);
+        ibEvents.on(IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES, async (data: any) => {
+            return that.unsubscribe(data);
         });
     }
 
@@ -124,12 +124,13 @@ export class PriceUpdates {
     }
 
     private async subscribe(args: ISubScribe) {
+        const that = this;
         const ib = IBKRConnection.Instance.getIBKR();
         const opt = args && args.opt;
         let contractArg = args && args.contract;
 
         if (isEmpty(contractArg)) {
-            return verbose('contract is not defined', contractArg);
+            return; // verbose('contract is not defined', contractArg);
         }
 
         // If string, create stock contract as default
@@ -138,11 +139,10 @@ export class PriceUpdates {
         }
 
         const tickType = (args && args.tickType) || (opt && opt.tickType) || 'ASK';
-        const that = this;
 
         let symbol = (contractArg && contractArg.symbol) || contractArg;
 
-        log('contract before getting details', contractArg);
+        log('contract before getting details', symbol);
 
         const contractObj: any = await getContractDetails(contractArg);
 
@@ -169,7 +169,7 @@ export class PriceUpdates {
         }
 
         // Check if we already have the symbol
-        if (this.subscribers[symbol]) {
+        if (that.subscribers[symbol]) {
             //  symbol is already subscribed
             return verbose(
                 'PriceUpdates.subscribe',
@@ -182,10 +182,10 @@ export class PriceUpdates {
 
         // Add this symbol to subscribersTicker
         this.subscribersWithTicker.push({
+            ...contract,
             symbol,
             tickerId: that.subscribers[symbol],
             tickType,
-            ...contract,
         });
 
         setImmediate(() => {

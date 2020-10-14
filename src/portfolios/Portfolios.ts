@@ -20,7 +20,7 @@ const logPortfolio = ({marketPrice, averageCost, position, symbol, conId}: PortF
     const contractIdWithSymbol = `${symbol} ${conId}`;
     if (Math.round(marketPrice) > Math.round(averageCost)) {
         // We are in profit
-        log(
+        verbose(
             `logPortfolio:profit shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `,
             contractIdWithSymbol
         );
@@ -161,6 +161,12 @@ export class Portfolios {
                     done = true;
                     appEvents.off('position', handlePosition);
 
+                    verbose(
+                        'getPortfolios positionEnd',
+                        `********************** =`,
+                        portfoliosData && portfoliosData.length
+                    );
+
                     self.currentPortfolios = portfoliosData;
                     publishDataToTopic({
                         topic: IBKREVENTS.PORTFOLIOS,
@@ -170,19 +176,19 @@ export class Portfolios {
                 }
             };
 
-            ib.once('positionEnd', () => {
+            const positionEnd = () => {
+                if (done) {
+                    return;
+                }
+
                 const portfoliosData = Object.keys(portfolios).map(
                     (portfolioKey) => portfolios[portfolioKey]
                 );
-                log('getPortfolios positionEnd', `********************** =`);
-                log(
-                    'getPortfolios positionEnd',
-                    `********************** ${
-                        portfoliosData && portfoliosData.length
-                    } symbols=${portfoliosData.map((u) => u.localSymbol)}`
-                );
                 handlePositionEnd(portfoliosData);
-            });
+                ib.off('positionEnd', positionEnd);
+            };
+
+            ib.on('positionEnd', positionEnd);
 
             ib.on('position', handlePosition);
 
