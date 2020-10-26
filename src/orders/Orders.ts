@@ -1,7 +1,6 @@
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import compact from 'lodash/compact';
-import {intervalCollection} from '@stoqey/timeout-manager';
 import {
     ORDER,
     OrderState,
@@ -44,7 +43,7 @@ export class Orders {
      */
     stockOrders: OrderStock[] = [];
 
-    timeoutRetries: {[x: string]: string[]} = {};
+    timeoutRetries: {[x: string]: NodeJS.Timeout[]} = {};
 
     /**
      * A ledger of orders that are being executed,
@@ -562,23 +561,21 @@ export class Orders {
                         self.placeOrder(stockOrder);
                     }, 2000);
 
-                    const handlerId = intervalCollection.get(handleRecursive);
-
                     // save the symbol with it's timeout
                     self.timeoutRetries[stockOrder.symbol] = compact([
                         ...(self.timeoutRetries[stockOrder.symbol] || []),
-                        handlerId && handlerId.uuid,
+                        handleRecursive && handleRecursive,
                     ]);
 
                     setTimeout(() => {
-                        intervalCollection.remove(handleRecursive);
+                        clearInterval(handleRecursive);
                     }, numberOfRetries * retryDelayTime);
                     return;
                 }
 
                 // Clear all by this symbol
                 (self.timeoutRetries[stockOrder.symbol] || []).forEach((uuid) => {
-                    intervalCollection.removeByUuid(uuid);
+                    clearInterval(uuid);
                 });
 
                 // Start -----------------------------
