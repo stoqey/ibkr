@@ -1,6 +1,12 @@
 import 'mocha';
 import AccountSummary from './AccountSummary';
 import { log } from '../log';
+import ibkr from '..';
+
+before((done) => {
+    ibkr().then(r => done())
+});
+
 
 describe('Account Summary', () => {
     it('should get account Summary', (done) => {

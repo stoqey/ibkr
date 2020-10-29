@@ -14,6 +14,7 @@
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
     "build": "rimraf dist && tsc",
     "dev": "nodemon src/dev",
+    "account": "mocha src/account/*test.ts --exit",
     "contract": "mocha src/contracts/*test.ts --exit",
     "connection": "mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",

@@ -1,4 +1,4 @@
-import EventEmitter from 'events';
+import {EventEmitter} from 'events';
 
 export class IbkrEvents extends EventEmitter {
     private static _instance: IbkrEvents;
