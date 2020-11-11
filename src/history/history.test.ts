@@ -25,59 +25,63 @@ before((done) => {
 
 describe('Historical Data', () => {
 
-    it('should get market data', (done) => {
-        const symbol = "AAPL";
+    // it('should get market data', (done) => {
+    //     const symbol = "PPSI";
 
-        let complete = false;
-        HistoricalData.Instance.getHistoricalData({
-            endDateTime: '20200521 15:00:00',
-            symbol,
-            whatToShow: "BID",
-            durationStr: '3600 S',
-            barSizeSetting: '5 secs',
-        });
+    //     let complete = false;
+    //     HistoricalData.Instance.getHistoricalData({
+    //         // endDateTime: '20201102 16:00:00',
+    //         symbol,
+    //         whatToShow: "TRADES",
+    //         durationStr: '3600 S',
+    //         barSizeSetting: '5 secs',
+    //     });
 
-        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }: { symbol: string; marketData: any[] }) => {
-            // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
-            log(`Historical Data for ${symbol} ${data && data.length}`);
-            log(`Start ----> ${symbol} ${data.shift().date}`);
-            log(`End ----> ${symbol} ${data.pop().date}`);
-            if (!complete) {
-                complete = true;
-                done();
-            }
-        })
-    });
+    //     ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }: { symbol: string; marketData: any[] }) => {
+    //         // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+    //         log(`Historical Data for ${symbol} ${data && data.length}`);
 
-    it('should get market data with contract object', (done) => {
-        const symbol = "AAPL";
+    //         const firstItem = data.shift();
+    //         const lastItem = data.pop();
+    //         log(`Start ----> ${symbol} ${firstItem.close} ${firstItem.date}`);
+    //         log(`End ----> ${symbol} ${lastItem.close} ${lastItem.date}`);
+    //         if (!complete) {
+    //             complete = true;
+    //             done();
+    //         }
+    //     });
 
-        const ib = IBKRConnection.Instance.getIBKR();
+    // });
 
-        let complete = false;
+    // it('should get market data with contract object', (done) => {
+    //     const symbol = "AAPL";
 
-        setTimeout(() => {
-            // To avoid violation pace
-            HistoricalData.Instance.getHistoricalData({
+    //     const ib = IBKRConnection.Instance.getIBKR();
 
-                contract: ib.contract.stock("AAPL"),
-                symbol,
-                whatToShow: "BID",
-                durationStr: '1800 S',
-                barSizeSetting: '1 secs',
-            });
-        }, 3000);
+    //     let complete = false;
+
+    //     setTimeout(() => {
+    //         // To avoid violation pace
+    //         HistoricalData.Instance.getHistoricalData({
+
+    //             contract: ib.contract.stock("AAPL"),
+    //             symbol,
+    //             whatToShow: "BID",
+    //             durationStr: '1800 S',
+    //             barSizeSetting: '1 secs',
+    //         });
+    //     }, 3000);
 
 
-        ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
-            // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
-            log(`Historical Data for ${symbol} ${data && data.length}`);
-            if (!complete) {
-                complete = true;
-                done();
-            }
-        })
-    });
+    //     ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, async ({ symbol, marketData: data }) => {
+    //         // await fsPromises.writeFile(`${__dirname}/${symbol}.json`, JSON.stringify(data));
+    //         log(`Historical Data for ${symbol} ${data && data.length}`);
+    //         if (!complete) {
+    //             complete = true;
+    //             done();
+    //         }
+    //     })
+    // });
 
     it('should get market data async mode', (done) => {
         const symbol = "AAPL";

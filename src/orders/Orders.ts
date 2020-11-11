@@ -422,7 +422,7 @@ export class Orders {
 
             log(
                 'placingOrderNow',
-                `Existing orders in queue -> ${checkExistingOrders.map((i) => i.symbol)}`
+                `Existing orders in queue -> ${(checkExistingOrders || []).map((i) => i.symbol)}`
             );
 
             if (!isEmpty(checkExistingOrders)) {
