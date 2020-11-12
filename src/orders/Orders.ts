@@ -557,7 +557,7 @@ export class Orders {
                 // 1. Processing, or recursive
                 if (self.processing) {
                     const handleRecursive = setInterval(() => {
-                        console.log('retry in --------------------->', symbol);
+                        log('retry in --------------------->', symbol);
                         self.placeOrder(stockOrder);
                     }, 2000);
 
