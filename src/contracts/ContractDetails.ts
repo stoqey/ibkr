@@ -1,6 +1,7 @@
 import {ContractDetails} from './contracts.interfaces';
 import {getRadomReqId} from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
+import {handleEventfulError} from '../events/HandleError';
 
 export const getContractDetails = (
     contract: string | any
@@ -14,8 +15,10 @@ export const getContractDetails = (
         const ib = IBKRConnection.Instance.getIBKR();
 
         // If string, create stock contract as default
+        let symbol = contractArg && contractArg.symbol;
 
         if (typeof contractArg === 'string') {
+            symbol = contractArg;
             contractArg = ib.contract.stock(contractArg);
         }
 
@@ -25,15 +28,35 @@ export const getContractDetails = (
 
         ib.on('contractDetails', handleContract);
 
-        ib.on('contractDetailsEnd', (reqIdX) => {
+        const contractDetailsEnd = (reqIdX: number, isError?: boolean) => {
+            console.log('require id', {reqId, reqIdX, isError});
+
+            if (isError) {
+                return resolve(null);
+            }
+
             if (reqId === reqIdX) {
+                eventfulError(); // remove off event
                 ib.off('contractDetails', handleContract);
+
                 if (typeof contract === 'string') {
                     return resolve(contractsLocal[0]);
                 }
                 resolve(contractsLocal);
             }
-        });
+        };
+
+        ib.on('contractDetailsEnd', contractDetailsEnd);
+
+        // handleError
+        const eventfulError = handleEventfulError(
+            reqId,
+            [
+                `No security definition has been found for the request`,
+                `The contract description specified for ${symbol} is ambiguous.`,
+            ],
+            () => contractDetailsEnd(reqId, true)
+        );
 
         ib.reqContractDetails(reqId, contractArg);
     });

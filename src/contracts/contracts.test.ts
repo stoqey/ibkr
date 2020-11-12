@@ -4,7 +4,7 @@ import ibkr from '..';
 import { log } from '../log';
 import { IBKRConnection } from '../connection';
 
-const symbol = "ITCI"
+const symbol = "SKYS"
 
 before((done) => {
     ibkr().then(ran => done());
@@ -13,7 +13,14 @@ before((done) => {
 describe('Contracts', () => {
     it('should get contract details by symbol', (done) => {
         async function getContractDetailsData() {
-            const contractDetails = await getContractDetails(symbol);
+            const ib = IBKRConnection.Instance.getIBKR();
+
+            const symbolX = "SKYS";
+
+            const contractDetails = await getContractDetails(symbolX);
+
+            console.log('contract details', contractDetails);
+            
             if (!Array.isArray(contractDetails)) {
                 log('contract ', JSON.stringify(contractDetails))
                 return done();
