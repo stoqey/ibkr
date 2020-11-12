@@ -29,8 +29,6 @@ export const getContractDetails = (
         ib.on('contractDetails', handleContract);
 
         const contractDetailsEnd = (reqIdX: number, isError?: boolean) => {
-            console.log('require id', {reqId, reqIdX, isError});
-
             if (isError) {
                 return resolve(null);
             }
