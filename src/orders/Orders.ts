@@ -365,7 +365,7 @@ export class Orders {
      */
     public placeOrder = async (
         stockOrder: OrderStock,
-        options?: {retryCounts?: number; retryTime?: number}
+        options?: {retryCounts?: number; retryTime?: number; unique: boolean}
     ): Promise<void | any> => {
         const self = this;
         const ib = self.ib;
@@ -374,6 +374,7 @@ export class Orders {
 
         const numberOfRetries = (options && options.retryCounts) || 3;
         const retryDelayTime = (options && options.retryTime) || 2000;
+        const shouldBeUniqueOrder = (options && options.unique) || false;
 
         const success = (): void => {
             ib.off('nextValidId', handleOrderIdNext);
@@ -392,23 +393,7 @@ export class Orders {
             // -1 Validate size
             const orderSize = stockOrder.size;
 
-            if (Number.isNaN(orderSize)) {
-                log(
-                    'placingOrderNow.checkPending',
-                    `*********************** orderSize is NaN size=${orderSize} action=${stockOrder.action} symbol=${symbol}`
-                );
-                return erroredOut();
-            }
-
-            // 0. Pending orders
-            // Check active tickerSymbols
-            const pendingOrders = self.symbolsTickerOrder[symbol];
-            const pendingOrderStatus = pendingOrders && pendingOrders.orderStatus;
-            const isPending = ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(
-                pendingOrderStatus
-            );
-
-            if (isPending) {
+            const orderIsPending = () => {
                 log(
                     'placingOrderNow',
                     `*********************** Order is already being processed for ${
@@ -418,7 +403,36 @@ export class Orders {
                     } isPending=${isPending}`
                 );
                 return erroredOut();
+            };
+
+            if (Number.isNaN(orderSize)) {
+                log(
+                    'placingOrderNow.checkPending',
+                    `*********************** orderSize is NaN size=${orderSize} action=${stockOrder.action} symbol=${symbol}`
+                );
+                return erroredOut();
             }
+
+            // Check if it should be a unique order
+            const currentOpenOrders = self.tickersAndOrders;
+            const currentOpenOrdersSymbolId = currentOpenOrders.filter(
+                (cos) => cos.symbol === symbol
+            );
+
+            // Should check whether orders can be unique/duplicates
+            if (shouldBeUniqueOrder && !isEmpty(currentOpenOrdersSymbolId)) {
+                const existingOrdersStatuses = currentOpenOrdersSymbolId.map((i) => i.orderStatus);
+
+                const allOrdersThatArePending = existingOrdersStatuses.filter((status) =>
+                    ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(status)
+                );
+
+                if (!isEmpty(allOrdersThatArePending)) {
+                    return orderIsPending();
+                }
+            }
+
+            // 0. Pending orders
 
             // 1. Check existing open orders
             const checkExistingOrders = await self.getOpenOrders();
