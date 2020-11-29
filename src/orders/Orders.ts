@@ -52,7 +52,8 @@ export class Orders {
      * new order overrides old one
      * only filled, canceled, error orders can be overridden
      */
-    symbolsTickerOrder: {[x: string]: SymbolTickerOrder} = {};
+    // symbolsTickerOrder: {[x: string]: SymbolTickerOrder} = {};
+    tickersAndOrders: SymbolTickerOrder[] = [];
 
     /**
      * Redundant orderIdNext recorded
