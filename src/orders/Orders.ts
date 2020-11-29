@@ -16,6 +16,7 @@ import IBKRConnection from '../connection/IBKRConnection';
 
 import {Portfolios} from '../portfolios';
 import {log, verbose} from '../log';
+import {createSymbolAndTickerId} from './Orders.util';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -23,8 +24,9 @@ const ibkrEvents = IbkrEvents.Instance;
 // Get Filled open orders
 
 interface SymbolTickerOrder {
+    id: string;
     tickerId: number;
-    orderPermId: number; // for reference when closing it
+    orderPermId?: number; // for reference when closing it
     symbol: string;
     stockOrderRequest: OrderStock;
     orderStatus?: OrderStatusType;
@@ -510,14 +512,29 @@ export class Orders {
                 return erroredOut();
             }
 
+            // TODO check if orders must be unique else
+            // Default to just add it to queue
+
+            const tickerIdWithSymbol = createSymbolAndTickerId(symbol, tickerToUse);
+
+            const oldTickerSymbol = self.tickersAndOrders.find((t) => t.id === tickerIdWithSymbol);
+
+            if (oldTickerSymbol) {
+                log('handleOrderIdNext', `Order already exists`);
+                return erroredOut();
+            }
+
             // Just save tickerId and stockOrder
-            self.symbolsTickerOrder[symbol] = {
-                ...(self.symbolsTickerOrder[symbol] || null),
+            const tickerNOrder: SymbolTickerOrder = {
+                id: tickerIdWithSymbol,
                 tickerId: tickerToUse,
                 symbol,
                 orderStatus: 'PendingSubmit',
                 stockOrderRequest: stockOrder, // for reference when closing trade,
             };
+
+            // Add it
+            self.tickersAndOrders.push(tickerNOrder);
 
             // Place order
             ib.placeOrder(
