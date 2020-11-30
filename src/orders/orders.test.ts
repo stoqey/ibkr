@@ -58,17 +58,17 @@ before((done) => {
 
 describe('Orders', () => {
 
-    it('should get open orders', async () => {
+    // it('should get open orders', async () => {
 
-        const openOrders = Orders.Instance;
+    //     const openOrders = Orders.Instance;
 
-        log('connected now, placing order now');
-        const results = await openOrders.getOpenOrders();
-        log('Open orders are', results && results.length)
+    //     log('connected now, placing order now');
+    //     const results = await openOrders.getOpenOrders();
+    //     log('Open orders are', results && results.length)
 
-        expect(results).to.be.not.null;
+    //     expect(results).to.be.not.null;
 
-    });
+    // });
 
 
     it('Place Order', (done) => {
@@ -100,24 +100,45 @@ describe('Orders', () => {
             //     }
 
             // });
-            Orders.Instance.getOpenOrders();
+
+            function delay(t: number): Promise<any> {
+                return new Promise(function (resolve) {
+                    setTimeout(resolve.bind(null, { d: true }), t);
+                });
+            }
+
+            await Orders.Instance.getOpenOrders();
+
+            const delayTime = 1000;
+
+            const opt = { unique: false };
 
             const orders = [
-                orderTrade.placeOrder(stockOrderBuyInZ, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInZ, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInZ, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInY, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInY, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInY, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
-                orderTrade.placeOrder(stockOrderBuyInY, { unique: true })
+                async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt)
             ];
 
             for (const order of orders) {
-                await order;
+                await order();
             }
         };
 
