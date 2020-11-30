@@ -390,7 +390,7 @@ export class Orders {
             return;
         };
 
-        const checkPending = async (): Promise<void | boolean> => {
+        const checkPending = (): boolean => {
             // -1 Validate size
             const orderSize = stockOrder.size;
 
@@ -417,43 +417,54 @@ export class Orders {
                 (cos) => cos.symbol === symbol
             );
 
+            console.log(
+                'currentOpenOrdersSymbolId',
+                JSON.stringify(currentOpenOrdersSymbolId.map((o) => o.symbol))
+            );
+
             // Should check whether orders  in queue should be unique/ no duplicates
-            if (shouldBeUniqueOrder && !isEmpty(currentOpenOrdersSymbolId)) {
+            if (!isEmpty(currentOpenOrdersSymbolId)) {
                 const existingOrdersStatuses = currentOpenOrdersSymbolId.map((i) => i.orderStatus);
 
                 const allOrdersThatArePending = existingOrdersStatuses.filter((status) =>
                     ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(status)
                 );
 
-                if (!isEmpty(allOrdersThatArePending)) {
-                    return orderIsPending();
+                console.log('allOrdersThatArePending', JSON.stringify(allOrdersThatArePending));
+
+                if (shouldBeUniqueOrder) {
+                    if (!isEmpty(allOrdersThatArePending)) {
+                        return orderIsPending();
+                    }
                 }
             }
 
             // 0. Pending orders from broker
 
             // 1. Check existing open placed orders
-            const checkExistingOrders = await self.getOpenOrders();
+            // const checkExistingOrders = await self.getOpenOrders();
 
-            log(
-                'placingOrderNow',
-                `Existing orders in queue -> ${(checkExistingOrders || []).map((i) => i.symbol)}`
-            );
+            // log(
+            //     'placingOrderNow',
+            //     `Existing orders in queue -> ${(checkExistingOrders || []).map((i) => i.symbol)}`
+            // );
 
-            if (!isEmpty(checkExistingOrders) && shouldBeUniqueOrder) {
-                // check if we have the same order from here
-                const findMatchingAction = checkExistingOrders.filter(
-                    (exi) => exi.action === stockOrder.action && exi.symbol === stockOrder.symbol
-                );
+            // if (!isEmpty(checkExistingOrders)) {
+            //     // check if we have the same order from here
+            //     const findMatchingAction = checkExistingOrders.filter(
+            //         (exi) => exi.action === stockOrder.action && exi.symbol === stockOrder.symbol
+            //     );
 
-                if (!isEmpty(findMatchingAction)) {
-                    log(
-                        'placingOrderNow',
-                        `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`
-                    );
-                    return erroredOut();
-                }
-            }
+            //     if (!isEmpty(findMatchingAction)) {
+            //         if (shouldBeUniqueOrder) {
+            //             log(
+            //                 'placingOrderNow',
+            //                 `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`
+            //             );
+            //             return erroredOut();
+            //         }
+            //     }
+            // }
 
             // 2. Check existing portfolios
             // let checkExistingPositions = await Portfolios.Instance.getPortfolios();

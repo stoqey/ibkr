@@ -103,17 +103,17 @@ describe('Orders', () => {
             Orders.Instance.getOpenOrders();
 
             const orders = [
-                orderTrade.placeOrder(stockOrderBuyInZ),
-                orderTrade.placeOrder(stockOrderBuyInZ),
-                orderTrade.placeOrder(stockOrderBuyInZ),
-                orderTrade.placeOrder(stockOrderBuyInY),
-                orderTrade.placeOrder(stockOrderBuyInY),
-                orderTrade.placeOrder(stockOrderBuyInY),
-                orderTrade.placeOrder(stockOrderBuyInX),
-                orderTrade.placeOrder(stockOrderBuyInX),
-                orderTrade.placeOrder(stockOrderBuyInX),
-                orderTrade.placeOrder(stockOrderBuyInX),
-                orderTrade.placeOrder(stockOrderBuyInY)
+                orderTrade.placeOrder(stockOrderBuyInZ, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInZ, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInZ, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInY, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInY, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInY, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInX, { unique: true }),
+                orderTrade.placeOrder(stockOrderBuyInY, { unique: true })
             ];
 
             for (const order of orders) {
