@@ -13,8 +13,6 @@ import {
 
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
-
-import {Portfolios} from '../portfolios';
 import {log, verbose} from '../log';
 import {createSymbolAndTickerId} from './Orders.util';
 
@@ -54,7 +52,6 @@ export class Orders {
      * new order overrides old one
      * only filled, canceled, error orders can be overridden
      */
-    // symbolsTickerOrder: {[x: string]: SymbolTickerOrder} = {};
     tickersAndOrders: SymbolTickerOrder[] = [];
 
     /**
@@ -208,9 +205,7 @@ export class Orders {
                 // Orders requests to send to transmit
                 // Using ticker Ids
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                const allTickerOrder: SymbolTickerOrder[] = Object.keys(
-                    self.symbolsTickerOrder
-                ).map((key) => self.symbolsTickerOrder[key]);
+                const allTickerOrder: SymbolTickerOrder[] = self.tickersAndOrders;
 
                 const thisOrderTicker = allTickerOrder.find(
                     (tickerOrder) => tickerOrder.tickerId === orderId
@@ -218,15 +213,21 @@ export class Orders {
 
                 // Add permId to orderTickObject
                 if (!isEmpty(thisOrderTicker)) {
+                    let updatedSymbolTicker: SymbolTickerOrder = null;
                     // update this symbolTickerOrder
-                    self.symbolsTickerOrder[thisOrderTicker.symbol] = {
-                        ...(self.symbolsTickerOrder[thisOrderTicker.symbol] || null),
-                        orderPermId: order.permId,
-                        symbol: thisOrderTicker.symbol,
-                        orderStatus: orderState.status, // update order state
-                    };
-
-                    const updatedSymbolTicker = self.symbolsTickerOrder[thisOrderTicker.symbol];
+                    self.tickersAndOrders = self.tickersAndOrders.map((i) => {
+                        if (i.tickerId === orderId) {
+                            const updatedSymbolTickerX = {
+                                ...i,
+                                orderPermId: order.permId,
+                                symbol: thisOrderTicker.symbol,
+                                orderStatus: orderState.status, // update order state
+                            };
+                            updatedSymbolTicker = updatedSymbolTickerX;
+                            return updatedSymbolTickerX;
+                        }
+                        return i;
+                    });
 
                     // create sale if order is filled
                     if (orderState.status === 'Filled') {
@@ -370,7 +371,7 @@ export class Orders {
         const self = this;
         const ib = self.ib;
 
-        const {exitTrade, symbol} = stockOrder;
+        const {symbol} = stockOrder;
 
         const numberOfRetries = (options && options.retryCounts) || 3;
         const retryDelayTime = (options && options.retryTime) || 2000;
@@ -396,11 +397,7 @@ export class Orders {
             const orderIsPending = () => {
                 log(
                     'placingOrderNow',
-                    `*********************** Order is already being processed for ${
-                        stockOrder.action
-                    } symbol=${symbol} pendingOrderStatus=${
-                        pendingOrderStatus || 'NONE'
-                    } isPending=${isPending}`
+                    `*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} `
                 );
                 return erroredOut();
             };
@@ -420,7 +417,7 @@ export class Orders {
                 (cos) => cos.symbol === symbol
             );
 
-            // Should check whether orders can be unique/duplicates
+            // Should check whether orders  in queue should be unique/ no duplicates
             if (shouldBeUniqueOrder && !isEmpty(currentOpenOrdersSymbolId)) {
                 const existingOrdersStatuses = currentOpenOrdersSymbolId.map((i) => i.orderStatus);
 
@@ -433,9 +430,9 @@ export class Orders {
                 }
             }
 
-            // 0. Pending orders
+            // 0. Pending orders from broker
 
-            // 1. Check existing open orders
+            // 1. Check existing open placed orders
             const checkExistingOrders = await self.getOpenOrders();
 
             log(
@@ -443,7 +440,7 @@ export class Orders {
                 `Existing orders in queue -> ${(checkExistingOrders || []).map((i) => i.symbol)}`
             );
 
-            if (!isEmpty(checkExistingOrders)) {
+            if (!isEmpty(checkExistingOrders) && shouldBeUniqueOrder) {
                 // check if we have the same order from here
                 const findMatchingAction = checkExistingOrders.filter(
                     (exi) => exi.action === stockOrder.action && exi.symbol === stockOrder.symbol
@@ -459,40 +456,40 @@ export class Orders {
             }
 
             // 2. Check existing portfolios
-            let checkExistingPositions = await Portfolios.Instance.getPortfolios();
-            checkExistingPositions = !isEmpty(checkExistingPositions) ? checkExistingPositions : [];
+            // let checkExistingPositions = await Portfolios.Instance.getPortfolios();
+            // checkExistingPositions = !isEmpty(checkExistingPositions) ? checkExistingPositions : [];
 
-            verbose(
-                'placingOrderNow',
-                `Existing portfolios -> ${JSON.stringify(
-                    checkExistingPositions && checkExistingPositions.map((i) => i.symbol)
-                )}`
-            );
+            // verbose(
+            //     'placingOrderNow',
+            //     `Existing portfolios -> ${JSON.stringify(
+            //         checkExistingPositions && checkExistingPositions.map((i) => i.symbol)
+            //     )}`
+            // );
 
-            const foundExistingPortfolios = !isEmpty(checkExistingPositions)
-                ? checkExistingPositions.filter((exi) => exi.symbol === stockOrder.symbol)
-                : [];
+            // const foundExistingPortfolios = !isEmpty(checkExistingPositions)
+            //     ? checkExistingPositions.filter((exi) => exi.symbol === stockOrder.symbol)
+            //     : [];
 
-            verbose(
-                'placingOrderNow',
-                `foundExistingPortfolios -> ${JSON.stringify(
-                    foundExistingPortfolios.map((i) => i.symbol)
-                )}`
-            );
+            // verbose(
+            //     'placingOrderNow',
+            //     `foundExistingPortfolios -> ${JSON.stringify(
+            //         foundExistingPortfolios.map((i) => i.symbol)
+            //     )}`
+            // );
 
-            if (!isEmpty(foundExistingPortfolios)) {
-                // Only if this is not exit
-                if (!exitTrade) {
-                    log(
-                        'placingOrderNow',
-                        `*********************** Portfolio already exist and has position for ${
-                            stockOrder.action
-                        }, order=${JSON.stringify(foundExistingPortfolios.map((i) => i.symbol))}`
-                    );
-                    return erroredOut();
-                }
-                // Else existing trades are allowed
-            }
+            // if (!isEmpty(foundExistingPortfolios)) {
+            //     // Only if this is not exit
+            //     if (!exitTrade) {
+            //         log(
+            //             'placingOrderNow',
+            //             `*********************** Portfolio already exist and has position for ${
+            //                 stockOrder.action
+            //             }, order=${JSON.stringify(foundExistingPortfolios.map((i) => i.symbol))}`
+            //         );
+            //         return erroredOut();
+            //     }
+            //     // Else existing trades are allowed
+            // }
 
             return true;
         };
