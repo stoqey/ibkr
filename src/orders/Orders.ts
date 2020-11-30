@@ -1,6 +1,5 @@
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
-import compact from 'lodash/compact';
 import {
     ORDER,
     OrderState,
@@ -13,9 +12,8 @@ import {
 
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
-
-import {Portfolios} from '../portfolios';
 import {log, verbose} from '../log';
+import {createSymbolAndTickerId} from './Orders.util';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -23,8 +21,9 @@ const ibkrEvents = IbkrEvents.Instance;
 // Get Filled open orders
 
 interface SymbolTickerOrder {
+    id: string;
     tickerId: number;
-    orderPermId: number; // for reference when closing it
+    orderPermId?: number; // for reference when closing it
     symbol: string;
     stockOrderRequest: OrderStock;
     orderStatus?: OrderStatusType;
@@ -52,7 +51,7 @@ export class Orders {
      * new order overrides old one
      * only filled, canceled, error orders can be overridden
      */
-    symbolsTickerOrder: {[x: string]: SymbolTickerOrder} = {};
+    tickersAndOrders: SymbolTickerOrder[] = [];
 
     /**
      * Redundant orderIdNext recorded
@@ -205,9 +204,7 @@ export class Orders {
                 // Orders requests to send to transmit
                 // Using ticker Ids
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                const allTickerOrder: SymbolTickerOrder[] = Object.keys(
-                    self.symbolsTickerOrder
-                ).map((key) => self.symbolsTickerOrder[key]);
+                const allTickerOrder: SymbolTickerOrder[] = self.tickersAndOrders;
 
                 const thisOrderTicker = allTickerOrder.find(
                     (tickerOrder) => tickerOrder.tickerId === orderId
@@ -215,15 +212,21 @@ export class Orders {
 
                 // Add permId to orderTickObject
                 if (!isEmpty(thisOrderTicker)) {
+                    let updatedSymbolTicker: SymbolTickerOrder = null;
                     // update this symbolTickerOrder
-                    self.symbolsTickerOrder[thisOrderTicker.symbol] = {
-                        ...(self.symbolsTickerOrder[thisOrderTicker.symbol] || null),
-                        orderPermId: order.permId,
-                        symbol: thisOrderTicker.symbol,
-                        orderStatus: orderState.status, // update order state
-                    };
-
-                    const updatedSymbolTicker = self.symbolsTickerOrder[thisOrderTicker.symbol];
+                    self.tickersAndOrders = self.tickersAndOrders.map((i) => {
+                        if (i.tickerId === orderId) {
+                            const updatedSymbolTickerX = {
+                                ...i,
+                                orderPermId: order.permId,
+                                symbol: thisOrderTicker.symbol,
+                                orderStatus: orderState.status, // update order state
+                            };
+                            updatedSymbolTicker = updatedSymbolTickerX;
+                            return updatedSymbolTickerX;
+                        }
+                        return i;
+                    });
 
                     // create sale if order is filled
                     if (orderState.status === 'Filled') {
@@ -362,32 +365,39 @@ export class Orders {
      */
     public placeOrder = async (
         stockOrder: OrderStock,
-        options?: {retryCounts?: number; retryTime?: number}
-    ): Promise<void | any> => {
+        options?: {unique: boolean}
+    ): Promise<any> => {
         const self = this;
         const ib = self.ib;
 
-        const {exitTrade, symbol} = stockOrder;
+        const {symbol} = stockOrder;
 
-        const numberOfRetries = (options && options.retryCounts) || 3;
-        const retryDelayTime = (options && options.retryTime) || 2000;
+        const shouldBeUniqueOrder = (options && options.unique) || false;
 
-        const success = (): void => {
+        const success = (): boolean => {
             ib.off('nextValidId', handleOrderIdNext);
             self.processing = false; // reset processing
-            return;
+            return true;
         };
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const erroredOut = (error?: Error): void => {
+        const erroredOut = (error?: Error): boolean => {
             ib.off('nextValidId', handleOrderIdNext);
             self.processing = false; // reset processing
-            return;
+            return false;
         };
 
-        const checkPending = async (): Promise<void | boolean> => {
+        const checkPending = (): boolean => {
             // -1 Validate size
             const orderSize = stockOrder.size;
+
+            const orderIsPending = () => {
+                log(
+                    'placingOrderNow',
+                    `*********************** Order is already being processed for ${stockOrder.action} symbol=${symbol} `
+                );
+                return erroredOut();
+            };
 
             if (Number.isNaN(orderSize)) {
                 log(
@@ -397,28 +407,41 @@ export class Orders {
                 return erroredOut();
             }
 
-            // 0. Pending orders
-            // Check active tickerSymbols
-            const pendingOrders = self.symbolsTickerOrder[symbol];
-            const pendingOrderStatus = pendingOrders && pendingOrders.orderStatus;
-            const isPending = ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(
-                pendingOrderStatus
+            /**
+             * Check existing orders from tickersAndOrders
+             */
+            const currentOpenOrders = self.tickersAndOrders;
+
+            const currentOpenOrdersSymbolId = currentOpenOrders.filter(
+                (cos) => cos.symbol === symbol
             );
 
-            if (isPending) {
-                log(
-                    'placingOrderNow',
-                    `*********************** Order is already being processed for ${
-                        stockOrder.action
-                    } symbol=${symbol} pendingOrderStatus=${
-                        pendingOrderStatus || 'NONE'
-                    } isPending=${isPending}`
+            verbose(
+                'currentOpenOrdersSymbolId',
+                JSON.stringify(currentOpenOrdersSymbolId.map((o) => o.symbol))
+            );
+
+            // Should check whether orders  in queue should be unique/ no duplicates
+            if (!isEmpty(currentOpenOrdersSymbolId)) {
+                const existingOrdersStatuses = currentOpenOrdersSymbolId.map((i) => i.orderStatus);
+
+                const allOrdersThatArePending = existingOrdersStatuses.filter((status) =>
+                    ['PreSubmitted', 'Submitted', 'PendingSubmit'].includes(status)
                 );
-                return erroredOut();
+
+                if (shouldBeUniqueOrder) {
+                    if (!isEmpty(allOrdersThatArePending)) {
+                        return orderIsPending();
+                    }
+                }
             }
 
-            // 1. Check existing open orders
-            const checkExistingOrders = await self.getOpenOrders();
+            /**
+             * Check existing opened placed orders
+             */
+            const checkExistingOrders = Object.keys(self.openOrders).map(
+                (key) => self.openOrders[key]
+            );
 
             log(
                 'placingOrderNow',
@@ -432,50 +455,15 @@ export class Orders {
                 );
 
                 if (!isEmpty(findMatchingAction)) {
-                    log(
-                        'placingOrderNow',
-                        `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`
-                    );
-                    return erroredOut();
+                    if (shouldBeUniqueOrder) {
+                        log(
+                            'placingOrderNow',
+                            `Order already exist for ${stockOrder.action}, ${findMatchingAction[0].symbol} ->  @${stockOrder.parameters[0]}`
+                        );
+                        return erroredOut();
+                    }
                 }
             }
-
-            // 2. Check existing portfolios
-            let checkExistingPositions = await Portfolios.Instance.getPortfolios();
-            checkExistingPositions = !isEmpty(checkExistingPositions) ? checkExistingPositions : [];
-
-            verbose(
-                'placingOrderNow',
-                `Existing portfolios -> ${JSON.stringify(
-                    checkExistingPositions && checkExistingPositions.map((i) => i.symbol)
-                )}`
-            );
-
-            const foundExistingPortfolios = !isEmpty(checkExistingPositions)
-                ? checkExistingPositions.filter((exi) => exi.symbol === stockOrder.symbol)
-                : [];
-
-            verbose(
-                'placingOrderNow',
-                `foundExistingPortfolios -> ${JSON.stringify(
-                    foundExistingPortfolios.map((i) => i.symbol)
-                )}`
-            );
-
-            if (!isEmpty(foundExistingPortfolios)) {
-                // Only if this is not exit
-                if (!exitTrade) {
-                    log(
-                        'placingOrderNow',
-                        `*********************** Portfolio already exist and has position for ${
-                            stockOrder.action
-                        }, order=${JSON.stringify(foundExistingPortfolios.map((i) => i.symbol))}`
-                    );
-                    return erroredOut();
-                }
-                // Else existing trades are allowed
-            }
-
             return true;
         };
 
@@ -509,9 +497,18 @@ export class Orders {
                 return erroredOut();
             }
 
+            const tickerIdWithSymbol = createSymbolAndTickerId(symbol, tickerToUse);
+
+            const oldTickerSymbol = self.tickersAndOrders.find((t) => t.id === tickerIdWithSymbol);
+
+            if (oldTickerSymbol) {
+                log('handleOrderIdNext', `Order already exists`);
+                return erroredOut();
+            }
+
             // Just save tickerId and stockOrder
-            self.symbolsTickerOrder[symbol] = {
-                ...(self.symbolsTickerOrder[symbol] || null),
+            const tickerNOrder: SymbolTickerOrder = {
+                id: tickerIdWithSymbol,
                 tickerId: tickerToUse,
                 symbol,
                 orderStatus: 'PendingSubmit',
@@ -525,7 +522,8 @@ export class Orders {
                 orderCommand(stockOrder.action, ...args)
             );
 
-            // self.orderIdNext = tickerToUse;
+            // Add it
+            self.tickersAndOrders.push(tickerNOrder);
             self.tickerId = tickerToUse;
             ib.reqAllOpenOrders(); // refresh orders
 
@@ -538,10 +536,11 @@ export class Orders {
 
         function placingOrderNow(): void {
             if (isEmpty(stockOrder.symbol)) {
-                return erroredOut(new Error('Please enter order'));
+                erroredOut(new Error('Please enter order'));
+                return;
             }
 
-            self.stockOrders = [...self.stockOrders, stockOrder];
+            self.stockOrders.push(stockOrder);
             self.ib.reqIds(++self.orderIdNext);
             verbose(
                 'placingOrderNow',
@@ -553,30 +552,12 @@ export class Orders {
             const canProceed = await checkPending();
 
             if (canProceed === true) {
-                // can proceed
-                // 1. Processing, or recursive
                 if (self.processing) {
-                    const handleRecursive = setInterval(() => {
-                        log('retry in --------------------->', symbol);
-                        self.placeOrder(stockOrder);
-                    }, 2000);
-
-                    // save the symbol with it's timeout
-                    self.timeoutRetries[stockOrder.symbol] = compact([
-                        ...(self.timeoutRetries[stockOrder.symbol] || []),
-                        handleRecursive && handleRecursive,
-                    ]);
-
-                    setTimeout(() => {
-                        clearInterval(handleRecursive);
-                    }, numberOfRetries * retryDelayTime);
-                    return;
+                    return log(
+                        `Broker is already processing an order for ${self.tickerId}`,
+                        symbol
+                    );
                 }
-
-                // Clear all by this symbol
-                (self.timeoutRetries[stockOrder.symbol] || []).forEach((uuid) => {
-                    clearInterval(uuid);
-                });
 
                 // Start -----------------------------
                 self.processing = true;
@@ -586,8 +567,18 @@ export class Orders {
             }
         }
 
-        run();
+        return run();
     };
+
+    /**
+     * cancelOrder
+     * @param orderId: number
+     */
+    public cancelOrder(orderId: number): void {
+        const self = this;
+        const ib = self.ib;
+        ib.cancelOrder(orderId);
+    }
 }
 
 export default Orders;
