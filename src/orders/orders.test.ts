@@ -111,7 +111,7 @@ describe('Orders', () => {
 
             const delayTime = 1000;
 
-            const opt = { unique: false };
+            const opt = { unique: true };
 
             const orders = [
                 async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),

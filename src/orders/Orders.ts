@@ -497,9 +497,6 @@ export class Orders {
                 return erroredOut();
             }
 
-            // TODO check if orders must be unique else
-            // Default to just add it to queue
-
             const tickerIdWithSymbol = createSymbolAndTickerId(symbol, tickerToUse);
 
             const oldTickerSymbol = self.tickersAndOrders.find((t) => t.id === tickerIdWithSymbol);
@@ -562,31 +559,6 @@ export class Orders {
                     );
                 }
 
-                // can proceed
-                // 1. Processing, or recursive
-                // if (self.processing) {
-                //     const handleRecursive = setInterval(() => {
-                //         log('retry in --------------------->', symbol);
-                //         self.placeOrder(stockOrder);
-                //     }, 2000);
-
-                //     // save the symbol with it's timeout
-                //     self.timeoutRetries[stockOrder.symbol] = compact([
-                //         ...(self.timeoutRetries[stockOrder.symbol] || []),
-                //         handleRecursive && handleRecursive,
-                //     ]);
-
-                //     setTimeout(() => {
-                //         clearInterval(handleRecursive);
-                //     }, numberOfRetries * retryDelayTime);
-                //     return;
-                // }
-
-                // Clear all by this symbol
-                (self.timeoutRetries[stockOrder.symbol] || []).forEach((uuid) => {
-                    clearInterval(uuid);
-                });
-
                 // Start -----------------------------
                 self.processing = true;
 
@@ -597,6 +569,16 @@ export class Orders {
 
         return run();
     };
+
+    /**
+     * cancelOrder
+     * @param orderId: number
+     */
+    public cancelOrder(orderId: number): void {
+        const self = this;
+        const ib = self.ib;
+        ib.cancelOrder(orderId);
+    }
 }
 
 export default Orders;
