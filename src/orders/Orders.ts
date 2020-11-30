@@ -415,6 +415,7 @@ export class Orders {
 
             // Check if it should be a unique order
             const currentOpenOrders = self.tickersAndOrders;
+
             const currentOpenOrdersSymbolId = currentOpenOrders.filter(
                 (cos) => cos.symbol === symbol
             );
