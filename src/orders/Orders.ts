@@ -333,7 +333,6 @@ export class Orders {
                 order: ORDER,
                 orderState: OrderState
             ) {
-                log('orderStatus', orderState.status);
                 // Only check pending orders
                 if (['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(orderState.status)) {
                     openedOrders.push({
