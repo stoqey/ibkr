@@ -59,20 +59,20 @@ before((done) => {
 });
 
 describe('Orders', () => {
-    // it('should get open orders', async () => {
-    //     const OrdersManager = Orders.Instance;
+    it('should get open orders', async () => {
+        const OrdersManager = Orders.Instance;
 
-    //     log('connected now, placing order now');
-    //     const results = await OrdersManager.getOpenOrders();
+        log('connected now, placing order now');
+        const results = await OrdersManager.getOpenOrders();
 
-    //     log('Open orders are', JSON.stringify(results.map(u => u.orderId)));
+        log('Open orders are', JSON.stringify(results));
 
-    //     for (const res of results) {
-    //         OrdersManager.cancelOrder(res.orderId);
-    //         await delay(1000);
-    //     };
-    //     expect(results).to.be.not.null;
-    // });
+        for (const res of results) {
+            OrdersManager.cancelOrder(res.orderId);
+            await delay(1000);
+        };
+        expect(results).to.be.not.null;
+    });
 
     // it('Place Order', (done) => {
 
