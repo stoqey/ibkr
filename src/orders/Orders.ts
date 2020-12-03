@@ -377,9 +377,10 @@ export class Orders {
 
         const shouldBeUniqueOrder = (options && options.unique) || false;
 
-        const success = (): boolean => {
+        const success = async (): Promise<boolean> => {
             ib.off('nextValidId', handleOrderIdNext);
             self.processing = false; // reset processing
+            await self.getOpenOrders(); // refresh orders
             return true;
         };
 
@@ -468,7 +469,7 @@ export class Orders {
             return true;
         };
 
-        const handleOrderIdNext = (orderIdNext: number) => {
+        const handleOrderIdNext = async (orderIdNext: number) => {
             const tickerToUse = ++orderIdNext;
 
             const currentOrders = self.stockOrders;
@@ -532,7 +533,7 @@ export class Orders {
                 'handleOrderIdNext',
                 `Placing order for ... tickerToUse=${tickerToUse} orderIdNext=${orderIdNext} tickerId=${self.tickerId} symbol=${symbol} size=${size}`
             );
-            return success();
+            return await success();
         };
 
         function placingOrderNow(): void {
