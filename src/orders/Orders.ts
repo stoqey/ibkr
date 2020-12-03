@@ -581,25 +581,31 @@ export class Orders {
      * cancelOrder
      * @param orderId: number
      */
-    public cancelOrder(orderId: number): Promise<boolean> {
+    cancelOrder = async (orderId: number): Promise<boolean> => {
         const self = this;
         const ib = self.ib;
 
         return new Promise((res) => {
             const handleResults = (r: boolean) => {
+                if (r) {
+                    delete self.openOrders[orderId];
+                }
                 res(r);
+                handleError();
             };
 
             // handleError
-            handleEventfulError(
+            const handleError = handleEventfulError(
                 undefined,
                 [`OrderId ${orderId} that needs to be cancelled is not found`],
                 () => handleResults(false)
             );
 
             ib.cancelOrder(orderId);
+
+            setTimeout(() => handleResults(true), 2000);
         });
-    }
+    };
 }
 
 export default Orders;
