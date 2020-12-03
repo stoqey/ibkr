@@ -14,6 +14,7 @@ import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
 import IBKRConnection from '../connection/IBKRConnection';
 import {log, verbose} from '../log';
 import {createSymbolAndTickerId} from './Orders.util';
+import {handleEventfulError} from '../events/HandleError';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -150,7 +151,7 @@ export class Orders {
                 }
             );
 
-            ib.on('openOrder', function (orderId, contract, order: ORDER, orderState: OrderState) {
+            ib.on('openOrder', (orderId, contract, order: ORDER, orderState: OrderState) => {
                 // 1. Update OpenOrders
                 // Orders that need to be filled
                 // -----------------------------------------------------------------------------------
@@ -294,27 +295,30 @@ export class Orders {
         }
     };
 
-    public getOpenOrders = async (timeout?: number): Promise<OrderWithContract[]> => {
+    public getOpenOrders = async (): Promise<OrderWithContract[]> => {
         const self = this;
+        const openedOrders: OrderWithContract[] = [];
 
-        let openedOrders = {};
+        // const timeoutTime: number = timeout || 6;
 
         return new Promise((resolve) => {
             let done = false;
-
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 if (!done) {
                     self.ib.off('openOrder', handleOpenOrders);
+                    self.ib.off('openOrderEnd', openOrderEnd);
                     done = true;
-                    resolve(ordersData);
+                    return resolve(ordersData);
                 }
             };
 
-            self.ib.on('openOrderEnd', () => {
-                const openOrders = Object.keys(openedOrders).map((key) => openedOrders[key]);
-                handleOpenOrders(openOrders);
-            });
+            const openOrderEnd = () => {
+                log('openOrderEnd', openedOrders.length);
+                handleOpenOrders(openedOrders);
+            };
+
+            self.ib.once('openOrderEnd', openOrderEnd);
 
             self.ib.on('openOrder', function (
                 orderId,
@@ -322,33 +326,27 @@ export class Orders {
                 order: ORDER,
                 orderState: OrderState
             ) {
+                log('orderStatus', orderState.status);
                 // Only check pending orders
-                if (
-                    ['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(
-                        orderState && orderState.status
-                    )
-                ) {
-                    openedOrders = {
-                        ...openedOrders,
-                        [orderId]: {
-                            ...((openedOrders && openedOrders[orderId]) || null),
+                if (['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(orderState.status)) {
+                    openedOrders.push({
+                        // OrderId + orderState
+                        orderId,
+                        orderState,
 
-                            // OrderId + orderState
-                            orderId,
-                            orderState,
-
-                            // Add order
-                            ...order,
-                            // Add contract
-                            ...contract,
-                        },
-                    };
+                        // Add order
+                        ...order,
+                        // Add contract
+                        ...contract,
+                    });
                 }
             });
 
             self.ib.reqAllOpenOrders(); // refresh orders
 
-            return setTimeout(handleOpenOrders, timeout || 6000);
+            // setTimeout(() => handleOpenOrders([]), timeoutTime * 1000); // timeout
+
+            return;
         });
     };
 
@@ -574,10 +572,24 @@ export class Orders {
      * cancelOrder
      * @param orderId: number
      */
-    public cancelOrder(orderId: number): void {
+    public cancelOrder(orderId: number): Promise<boolean> {
         const self = this;
         const ib = self.ib;
-        ib.cancelOrder(orderId);
+
+        return new Promise((res) => {
+            const handleResults = (r: boolean) => {
+                res(r);
+            };
+
+            // handleError
+            handleEventfulError(
+                undefined,
+                [`OrderId ${orderId} that needs to be cancelled is not found`],
+                () => handleResults(false)
+            );
+
+            ib.cancelOrder(orderId);
+        });
     }
 }
 

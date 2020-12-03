@@ -29,7 +29,7 @@ export function handleEventfulError(
     const handleError = (error, errorData) => {
         const reqIdFromError = errorData && errorData.id;
 
-        if (reqIdFromError === reqId) {
+        if (reqId && reqIdFromError === reqId) {
             verbose('handleEventfulError > handleError.reqIdFromError', reqId);
             catchError();
         }
