@@ -309,6 +309,15 @@ export class Orders {
                     self.ib.off('openOrder', handleOpenOrders);
                     self.ib.off('openOrderEnd', openOrderEnd);
                     done = true;
+
+                    // update opened orders
+                    // Set new opened orders
+                    const newOpenOrders = {};
+                    for (const oo of ordersData) {
+                        newOpenOrders[oo.orderId] = oo;
+                    }
+                    self.openOrders = newOpenOrders;
+
                     return resolve(ordersData);
                 }
             };
