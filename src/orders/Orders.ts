@@ -1,5 +1,7 @@
 import IB from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
+import findIndex from 'lodash/findIndex';
+import compact from 'lodash/compact';
 import {
     ORDER,
     OrderState,
@@ -60,7 +62,10 @@ export class Orders {
     orderIdNext: number = null;
 
     // OPEN ORDERS
-    public openOrders: {[x: string]: OrderWithContract} = {};
+    // public openOrders: {[x: string]: OrderWithContract} = {};
+
+    public openedOrders: OrderWithContract[] = [];
+
     public receivedOrders = false; // stopper
 
     private static _instance: Orders;
@@ -93,12 +98,9 @@ export class Orders {
             ib.on('openOrderEnd', () => {
                 // Initialise OrderTrader
                 // OrderTrade.Instance.init();
-
-                const openOrders = Object.keys(self.openOrders).map((key) => self.openOrders[key]);
-
                 publishDataToTopic({
                     topic: IBKREVENTS.OPEN_ORDERS,
-                    data: openOrders,
+                    data: self.openedOrders,
                 });
             });
 
@@ -116,7 +118,7 @@ export class Orders {
                     clientId,
                     whyHeld
                 ) => {
-                    const currentOrder = self.openOrders[id];
+                    const currentOrder = self.openedOrders.find((oo) => oo.orderId === id);
 
                     const orderStatus: OrderStatus = {
                         status,
@@ -157,23 +159,23 @@ export class Orders {
                 // -----------------------------------------------------------------------------------
                 self.receivedOrders = true;
 
-                const openOrders = self.openOrders;
+                const openedOrders = self.openedOrders;
 
-                self.openOrders = {
-                    ...openOrders,
-                    [orderId]: {
-                        ...((openOrders && openOrders[orderId]) || null),
+                const currentOrderindex = findIndex(openedOrders, {orderId});
+                openedOrders[currentOrderindex] = {
+                    // OrderId + orderState
+                    orderId,
+                    orderState,
 
-                        // OrderId + orderState
-                        orderId,
-                        orderState,
-
-                        // Add order
-                        ...order,
-                        // Add contract
-                        ...contract,
-                    },
+                    // Add order
+                    ...order,
+                    // Add contract
+                    ...contract,
                 };
+
+                // update orders
+                self.openedOrders = compact(openedOrders);
+
                 //  Delete order from openOrders list
                 if (orderState.status === 'Filled') {
                     log(
@@ -181,7 +183,11 @@ export class Orders {
                             contract && contract.symbol
                         }`
                     );
-                    delete self.openOrders[orderId];
+
+                    // update orders
+                    self.openedOrders = compact(
+                        (self.openedOrders || []).filter((i) => i.orderId !== orderId)
+                    );
                 }
 
                 //  Delete order from openOrders list
@@ -191,12 +197,12 @@ export class Orders {
                             contract && contract.symbol
                         }`
                     );
-                    delete self.openOrders[orderId];
+                    self.openedOrders = compact(
+                        (self.openedOrders || []).filter((i) => i.orderId !== orderId)
+                    );
                 }
 
-                const openOrdersArr = Object.keys(self.openOrders).map(
-                    (key) => self.openOrders[key]
-                );
+                const openOrdersArr = self.openedOrders;
                 log(`OPEN ORDERS ${openOrdersArr && openOrdersArr.length}`);
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                 // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -299,8 +305,6 @@ export class Orders {
         const self = this;
         const openedOrders: OrderWithContract[] = [];
 
-        // const timeoutTime: number = timeout || 6;
-
         return new Promise((resolve) => {
             let done = false;
             // listen for account summary
@@ -310,20 +314,14 @@ export class Orders {
                     self.ib.off('openOrderEnd', openOrderEnd);
                     done = true;
 
-                    // update opened orders
-                    // Set new opened orders
-                    const newOpenOrders = {};
-                    for (const oo of ordersData) {
-                        newOpenOrders[oo.orderId] = oo;
-                    }
-                    self.openOrders = newOpenOrders;
+                    // update  openedOrders
+                    self.openedOrders = ordersData;
 
                     return resolve(ordersData);
                 }
             };
 
             const openOrderEnd = () => {
-                log('openOrderEnd', openedOrders.length);
                 handleOpenOrders(openedOrders);
             };
 
@@ -352,8 +350,6 @@ export class Orders {
             });
 
             self.ib.reqAllOpenOrders(); // refresh orders
-
-            // setTimeout(() => handleOpenOrders([]), timeoutTime * 1000); // timeout
 
             return;
         });
@@ -446,9 +442,7 @@ export class Orders {
             /**
              * Check existing opened placed orders
              */
-            const checkExistingOrders = Object.keys(self.openOrders).map(
-                (key) => self.openOrders[key]
-            );
+            const checkExistingOrders = self.openedOrders;
 
             log(
                 'placingOrderNow',
@@ -588,7 +582,10 @@ export class Orders {
         return new Promise((res) => {
             const handleResults = (r: boolean) => {
                 if (r) {
-                    delete self.openOrders[orderId];
+                    // update orders
+                    self.openedOrders = compact(
+                        (self.openedOrders || []).filter((i) => i.orderId !== orderId)
+                    );
                 }
                 res(r);
                 handleError();
