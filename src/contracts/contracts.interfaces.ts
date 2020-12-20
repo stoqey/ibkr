@@ -2,15 +2,15 @@ export interface ContractObject {
     conId: number;
     symbol: string;
     secType: string;
-    expiry: string;
-    strike: number;
-    right: string;
-    multiplier: string;
+    expiry?: string;
+    strike?: number;
+    right?: string;
+    multiplier?: string;
     exchange: string;
     currency: string;
-    localSymbol: string;
-    tradingClass: string;
-    comboLegsDescrip: string;
+    localSymbol?: string;
+    tradingClass?: string;
+    comboLegsDescrip?: string;
 }
 
 interface ContractsSummary extends ContractObject {
