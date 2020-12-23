@@ -17,11 +17,11 @@ interface SymbolSubscribers {
 interface SymbolWithTicker {
     tickerId: number;
     symbol: string;
-    tickType?: TickPrice;
+    tickType?: TickPrice | TickPrice[];
 }
 
 interface ReqPriceUpdates {
-    tickType?: TickPrice;
+    tickType?: TickPrice | TickPrice[];
 }
 
 type ISubScribe = Record<any, any> & {
@@ -97,7 +97,11 @@ export class PriceUpdates {
                 // https://www.investopedia.com/terms/b/bid-and-ask.asp
 
                 // Matches as requested
-                if (currentTickerType === tickTypeWords) {
+                if (
+                    (typeof currentTickerType === 'string' &&
+                        currentTickerType === tickTypeWords) ||
+                    (isArray(currentTickerType) && currentTickerType.includes(tickTypeWords as any))
+                ) {
                     log(
                         'PriceUpdates.tickPrice',
                         `${tickTypeWords}:PRICE ${currentSymbol} => $${price} tickerId = ${tickerId}`
@@ -111,10 +115,12 @@ export class PriceUpdates {
                     }
 
                     const dataToPublish: {
+                        tickType: TickPrice | TickPrice[];
                         symbol: string;
                         price: number;
                         date: Date;
                     } = {
+                        tickType: tickTypeWords as any,
                         symbol: currentSymbol,
                         price,
                         date: new Date(),
