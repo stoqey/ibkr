@@ -1,39 +1,37 @@
 import {isArray} from 'lodash';
-import find from 'lodash/find';
 import isEmpty from 'lodash/isEmpty';
 import {IBKRConnection} from '../connection';
-import {getContractDetails} from '../contracts';
+import {ContractSummary, getContractDetails} from '../contracts';
 import {IbkrEvents, IBKREVENTS, publishDataToTopic} from '../events';
 import {log, verbose} from '../log';
 import {getRadomReqId} from '../_utils/text.utils';
-import {TickPrice} from './price.interfaces';
+import {PriceUpdatesEvent, TickPrice} from './price.interfaces';
 
 const ibEvents = IbkrEvents.Instance;
 
-interface SymbolSubscribers {
-    [x: string]: number;
-}
-
 interface SymbolWithTicker {
-    tickerId: number;
-    symbol: string;
-    tickType?: TickPrice | TickPrice[];
+    readonly tickerId: number;
+    readonly conId: number | undefined;
+    readonly symbol: string;
+    readonly tickType?: TickPrice | TickPrice[];
 }
 
 interface ReqPriceUpdates {
     tickType?: TickPrice | TickPrice[];
 }
 
-type ISubScribe = Record<any, any> & {
+type ISubscribe = Record<any, any> & {
     contract: any;
     opt: ReqPriceUpdates;
 };
 
 export class PriceUpdates {
     ib: any;
-    subscribers: SymbolSubscribers = {};
+    // subscribers: SymbolSubscribers = {};
 
-    subscribersWithTicker: SymbolWithTicker[] = [];
+    // subscribersWithTicker: SymbolWithTicker[] = [];
+    keyToTickerId: {[key: string]: number} = {};
+    tickerIdToData: {[tickerId: string]: SymbolWithTicker} = {};
 
     private static _instance: PriceUpdates;
 
@@ -73,7 +71,7 @@ export class PriceUpdates {
             'tickPrice',
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
-                const thisSymbol = find(that.subscribersWithTicker, {tickerId});
+                const thisSymbol = that.tickerIdToData[tickerId];
                 const tickTypeWords = ib.util.tickTypeToString(tickType);
 
                 log(
@@ -109,12 +107,7 @@ export class PriceUpdates {
                         `${tickTypeWords}:PRICE ${currentSymbol} => $${price} tickerId = ${tickerId}`
                     );
 
-                    const dataToPublish: {
-                        tickType: TickPrice | TickPrice[];
-                        symbol: string;
-                        price: number | null;
-                        date: Date;
-                    } = {
+                    const dataToPublish: PriceUpdatesEvent = {
                         tickType: tickTypeWords as any,
                         symbol: currentSymbol,
                         price: price === -1 ? null : price,
@@ -131,7 +124,7 @@ export class PriceUpdates {
         );
     }
 
-    private async subscribe(args: ISubScribe) {
+    private async subscribe(args: ISubscribe) {
         const that = this;
         const ib = IBKRConnection.Instance.getIBKR();
         const opt = args && args.opt;
@@ -152,15 +145,11 @@ export class PriceUpdates {
 
         log('contract before getting details', symbol);
 
-        const contractObj: any = await getContractDetails(contractArg);
+        const contractDetailsResult = await getContractDetails(contractArg);
 
-        let contract: any = contractObj;
-
-        if (!isArray(contractObj)) {
-            contract = contractObj?.summary || contractArg;
-        } else {
-            contract = contractObj[0]?.summary || contractArg;
-        }
+        const contract: Partial<ContractSummary> = !isArray(contractDetailsResult)
+            ? contractDetailsResult?.summary ?? contractArg
+            : contractDetailsResult[0]?.summary ?? contractArg;
 
         const includesForexOrOpt = ['CASH', 'OPT'].includes(contract?.secType || '');
         if (includesForexOrOpt) {
@@ -176,26 +165,25 @@ export class PriceUpdates {
             return log('PriceUpdates.subscribe', `Symbol cannot be null`);
         }
 
+        const key = contract?.conId ?? symbol;
+
         // Check if we already have the symbol
-        if (that.subscribers[symbol]) {
+        if (that.keyToTickerId[key]) {
             //  symbol is already subscribed
-            return verbose(
-                'PriceUpdates.subscribe',
-                `${symbol.toLocaleUpperCase()} is already subscribed`
-            );
+            return verbose('PriceUpdates.subscribe', `${key}/${symbol} is already subscribed`);
         }
 
         // Assign random number for symbol
         const tickerIdToUse = getRadomReqId();
-        that.subscribers[symbol] = tickerIdToUse;
+        that.keyToTickerId[key] = tickerIdToUse;
 
         // Add this symbol to subscribersTicker
-        that.subscribersWithTicker.push({
-            ...contract,
-            symbol,
+        that.tickerIdToData[tickerIdToUse] = {
             tickerId: tickerIdToUse,
+            conId: contract?.conId,
+            symbol,
             tickType,
-        });
+        };
 
         setImmediate(() => {
             that.ib.reqMktData(tickerIdToUse, contract, '', false, false);
@@ -210,35 +198,40 @@ export class PriceUpdates {
         const that = this;
 
         setTimeout(() => {
-            if (!isEmpty(that.subscribersWithTicker)) {
-                that.subscribersWithTicker.forEach((symbolTicker) => {
-                    log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
-                    that.ib.cancelMktData(symbolTicker.tickerId);
-                });
+            for (const symbolTicker of Object.values(this.tickerIdToData)) {
+                log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
+                that.ib.cancelMktData(symbolTicker.tickerId);
             }
-            return;
+            this.tickerIdToData = {};
+            this.keyToTickerId = {};
         }, 1000);
     }
 
     /**
      * unsubscribe
      */
-    public unsubscribe(symbol: string): void {
+    public unsubscribe(contract: {readonly conId?: number; readonly symbol?: string}): void {
         const that = this;
 
-        if (isEmpty(symbol)) {
+        const {conId, symbol} = contract;
+        const key = conId ?? symbol;
+        if (!key) {
+            return;
+        }
+
+        const tickerId = this.keyToTickerId[key];
+        if (!tickerId) {
             return;
         }
 
         setTimeout(() => {
-            if (!isEmpty(that.subscribersWithTicker)) {
-                const symbolTicker = that.subscribersWithTicker.find((st) => st.symbol === symbol);
-                if (symbolTicker) {
-                    log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
-                    that.ib.cancelMktData(symbolTicker.tickerId);
-                }
+            const symbolTicker = this.tickerIdToData[tickerId];
+            if (symbolTicker) {
+                log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
+                that.ib.cancelMktData(symbolTicker.tickerId);
             }
-            return;
+            delete this.tickerIdToData[tickerId];
+            delete this.keyToTickerId[key];
         }, 1000);
     }
 }

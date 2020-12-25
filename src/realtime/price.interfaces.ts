@@ -1,4 +1,19 @@
-export type TickPrice = 'BID' | 'ASK' | 'LAST' | 'HIGH' | 'LOW' | 'CLOSE' | 'OPEN';
+export type TickPrice =
+    | 'BID'
+    | 'ASK'
+    | 'LAST'
+    | 'HIGH'
+    | 'LOW'
+    | 'CLOSE'
+    | 'OPEN'
+    | 'DELAYED_BID'
+    | 'DELAYED_ASK'
+    | 'DELAYED_LAST'
+    | 'DELAYED_HIGH'
+    | 'DELAYED_LOW'
+    | 'DELAYED_VOLUME'
+    | 'DELAYED_CLOSE'
+    | 'DELAYED_OPEN';
 
 export type TickSize = 'BID_SIZE' | 'ASK_SIZE' | 'LAST_SIZE' | 'VOLUME';
 
@@ -20,4 +35,11 @@ export interface SymbolWithData {
         LAST_SIZE: number;
         VOLUME: number;
     };
+}
+
+export interface PriceUpdatesEvent {
+    readonly tickType: TickPrice | readonly TickPrice[];
+    readonly symbol: string;
+    readonly price: number | null;
+    readonly date: Date;
 }

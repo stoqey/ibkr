@@ -13,12 +13,12 @@ export interface ContractObject {
     comboLegsDescrip?: string;
 }
 
-interface ContractsSummary extends ContractObject {
+export interface ContractSummary extends ContractObject {
     primaryExch: string;
 }
 
 export interface ContractDetails {
-    summary: ContractsSummary;
+    summary: ContractSummary;
     marketName: string;
     minTick: number;
     orderTypes: string;
