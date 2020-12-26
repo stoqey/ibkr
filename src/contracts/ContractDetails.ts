@@ -1,28 +1,64 @@
-import {ContractDetails} from './contracts.interfaces';
+import {ContractDetails, ContractSummary} from './contracts.interfaces';
 import {getRadomReqId} from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import {handleEventfulError} from '../events/HandleError';
 
-export const getContractDetails = (
-    contract: string | any
-): Promise<ContractDetails | ContractDetails[]> => {
-    let contractArg: any = contract;
-    const contractsLocal: ContractDetails[] = [] as any;
+export interface ContractDetailsParams {
+    readonly conId?: number;
+    readonly symbol?: string;
+    readonly secType?: string;
+    readonly expiry?: string;
+    readonly strike?: number;
+    readonly right?: string;
+    readonly multiplier?: string;
+    readonly exchange?: string;
+    readonly currency?: string;
+    readonly localSymbol?: string;
+    readonly tradingClass?: string;
+    readonly comboLegsDescrip?: string;
+    readonly includeExpired?: any;
+    readonly secIdType?: any;
+    readonly secId?: any;
+}
+
+/**
+ * For some reason, NASDAQ needs to be called ISLAND in the contract request field for "exchange".
+ */
+const exchangeMap: {readonly [exchange: string]: string} = {
+    NASDAQ: 'ISLAND',
+};
+
+export function convertContractToContractDetailsParams(
+    contract: Partial<ContractSummary>
+): ContractDetailsParams {
+    return {
+        conId: contract.conId,
+        symbol: contract.symbol,
+        secType: contract.secType,
+        expiry: contract.expiry,
+        strike: contract.strike,
+        right: contract.right,
+        multiplier: contract.multiplier,
+        exchange: (contract.exchange && exchangeMap[contract.exchange]) ?? contract.exchange,
+        currency: contract.currency,
+        localSymbol: contract.localSymbol,
+        tradingClass: contract.tradingClass,
+        comboLegsDescrip: contract.comboLegsDescrip,
+        includeExpired: undefined,
+        secIdType: undefined,
+        secId: undefined,
+    };
+}
+
+export const getContractDetails = (params: ContractDetailsParams): Promise<ContractDetails[]> => {
+    const contractsLocal: ContractDetails[] = [];
 
     const reqId: number = getRadomReqId();
 
     return new Promise((resolve) => {
         const ib = IBKRConnection.Instance.getIBKR();
 
-        // If string, create stock contract as default
-        let symbol = contractArg && contractArg.symbol;
-
-        if (typeof contractArg === 'string') {
-            symbol = contractArg;
-            contractArg = ib.contract.stock(contractArg);
-        }
-
-        const handleContract = (reqId, contractReceived) => {
+        const handleContract = (_reqId: number, contractReceived: ContractDetails) => {
             contractsLocal.push(contractReceived);
         };
 
@@ -36,11 +72,7 @@ export const getContractDetails = (
             if (reqId === reqIdX) {
                 eventfulError(); // remove off event
                 ib.off('contractDetails', handleContract);
-
-                if (typeof contract === 'string') {
-                    return resolve(contractsLocal[0]);
-                }
-                resolve(contractsLocal);
+                return resolve(contractsLocal);
             }
         };
 
@@ -51,11 +83,12 @@ export const getContractDetails = (
             reqId,
             [
                 `No security definition has been found for the request`,
-                `The contract description specified for ${symbol} is ambiguous.`,
+                `The contract description specified is ambiguous:`,
+                JSON.stringify(params),
             ],
             () => contractDetailsEnd(reqId, true)
         );
 
-        ib.reqContractDetails(reqId, contractArg);
+        ib.reqContractDetails(reqId, params);
     });
 };

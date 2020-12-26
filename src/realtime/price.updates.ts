@@ -1,7 +1,12 @@
 import {isArray} from 'lodash';
 import isEmpty from 'lodash/isEmpty';
 import {IBKRConnection} from '../connection';
-import {ContractSummary, getContractDetails} from '../contracts';
+import {
+    ContractObject,
+    ContractSummary,
+    convertContractToContractDetailsParams,
+    getContractDetails,
+} from '../contracts';
 import {IbkrEvents, IBKREVENTS, publishDataToTopic} from '../events';
 import {log, verbose} from '../log';
 import {getRadomReqId} from '../_utils/text.utils';
@@ -21,15 +26,13 @@ interface ReqPriceUpdates {
 }
 
 type ISubscribe = Record<any, any> & {
-    contract: any;
+    contract: string | Partial<ContractObject>;
     opt: ReqPriceUpdates;
 };
 
 export class PriceUpdates {
     ib: any;
-    // subscribers: SymbolSubscribers = {};
 
-    // subscribersWithTicker: SymbolWithTicker[] = [];
     keyToTickerId: {[key: string]: number} = {};
     tickerIdToData: {[tickerId: string]: SymbolWithTicker} = {};
 
@@ -124,53 +127,48 @@ export class PriceUpdates {
         );
     }
 
-    private async subscribe(args: ISubscribe) {
+    public async subscribe(args: ISubscribe): Promise<void> {
         const that = this;
         const ib = IBKRConnection.Instance.getIBKR();
         const opt = args && args.opt;
-        let contractArg = args && args.contract;
 
+        const contractArg =
+            typeof args?.contract === 'string' ? ib.contract.stock(args.contract) : args?.contract;
         if (isEmpty(contractArg)) {
             return; // verbose('contract is not defined', contractArg);
         }
-
-        // If string, create stock contract as default
-        if (typeof contractArg === 'string') {
-            contractArg = ib.contract.stock(contractArg);
-        }
+        log('contract before getting details', contractArg);
 
         const tickType = (args && args.tickType) || (opt && opt.tickType);
 
-        let symbol = (contractArg && contractArg.symbol) || contractArg;
+        const contractDetailsParams = convertContractToContractDetailsParams(contractArg);
+        const contractDetailsList = await getContractDetails(contractDetailsParams);
 
-        log('contract before getting details', symbol);
+        if (contractDetailsList.length !== 1) {
+            log('contract details are ambiguous, expected exactly one:', contractDetailsList);
+        }
 
-        const contractDetailsResult = await getContractDetails(contractArg);
+        const contract: ContractSummary = contractDetailsList[0].summary;
+        log('contract to be queried:', contract);
 
-        const contract: Partial<ContractSummary> = !isArray(contractDetailsResult)
-            ? contractDetailsResult?.summary ?? contractArg
-            : contractDetailsResult[0]?.summary ?? contractArg;
-
-        const includesForexOrOpt = ['CASH', 'OPT'].includes(contract?.secType || '');
-        if (includesForexOrOpt) {
-            symbol = contract && contract.localSymbol;
+        const includesForexOrOpt = ['CASH', 'OPT'].includes(contract.secType);
+        const symbol = includesForexOrOpt ? contract.localSymbol : contract.symbol;
+        // Check if symbol exist
+        if (!symbol) {
+            return log('PriceUpdates.subscribe', `Symbol cannot be null`);
         }
 
         if (!that.ib) {
             that.init();
         }
 
-        // Check if symbol exist
-        if (isEmpty(symbol)) {
-            return log('PriceUpdates.subscribe', `Symbol cannot be null`);
-        }
-
-        const key = contract?.conId ?? symbol;
+        const conId = contract.conId;
+        const key = conId.toString();
 
         // Check if we already have the symbol
         if (that.keyToTickerId[key]) {
             //  symbol is already subscribed
-            return verbose('PriceUpdates.subscribe', `${key}/${symbol} is already subscribed`);
+            return verbose('PriceUpdates.subscribe', `${conId}/${symbol} is already subscribed`);
         }
 
         // Assign random number for symbol
@@ -180,17 +178,14 @@ export class PriceUpdates {
         // Add this symbol to subscribersTicker
         that.tickerIdToData[tickerIdToUse] = {
             tickerId: tickerIdToUse,
-            conId: contract?.conId,
+            conId,
             symbol,
             tickType,
         };
 
         setImmediate(() => {
             that.ib.reqMktData(tickerIdToUse, contract, '', false, false);
-            return log(
-                'PriceUpdates.subscribe',
-                `${symbol.toLocaleUpperCase()} is successfully subscribed`
-            );
+            return log('PriceUpdates.subscribe', `${conId}/${symbol} is successfully subscribed`);
         });
     }
 
