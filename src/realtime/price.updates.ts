@@ -18,17 +18,17 @@ interface SymbolWithTicker {
     readonly tickerId: number;
     readonly conId: number | undefined;
     readonly symbol: string;
-    readonly tickType?: TickPrice | TickPrice[];
+    readonly tickTypes?: readonly TickPrice[];
 }
 
 interface ReqPriceUpdates {
-    tickType?: TickPrice | TickPrice[];
+    readonly tickType?: TickPrice | readonly TickPrice[];
 }
 
-type ISubscribe = Record<any, any> & {
-    contract: string | Partial<ContractObject>;
-    opt: ReqPriceUpdates;
-};
+interface ISubscribe {
+    readonly contract: string | Partial<ContractObject> | ContractSummary;
+    readonly opt?: ReqPriceUpdates;
+}
 
 export class PriceUpdates {
     ib: any;
@@ -87,7 +87,7 @@ export class PriceUpdates {
                     )}`
                 );
 
-                const currentTickerType = thisSymbol.tickType;
+                const tickTypesAllowed = thisSymbol.tickTypes;
 
                 const currentSymbol = thisSymbol && thisSymbol.symbol;
 
@@ -100,10 +100,8 @@ export class PriceUpdates {
 
                 // Matches as requested
                 if (
-                    currentTickerType === undefined ||
-                    (typeof currentTickerType === 'string' &&
-                        currentTickerType === tickTypeWords) ||
-                    (isArray(currentTickerType) && currentTickerType.includes(tickTypeWords as any))
+                    tickTypesAllowed === undefined ||
+                    tickTypesAllowed.includes(tickTypeWords as any)
                 ) {
                     log(
                         'PriceUpdates.tickPrice',
@@ -127,35 +125,57 @@ export class PriceUpdates {
         );
     }
 
-    public async subscribe(args: ISubscribe): Promise<void> {
+    /**
+     * @returns The `conId` of the contract subscribed to, or `undefined` if there was a failure.
+     */
+    public async subscribe(args: ISubscribe): Promise<undefined | number> {
         const that = this;
         const ib = IBKRConnection.Instance.getIBKR();
-        const opt = args && args.opt;
 
-        const contractArg =
-            typeof args?.contract === 'string' ? ib.contract.stock(args.contract) : args?.contract;
-        if (isEmpty(contractArg)) {
-            return; // verbose('contract is not defined', contractArg);
+        const tickTypes: readonly TickPrice[] | undefined = args.opt?.tickType
+            ? isArray(args.opt?.tickType)
+                ? args.opt.tickType
+                : [args.opt.tickType]
+            : undefined;
+
+        const contract: ContractSummary | undefined = await (async () => {
+            const contractArg: ContractSummary | Partial<ContractObject> =
+                typeof args.contract === 'string'
+                    ? ib.contract.stock(args.contract)
+                    : args.contract;
+            if (isEmpty(contractArg)) {
+                // verbose('contract is not defined', contractArg);
+                return undefined;
+            }
+            log('contract before getting details', contractArg);
+
+            if ('primaryExch' in contractArg) {
+                return contractArg;
+            } else {
+                const contractDetailsParams = convertContractToContractDetailsParams(contractArg);
+                const contractDetailsList = await getContractDetails(contractDetailsParams);
+                if (contractDetailsList.length !== 1) {
+                    log(
+                        'contract details are ambiguous, expected exactly one:',
+                        contractDetailsList
+                    );
+                }
+
+                return contractDetailsList[0].summary;
+            }
+        })();
+        if (!contract) {
+            return undefined;
         }
-        log('contract before getting details', contractArg);
 
-        const tickType = (args && args.tickType) || (opt && opt.tickType);
-
-        const contractDetailsParams = convertContractToContractDetailsParams(contractArg);
-        const contractDetailsList = await getContractDetails(contractDetailsParams);
-
-        if (contractDetailsList.length !== 1) {
-            log('contract details are ambiguous, expected exactly one:', contractDetailsList);
-        }
-
-        const contract: ContractSummary = contractDetailsList[0].summary;
         log('contract to be queried:', contract);
 
         const includesForexOrOpt = ['CASH', 'OPT'].includes(contract.secType);
         const symbol = includesForexOrOpt ? contract.localSymbol : contract.symbol;
         // Check if symbol exist
         if (!symbol) {
-            return log('PriceUpdates.subscribe', `Symbol cannot be null`);
+            log('PriceUpdates.subscribe', `Symbol cannot be null`);
+            return undefined;
         }
 
         if (!that.ib) {
@@ -168,7 +188,8 @@ export class PriceUpdates {
         // Check if we already have the symbol
         if (that.keyToTickerId[key]) {
             //  symbol is already subscribed
-            return verbose('PriceUpdates.subscribe', `${conId}/${symbol} is already subscribed`);
+            verbose('PriceUpdates.subscribe', `${conId}/${symbol} is already subscribed`);
+            return conId;
         }
 
         // Assign random number for symbol
@@ -180,54 +201,54 @@ export class PriceUpdates {
             tickerId: tickerIdToUse,
             conId,
             symbol,
-            tickType,
+            tickTypes,
         };
 
+        // QUESTION: what is the reason for the waiting to call reqMktData till the next loop? -- ellis, 2020-12-27
         setImmediate(() => {
             that.ib.reqMktData(tickerIdToUse, contract, '', false, false);
-            return log('PriceUpdates.subscribe', `${conId}/${symbol} is successfully subscribed`);
+            log('PriceUpdates.subscribe', `${conId}/${symbol} is successfully subscribed`);
         });
+
+        return conId;
     }
 
     public unsubscribeAllSymbols(): void {
-        const that = this;
-
-        setTimeout(() => {
+        const timeoutHandler = () => {
             for (const symbolTicker of Object.values(this.tickerIdToData)) {
                 log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
-                that.ib.cancelMktData(symbolTicker.tickerId);
+                this.ib.cancelMktData(symbolTicker.tickerId);
             }
             this.tickerIdToData = {};
             this.keyToTickerId = {};
-        }, 1000);
+        };
+
+        // QUESTION: what is the reason for the 1s delay? -- ellis, 2020-12-27
+        setTimeout(timeoutHandler, 1000);
     }
 
     /**
      * unsubscribe
      */
-    public unsubscribe(contract: {readonly conId?: number; readonly symbol?: string}): void {
-        const that = this;
-
-        const {conId, symbol} = contract;
-        const key = conId ?? symbol;
-        if (!key) {
-            return;
-        }
-
+    public unsubscribe(contract: {readonly conId: number}): void {
+        const key = contract.conId.toString();
         const tickerId = this.keyToTickerId[key];
         if (!tickerId) {
             return;
         }
 
-        setTimeout(() => {
+        const timeoutHandler = () => {
             const symbolTicker = this.tickerIdToData[tickerId];
             if (symbolTicker) {
                 log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
-                that.ib.cancelMktData(symbolTicker.tickerId);
+                this.ib.cancelMktData(symbolTicker.tickerId);
             }
             delete this.tickerIdToData[tickerId];
             delete this.keyToTickerId[key];
-        }, 1000);
+        };
+
+        // QUESTION: what is the reason for the 1s delay? -- ellis, 2020-12-27
+        setTimeout(timeoutHandler, 1000);
     }
 }
 
