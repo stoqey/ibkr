@@ -58,18 +58,20 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
     return new Promise((resolve) => {
         const ib = IBKRConnection.Instance.getIBKR();
 
-        const handleContract = (_reqId: number, contractReceived: ContractDetails) => {
-            contractsLocal.push(contractReceived);
+        const handleContract = (reqIdX: number, contractReceived: ContractDetails) => {
+            if (reqIdX === reqId) {
+                contractsLocal.push(contractReceived);
+            }
         };
 
         ib.on('contractDetails', handleContract);
 
         const contractDetailsEnd = (reqIdX: number, isError?: boolean) => {
-            if (isError) {
-                return resolve([]);
-            }
+            if (reqIdX === reqId) {
+                if (isError) {
+                    return resolve([]);
+                }
 
-            if (reqId === reqIdX) {
                 eventfulError(); // remove off event
                 ib.off('contractDetails', handleContract);
                 return resolve(contractsLocal);

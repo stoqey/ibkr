@@ -12,7 +12,7 @@ before(async () => {
         port: Number(process.env.TEST_IBKR_PORT),
         host: process.env.TEST_IBKR_HOST,
     };
-    console.log('args:', args);
+    // console.log('args:', args);
     await ibkr(args);
 
     IBKRConnection.Instance.getIBKR();
