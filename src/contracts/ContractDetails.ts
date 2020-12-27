@@ -66,7 +66,7 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
 
         const contractDetailsEnd = (reqIdX: number, isError?: boolean) => {
             if (isError) {
-                return resolve(null);
+                return resolve([]);
             }
 
             if (reqId === reqIdX) {
