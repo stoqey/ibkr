@@ -1,12 +1,12 @@
-import isEmpty from 'lodash/isEmpty';
-import find from 'lodash/find';
-import {TickPrice} from './price.interfaces';
-import {IBKRConnection} from '../connection';
-import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
-import {getRadomReqId} from '../_utils/text.utils';
-import {log, verbose} from '../log';
-import {getContractDetails} from '../contracts';
 import {isArray} from 'lodash';
+import find from 'lodash/find';
+import isEmpty from 'lodash/isEmpty';
+import {IBKRConnection} from '../connection';
+import {getContractDetails} from '../contracts';
+import {IbkrEvents, IBKREVENTS, publishDataToTopic} from '../events';
+import {log, verbose} from '../log';
+import {getRadomReqId} from '../_utils/text.utils';
+import {TickPrice} from './price.interfaces';
 
 const ibEvents = IbkrEvents.Instance;
 
@@ -74,20 +74,21 @@ export class PriceUpdates {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
                 const thisSymbol = find(that.subscribersWithTicker, {tickerId});
+                const tickTypeWords = ib.util.tickTypeToString(tickType);
 
                 log(
                     'PriceUpdates.tickPrice',
-                    `tickerId=${tickerId}, price=${price} ${JSON.stringify({
-                        s: thisSymbol.symbol,
-                        ticker: thisSymbol.tickerId,
-                    })}`
+                    `tickerId=${tickerId}, tickType=${tickType}/${tickTypeWords}, price=${price} ${JSON.stringify(
+                        {
+                            s: thisSymbol.symbol,
+                            ticker: thisSymbol.tickerId,
+                        }
+                    )}`
                 );
 
                 const currentTickerType = thisSymbol.tickType;
 
                 const currentSymbol = thisSymbol && thisSymbol.symbol;
-
-                const tickTypeWords = ib.util.tickTypeToString(tickType);
 
                 if (isEmpty(currentSymbol)) {
                     log('PriceUpdates.tickPrice', `Symbol not found ${JSON.stringify(thisSymbol)}`);
@@ -98,6 +99,7 @@ export class PriceUpdates {
 
                 // Matches as requested
                 if (
+                    currentTickerType === undefined ||
                     (typeof currentTickerType === 'string' &&
                         currentTickerType === tickTypeWords) ||
                     (isArray(currentTickerType) && currentTickerType.includes(tickTypeWords as any))
@@ -107,22 +109,15 @@ export class PriceUpdates {
                         `${tickTypeWords}:PRICE ${currentSymbol} => $${price} tickerId = ${tickerId}`
                     );
 
-                    if (price === -1) {
-                        return log(
-                            'PriceUpdates.tickPrice',
-                            `${tickTypeWords}:PRICE NULL ${currentSymbol} $${price}`
-                        );
-                    }
-
                     const dataToPublish: {
                         tickType: TickPrice | TickPrice[];
                         symbol: string;
-                        price: number;
+                        price: number | null;
                         date: Date;
                     } = {
                         tickType: tickTypeWords as any,
                         symbol: currentSymbol,
-                        price,
+                        price: price === -1 ? null : price,
                         date: new Date(),
                     };
 
@@ -151,7 +146,7 @@ export class PriceUpdates {
             contractArg = ib.contract.stock(contractArg);
         }
 
-        const tickType = (args && args.tickType) || (opt && opt.tickType) || 'ASK';
+        const tickType = (args && args.tickType) || (opt && opt.tickType);
 
         let symbol = (contractArg && contractArg.symbol) || contractArg;
 
