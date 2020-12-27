@@ -1,4 +1,4 @@
-import {ContractDetails, ContractSummary} from './contracts.interfaces';
+import {ContractDetails, ContractSummary, SecType} from './contracts.interfaces';
 import {getRadomReqId} from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import {handleEventfulError} from '../events/HandleError';
@@ -6,11 +6,11 @@ import {handleEventfulError} from '../events/HandleError';
 export interface ContractDetailsParams {
     readonly conId?: number;
     readonly symbol?: string;
-    readonly secType?: string;
+    readonly secType?: SecType | string;
     readonly expiry?: string;
     readonly strike?: number;
     readonly right?: string;
-    readonly multiplier?: string;
+    readonly multiplier?: number;
     readonly exchange?: string;
     readonly currency?: string;
     readonly localSymbol?: string;
@@ -91,4 +91,36 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
 
         ib.reqContractDetails(reqId, params);
     });
+};
+
+export const getContractDetailsOneOrNone: (
+    params: ContractDetailsParams
+) => Promise<ContractDetails | undefined> = async (params) => {
+    const contractDetailsList = await getContractDetails(params);
+    if (contractDetailsList.length === 0) {
+        return undefined;
+    } else if (contractDetailsList.length === 1) {
+        return contractDetailsList[0];
+    } else {
+        throw Error(
+            'Expected zero or one results, received multiple: ' +
+                JSON.stringify(contractDetailsList)
+        );
+    }
+};
+
+export const getContractDetailsOne: (
+    params: ContractDetailsParams
+) => Promise<ContractDetails | undefined> = async (params) => {
+    const contractDetailsList = await getContractDetails(params);
+    if (contractDetailsList.length === 0) {
+        throw Error('Expected exactly one results, received none for: ' + JSON.stringify(params));
+    } else if (contractDetailsList.length === 1) {
+        return contractDetailsList[0];
+    } else {
+        throw Error(
+            'Expected exactly one results, received multiple: ' +
+                JSON.stringify(contractDetailsList)
+        );
+    }
 };
