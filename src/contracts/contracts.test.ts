@@ -4,7 +4,7 @@ import ibkr from '..';
 import {log} from '../log';
 import {IBKRConnection} from '../connection';
 import dotenv from 'dotenv';
-import {getContractDetailsOne, getContractDetailsOneOrNone} from '.';
+import {getContractDetailsOne, getContractDetailsOneOrNone, getContractSummaryOne} from '.';
 
 before(async () => {
     dotenv.config({path: '.env.test'});
@@ -19,7 +19,7 @@ before(async () => {
 });
 
 describe('Contracts', () => {
-    it.only('getContractDetails() should get stock contract details for AAPL', async () => {
+    it('getContractDetails() should get stock contract details for AAPL', async () => {
         const contractDetailsList = await getContractDetails({
             exchange: 'NYSE',
             symbol: 'AAPL',
@@ -31,7 +31,7 @@ describe('Contracts', () => {
         }
     });
 
-    it.only('getContractDetailsOne() should get stock contract details for AAPL', async () => {
+    it('getContractDetailsOne() should get stock contract details for AAPL', async () => {
         const contractDetails = await getContractDetailsOne({
             exchange: 'NYSE',
             symbol: 'AAPL',
@@ -43,22 +43,22 @@ describe('Contracts', () => {
         }
     });
 
-    it.only('getContractDetailsOne() should throw error for AAPLXZY', async () => {
+    it('getContractDetailsOne() should throw error for AAPLXZY', async () => {
         try {
             const contractDetails = await getContractDetailsOne({
                 exchange: 'NYSE',
-                symbol: 'AAPL',
+                symbol: 'AAPLXYZ',
                 secType: 'STK',
             });
-            throw Error(
-                'Received contractDetails but expected none: ' + JSON.stringify(contractDetails)
-            );
+            log('contract details', contractDetails);
         } catch (err) {
-            // Expected
+            // Success if error was throw
+            return;
         }
+        throw Error('Received contractDetails but expected none: ');
     });
 
-    it.only('getContractDetailsOneOrNone() should get stock contract details for AAPL', async () => {
+    it('getContractDetailsOneOrNone() should get stock contract details for AAPL', async () => {
         const contractDetails = await getContractDetailsOneOrNone({
             exchange: 'NYSE',
             symbol: 'AAPL',
@@ -70,7 +70,7 @@ describe('Contracts', () => {
         }
     });
 
-    it.only('getContractDetailsOneOrNone() should NOT get stock contract details for AAPLXYZ', async () => {
+    it('getContractDetailsOneOrNone() should NOT get stock contract details for AAPLXYZ', async () => {
         const contractDetails = await getContractDetailsOneOrNone({
             exchange: 'NYSE',
             symbol: 'AAPLXYZ',
@@ -81,6 +81,18 @@ describe('Contracts', () => {
             throw Error(
                 'Received contractDetails but expected none: ' + JSON.stringify(contractDetails)
             );
+        }
+    });
+
+    it('getContractSummaryOne() should get the ContractSummary for AAPL', async () => {
+        const contractSummary = await getContractSummaryOne({
+            exchange: 'NYSE',
+            symbol: 'AAPL',
+            secType: 'STK',
+        });
+        log('contractSummary:', contractSummary);
+        if (!contractSummary) {
+            throw Error('Error getting contractSummary for AAPL');
         }
     });
 

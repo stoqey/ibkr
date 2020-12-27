@@ -111,12 +111,28 @@ export const getContractDetailsOneOrNone: (
 
 export const getContractDetailsOne: (
     params: ContractDetailsParams
-) => Promise<ContractDetails | undefined> = async (params) => {
+) => Promise<ContractDetails> = async (params) => {
     const contractDetailsList = await getContractDetails(params);
     if (contractDetailsList.length === 0) {
         throw Error('Expected exactly one results, received none for: ' + JSON.stringify(params));
     } else if (contractDetailsList.length === 1) {
         return contractDetailsList[0];
+    } else {
+        throw Error(
+            'Expected exactly one results, received multiple: ' +
+                JSON.stringify(contractDetailsList)
+        );
+    }
+};
+
+export const getContractSummaryOne: (
+    params: ContractDetailsParams
+) => Promise<ContractSummary> = async (params) => {
+    const contractDetailsList = await getContractDetails(params);
+    if (contractDetailsList.length === 0) {
+        throw Error('Expected exactly one results, received none for: ' + JSON.stringify(params));
+    } else if (contractDetailsList.length === 1) {
+        return contractDetailsList[0].summary;
     } else {
         throw Error(
             'Expected exactly one results, received multiple: ' +
