@@ -214,13 +214,16 @@ export class PriceUpdates {
     }
 
     public unsubscribeAllSymbols(): void {
+        const tickerIdToData = this.tickerIdToData;
+
+        this.tickerIdToData = {};
+        this.keyToTickerId = {};
+
         const timeoutHandler = () => {
-            for (const symbolTicker of Object.values(this.tickerIdToData)) {
+            for (const symbolTicker of Object.values(tickerIdToData)) {
                 log(`cancelMktData ${symbolTicker.symbol} tickerId=${symbolTicker.tickerId}`);
                 this.ib.cancelMktData(symbolTicker.tickerId);
             }
-            this.tickerIdToData = {};
-            this.keyToTickerId = {};
         };
 
         // QUESTION: what is the reason for the 1s delay? -- ellis, 2020-12-27
