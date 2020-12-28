@@ -5,6 +5,7 @@ import {log} from '../log';
 import {IBKRConnection} from '../connection';
 import dotenv from 'dotenv';
 import {getContractDetailsOne, getContractDetailsOneOrNone, getContractSummaryOne} from '.';
+import {getSecDefOptParams} from './getSecDefOptParams';
 
 before(async () => {
     dotenv.config({path: '.env.test'});
@@ -101,7 +102,7 @@ describe('Contracts', () => {
             currency: 'USD',
             exchange: 'SMART',
             multiplier: 100,
-            expiry: "20210129",
+            expiry: '20210129',
             strike: 13.5,
             right: 'P',
             secType: 'OPT',
@@ -131,6 +132,19 @@ describe('Contracts', () => {
             log('contract ', JSON.stringify(contractDetails));
         } else {
             throw Error('Error getting symbol details');
+        }
+    });
+
+    it('getSecDefOptParams() should get an overview of options', async () => {
+        const datas = await getSecDefOptParams({
+            conId: 35111040,
+            secType: 'STK',
+            symbol: 'MPW',
+        });
+        if (datas) {
+            log('option overview:', JSON.stringify(datas));
+        } else {
+            throw Error('Error getting option overview');
         }
     });
 });
