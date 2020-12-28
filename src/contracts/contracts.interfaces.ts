@@ -1,11 +1,13 @@
+export type SecType = 'CASH' | 'FUT' | 'NEWS' | 'OPT' | 'STK';
+
 export interface ContractObject {
     conId: number;
     symbol: string;
-    secType: string;
+    secType: SecType | string;
     expiry?: string;
     strike?: number;
     right?: string;
-    multiplier?: string;
+    multiplier?: number;
     exchange: string;
     currency: string;
     localSymbol?: string;
@@ -13,12 +15,12 @@ export interface ContractObject {
     comboLegsDescrip?: string;
 }
 
-interface ContractsSummary extends ContractObject {
+export interface ContractSummary extends ContractObject {
     primaryExch: string;
 }
 
 export interface ContractDetails {
-    summary: ContractsSummary;
+    summary: ContractSummary;
     marketName: string;
     minTick: number;
     orderTypes: string;
