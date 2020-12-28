@@ -21,7 +21,7 @@ before(async () => {
 describe('Contracts', () => {
     it('getContractDetails() should get stock contract details for AAPL', async () => {
         const contractDetailsList = await getContractDetails({
-            exchange: 'NYSE',
+            exchange: 'ISLAND',
             symbol: 'AAPL',
             secType: 'STK',
         });
@@ -33,7 +33,7 @@ describe('Contracts', () => {
 
     it('getContractDetailsOne() should get stock contract details for AAPL', async () => {
         const contractDetails = await getContractDetailsOne({
-            exchange: 'NYSE',
+            exchange: 'ISLAND',
             symbol: 'AAPL',
             secType: 'STK',
         });
@@ -46,7 +46,7 @@ describe('Contracts', () => {
     it('getContractDetailsOne() should throw error for AAPLXZY', async () => {
         try {
             const contractDetails = await getContractDetailsOne({
-                exchange: 'NYSE',
+                exchange: 'ISLAND',
                 symbol: 'AAPLXYZ',
                 secType: 'STK',
             });
@@ -60,7 +60,7 @@ describe('Contracts', () => {
 
     it('getContractDetailsOneOrNone() should get stock contract details for AAPL', async () => {
         const contractDetails = await getContractDetailsOneOrNone({
-            exchange: 'NYSE',
+            exchange: 'ISLAND',
             symbol: 'AAPL',
             secType: 'STK',
         });
@@ -72,7 +72,7 @@ describe('Contracts', () => {
 
     it('getContractDetailsOneOrNone() should NOT get stock contract details for AAPLXYZ', async () => {
         const contractDetails = await getContractDetailsOneOrNone({
-            exchange: 'NYSE',
+            exchange: 'ISLAND',
             symbol: 'AAPLXYZ',
             secType: 'STK',
         });
@@ -86,7 +86,7 @@ describe('Contracts', () => {
 
     it('getContractSummaryOne() should get the ContractSummary for AAPL', async () => {
         const contractSummary = await getContractSummaryOne({
-            exchange: 'NYSE',
+            exchange: 'ISLAND',
             symbol: 'AAPL',
             secType: 'STK',
         });
@@ -101,9 +101,11 @@ describe('Contracts', () => {
             currency: 'USD',
             exchange: 'SMART',
             multiplier: 100,
-            right: 'C',
+            expiry: "20210129",
+            strike: 13.5,
+            right: 'P',
             secType: 'OPT',
-            symbol: 'AAPL',
+            symbol: 'HBI',
         };
 
         const contractDetails = await getContractDetails(contractObj);
