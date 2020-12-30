@@ -1,14 +1,13 @@
-import ibkr from '@stoqey/ib';
+import ibkr, {Contract, EventName, Order} from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
+import {IBKRAccountSummary} from '../account/account-summary.interfaces';
 import AccountSummary from '../account/AccountSummary';
+import IBKRConnection from '../connection/IBKRConnection';
 import {IBKREVENTS, IbkrEvents} from '../events';
 import {publishDataToTopic} from '../events/IbkrEvents.publisher';
-import IBKRConnection from '../connection/IBKRConnection';
-import {PortFolioUpdate} from './portfolios.interfaces';
-import {IBKRAccountSummary} from '../account/account-summary.interfaces';
-import {ORDER, OrderState} from '../orders';
 import {log, verbose} from '../log';
-import {ContractObject} from '../contracts';
+import {OrderState} from '../orders';
+import {PortFolioUpdate} from './portfolios.interfaces';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -57,7 +56,7 @@ export class Portfolios {
         const ib = this.ib;
 
         ib.on(
-            'updatePortfolio',
+            EventName.updatePortfolio,
             (
                 contract,
                 position,
@@ -78,15 +77,16 @@ export class Portfolios {
                     realizedPNL,
                     accountName,
                 };
-                logPortfolio(thisPortfolio);
+                // FIXME: remove `as any` ASAP
+                logPortfolio(thisPortfolio as any);
                 self.getPortfolios(); // refresh portfolios
             }
         );
 
-        ib.on('openOrder', function (
-            orderId,
-            contract: ContractObject,
-            order: ORDER,
+        ib.on(EventName.openOrder, function (
+            _orderId: number,
+            contract: Contract,
+            order: Order,
             orderState: OrderState
         ) {
             if (orderState.status === 'Filled') {
@@ -97,9 +97,8 @@ export class Portfolios {
 
                 if (isEmpty(existingPortfolio)) {
                     // Add to currentPortfolios
-                    self.currentPortfolios.push({
-                        ...contract,
-                    });
+                    // FIXME: remove `as any` ASAP
+                    self.currentPortfolios.push(contract as any);
                 } else {
                     self.currentPortfolios = self.currentPortfolios.filter(
                         (porto) => porto.symbol !== contract.symbol
@@ -135,7 +134,12 @@ export class Portfolios {
             let done = false;
             const portfolios: {[x: string]: PortFolioUpdate} = {};
 
-            const handlePosition = (account, contract: ContractObject, position, averageCost) => {
+            const handlePosition = (
+                aaccount: string,
+                contract: Contract,
+                position: number,
+                averageCost: number
+            ) => {
                 const thisPortfolio = {...contract, position, averageCost};
 
                 let symbol = contract && contract.symbol;
@@ -153,7 +157,8 @@ export class Portfolios {
 
                 thisPortfolio.symbol = symbol; // override symbol name
 
-                portfolios[symbol] = thisPortfolio;
+                // FIXME: need to coorindate Contract types with @stoqey/ib (in ib, some of the fields need to be non-optional)
+                portfolios[symbol] = thisPortfolio as any;
             };
 
             const handlePositionEnd = (portfoliosData: PortFolioUpdate[]) => {
@@ -188,9 +193,9 @@ export class Portfolios {
                 ib.off('positionEnd', positionEnd);
             };
 
-            ib.on('positionEnd', positionEnd);
+            ib.on(EventName.positionEnd, positionEnd);
 
-            ib.on('position', handlePosition);
+            ib.on(EventName.position, handlePosition);
 
             ib.reqPositions();
         });

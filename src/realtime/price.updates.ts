@@ -1,4 +1,4 @@
-import {isArray} from 'lodash';
+import {EventName, TickType} from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import {IBKRConnection} from '../connection';
 import {
@@ -23,11 +23,6 @@ interface SymbolWithTicker {
 
 interface ReqPriceUpdates {
     readonly tickType?: TickPrice | readonly TickPrice[];
-}
-
-interface ISubscribe {
-    readonly contract: string | Partial<ContractObject> | ContractSummary;
-    readonly opt?: ReqPriceUpdates;
 }
 
 export class PriceUpdates {
@@ -71,15 +66,15 @@ export class PriceUpdates {
         const that = this;
 
         ib.on(
-            'tickPrice',
+            EventName.tickPrice,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
+            (tickerId: number, tickType: TickType, price: number, attribs: unknown) => {
                 const thisSymbol = that.tickerIdToData[tickerId];
-                const tickTypeWords = ib.util.tickTypeToString(tickType);
+                const tickTypeText = TickType[tickType];
 
                 log(
                     'PriceUpdates.tickPrice',
-                    `tickerId=${tickerId}, tickType=${tickType}/${tickTypeWords}, price=${price} ${JSON.stringify(
+                    `tickerId=${tickerId}, tickType=${tickType}/${tickTypeText}, price=${price} ${JSON.stringify(
                         {
                             s: thisSymbol.symbol,
                             ticker: thisSymbol.tickerId,
@@ -101,15 +96,15 @@ export class PriceUpdates {
                 // Matches as requested
                 if (
                     tickTypesAllowed === undefined ||
-                    tickTypesAllowed.includes(tickTypeWords as any)
+                    tickTypesAllowed.includes(tickTypeText as any)
                 ) {
                     log(
                         'PriceUpdates.tickPrice',
-                        `${tickTypeWords}:PRICE ${currentSymbol} => $${price} tickerId = ${tickerId}`
+                        `${tickTypeText}:PRICE ${currentSymbol} => $${price} tickerId = ${tickerId}`
                     );
 
                     const dataToPublish: PriceUpdatesEvent = {
-                        tickType: tickTypeWords as any,
+                        tickType: tickTypeText as any,
                         symbol: currentSymbol,
                         price: price === -1 ? null : price,
                         date: new Date(),
@@ -128,21 +123,23 @@ export class PriceUpdates {
     /**
      * @returns The `conId` of the contract subscribed to, or `undefined` if there was a failure.
      */
-    public async subscribe(args: ISubscribe): Promise<undefined | number> {
+    public async subscribe(
+        contractParams: string | Partial<ContractObject> | ContractSummary,
+        opt?: ReqPriceUpdates
+    ): Promise<undefined | number> {
         const that = this;
-        const ib = IBKRConnection.Instance.getIBKR();
 
-        const tickTypes: readonly TickPrice[] | undefined = args.opt?.tickType
-            ? isArray(args.opt?.tickType)
-                ? args.opt.tickType
-                : [args.opt.tickType]
+        const tickTypes: readonly TickPrice[] | undefined = opt?.tickType
+            ? typeof opt.tickType === 'string'
+                ? [opt.tickType]
+                : opt.tickType
             : undefined;
 
         const contract: ContractSummary | undefined = await (async () => {
             const contractArg: ContractSummary | Partial<ContractObject> =
-                typeof args.contract === 'string'
-                    ? ib.contract.stock(args.contract)
-                    : args.contract;
+                typeof contractParams === 'string'
+                    ? {symbol: contractParams, secType: 'STK'}
+                    : contractParams;
             if (isEmpty(contractArg)) {
                 // verbose('contract is not defined', contractArg);
                 return undefined;

@@ -1,5 +1,6 @@
-import {IBKRConnection} from '../connection';
+import {EventName} from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
+import {IBKRConnection} from '../connection';
 import {verbose} from '../log';
 
 /**
@@ -45,7 +46,7 @@ export function handleEventfulError(
         }
     };
 
-    ib.on('error', handleError);
+    ib.on(EventName.error, handleError);
 
     // return remover
     return () => {

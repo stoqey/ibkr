@@ -1,4 +1,4 @@
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName} from '@stoqey/ib';
 import IBKRConnection from '../connection/IBKRConnection';
 import {getRadomReqId} from '../_utils/text.utils';
 import {ScanMarket, MosaicScannerData} from './scanner.interface';
@@ -16,30 +16,40 @@ export class MosaicScanner {
         const {instrument = 'STK', locationCode, numberOfRows, scanCode, stockTypeFilter} = args;
         const randomTicker = getRadomReqId();
 
-        const scansedData: MosaicScannerData[] = [];
+        const scannedData: MosaicScannerData[] = [];
 
         return new Promise((resolve) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const handleScannerData = (tickerId) => {
                 ib.off('scannerData', handleScannerData);
-                resolve(scansedData);
+                resolve(scannedData);
             };
 
             ib.on(
-                'scannerData',
-                (tickerId, rank, contract, distance, benchmark, projection, legsStr) => {
-                    scansedData.push({
-                        rank,
-                        ...((contract && contract.summary) || {}),
-                        distance,
-                        benchmark,
-                        projection,
-                        legsStr,
-                    });
+                EventName.scannerData,
+                (tickerId, rank, contractDetails, distance, benchmark, projection, legsStr) => {
+                    if (
+                        contractDetails &&
+                        contractDetails.contract &&
+                        contractDetails.contract.conId
+                    ) {
+                        // FIXME: the Contract types between @stoqey/ib and @stoqey/ibkr need to be resolved; in particular, the types from `ib` should not be optional if they are present.
+                        const data: MosaicScannerData = {
+                            rank,
+                            ...contractDetails.contract,
+                            conId: contractDetails.contract.conId,
+                            marketName: contractDetails?.marketName,
+                            distance,
+                            benchmark,
+                            projection,
+                            legsStr,
+                        } as any;
+                        scannedData.push(data);
+                    }
                 }
             );
 
-            ib.on('scannerDataEnd', handleScannerData);
+            ib.on(EventName.scannerDataEnd, handleScannerData);
 
             ib.reqScannerSubscription(randomTicker, {
                 instrument,

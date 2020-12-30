@@ -1,20 +1,20 @@
+import ibkr, {EventName} from '@stoqey/ib';
 import includes from 'lodash/includes';
-import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
-import ibkr from '@stoqey/ib';
-import {getRadomReqId} from '../_utils/text.utils';
+import moment from 'moment';
 import IBKRConnection from '../connection/IBKRConnection';
-import {IbkrEvents, publishDataToTopic, IBKREVENTS} from '../events';
-import {
-    HistoryData,
-    SymbolWithTicker,
-    ReqHistoricalData,
-    WhatToShow,
-    BarSizeSetting,
-} from './history.interfaces';
-import {log} from '../log';
-import {sortedMarketData} from './history.utils';
+import {IbkrEvents, IBKREVENTS, publishDataToTopic} from '../events';
 import {handleEventfulError} from '../events/HandleError';
+import {log} from '../log';
+import {getRadomReqId} from '../_utils/text.utils';
+import {
+    BarSizeSetting,
+    HistoryData,
+    ReqHistoricalData,
+    SymbolWithTicker,
+    WhatToShow,
+} from './history.interfaces';
+import {sortedMarketData} from './history.utils';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -84,7 +84,7 @@ export class HistoricalData {
         };
 
         ib.on(
-            'historicalData',
+            EventName.historicalData,
             (reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps) => {
                 if (includes([-1], open)) {
                     endhistoricalData(reqId);
