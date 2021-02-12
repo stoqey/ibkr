@@ -9,23 +9,13 @@ import {
     HistoryData,
     SymbolWithTicker,
     ReqHistoricalData,
-    WhatToShow,
-    BarSizeSetting,
+    GetMarketData,
 } from './history.interfaces';
 import {log} from '../log';
 import {sortedMarketData} from './history.utils';
 import {handleEventfulError} from '../events/HandleError';
 
 const appEvents = IbkrEvents.Instance;
-
-interface GetMarketData {
-    symbol: string;
-    contract?: Record<string, any> | string;
-    endDateTime?: string;
-    durationStr?: string;
-    barSizeSetting?: BarSizeSetting;
-    whatToShow?: WhatToShow;
-}
 
 export class HistoricalData {
     ib: ibkr;

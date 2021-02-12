@@ -67,3 +67,12 @@ export interface SymbolWithMarketData {
     symbol: string;
     marketData: HistoryData[];
 }
+
+export interface GetMarketData {
+    symbol: string;
+    contract?: Record<string, any> | string;
+    endDateTime?: string;
+    durationStr?: string;
+    barSizeSetting?: BarSizeSetting;
+    whatToShow?: WhatToShow;
+}
