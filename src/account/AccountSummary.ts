@@ -48,8 +48,8 @@ export class AccountSummary {
             // user accounts
             self.accounts[account] = {
                 ...self.accounts[account],
-                AccountId: account,
                 [tag]: value, // set the account value
+                AccountId: account,
                 Currency: currency, // always set the account currency
             };
         });
