@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName as IBevents} from '@stoqey/ib';
 import {IB_HOST, IB_PORT} from '../config';
 import {publishDataToTopic} from '../events/IbkrEvents.publisher';
 import {IBKREVENTS, IbkrEvents} from '../events';
@@ -44,7 +44,7 @@ export class IBKRConnection {
                 port,
             });
 
-            this.ib.setMaxListeners(0);
+            // this.ib.setMaxListeners(0);
             this.listen();
         }
     };
@@ -94,12 +94,8 @@ export class IBKRConnection {
         }
 
         // Important listners
-        this.ib.on(IBKREVENTS.CONNECTED, function (err: Error) {
+        this.ib.on(IBevents.connected, function () {
             async function connectApp() {
-                if (err) {
-                    return disconnectApp();
-                }
-
                 log(`.................................................................`);
                 log(`...... Connected client ${clientId}, initialising services ......`);
 
@@ -123,7 +119,7 @@ export class IBKRConnection {
             connectApp();
         });
 
-        this.ib.on(IBKREVENTS.ERROR, function (err: any) {
+        this.ib.on(IBevents.error, function (err: any) {
             const message = err && err.message;
 
             log(IBKREVENTS.ERROR, err && err.message);
@@ -133,9 +129,12 @@ export class IBKRConnection {
             }
         });
 
-        this.ib.on(IBKREVENTS.DISCONNECTED, function (err: Error) {
-            log(IBKREVENTS.DISCONNECTED, `${clientId} Connection disconnected error => ${err}`);
+        this.ib.on(IBevents.disconnected, function () {
+            log(IBKREVENTS.DISCONNECTED, `${clientId} Connection disconnected`);
             disconnectApp();
+
+            // Process has to stop when IBKR is disconnected
+            // TODO reconnect process
             process.exit(1);
         });
 
