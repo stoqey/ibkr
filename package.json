@@ -14,9 +14,10 @@
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
     "build": "rimraf dist && tsc",
     "dev": "nodemon src/dev",
+    "connect": "nodemon src/connection/connection.e.g.ts",
     "account": "mocha src/account/*test.ts --exit",
     "contract": "mocha src/contracts/*test.ts --exit",
-    "connection": "mocha src/connection/*test.ts --exit",
+    "connection": "DEBUG=ib* mocha src/connection/*test.ts --exit",
     "realtime": "mocha src/realtime/*test.ts --exit",
     "history": "mocha src/history/*test.ts --exit",
     "portfolios": "mocha src/portfolios/*test.ts --exit",
@@ -97,11 +98,12 @@
     "typescript": ">=2.0"
   },
   "dependencies": {
-    "@stoqey/ib": "^0.1.1",
+    "@stoqey/ib": "^1.1.39",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
     "lodash": "^4.17.20",
     "moment": "^2.24.0",
+    "rxjs": "^6.6.7",
     "sleepjs": "^4.0.2"
   }
 }
