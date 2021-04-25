@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import {BehaviorSubject} from 'rxjs';
 import {IBApiNext as ibkr} from '@stoqey/ib';
 import {IB_HOST, IB_PORT} from '../config';
 import {publishDataToTopic} from '../events/IbkrEvents.publisher';
@@ -16,30 +17,68 @@ const appEvents = IbkrEvents.Instance;
 const clientId = _.random(100, 100000);
 
 /**
+ 
+let currentUserSubject$ = new BehaviorSubject() < string > 'Eric';
+let currentUser$ = currentUserSubject$.asObservable();
+ */
+
+/**
  * Global IBKR connection
  * @singleton class
  */
 export class IBKRConnection {
+    /**
+     * @deprecated
+     */
     public status: ConnectionStatus = null;
+
+    /**
+     * Connection status of the IbApp
+     */
+    connection: BehaviorSubject<ConnectionStatus>;
+
     public IB_PORT: number = IB_PORT;
     public IB_HOST: string = IB_HOST;
     private static _instance: IBKRConnection;
 
     public ib: ibkr;
 
+    /**
+     * @deprecated
+     */
     public static get Instance(): IBKRConnection {
         return this._instance || (this._instance = new this());
     }
 
-    private constructor() {}
+    /**
+     * Get Static IBKR app
+     * App is persisted across all calls
+     */
+    public static get app(): IBKRConnection {
+        return this._instance || (this._instance = new this());
+    }
 
     /**
-     * init
+     * Start IBApp now
+     * @param host
+     * @param port
      */
-    public init = (host: string, port: number): void => {
+    public start = (host: string = IB_HOST, port: number = IB_PORT): void => {
         if (!this.ib) {
+            this.connection = new BehaviorSubject(IBKREVENTS.DISCONNECTED);
+            const logger = {
+                /** Log an info message. */
+                info: (tag: string, ...args: unknown[]) => log(tag, ...args),
+                // /** Log a warning message. */
+                warn: (tag: string, ...args: unknown[]) => log(tag, ...args),
+                // /** Log an error message. */
+                error: (tag: string, ...args: unknown[]) => log(tag, ...args),
+                // /** Log a debug message. */
+                debug: (tag: string, ...args: unknown[]) => log(tag, ...args),
+            };
+
             this.ib = new ibkr({
-                logger: log as any,
+                logger,
                 host,
                 port,
             });
@@ -48,6 +87,14 @@ export class IBKRConnection {
             this.listen();
         }
     };
+
+    private constructor() {}
+
+    /**
+     * @deprecated use start instead
+     * init
+     */
+    public init = (host: string = IB_HOST, port: number = IB_PORT): void => this.start(host, port);
 
     /**
      * initialiseDep
@@ -84,12 +131,15 @@ export class IBKRConnection {
     private listen = (): void => {
         const self: IBKRConnection = this;
 
+        log(`......client ${clientId}, initialising services ......`);
+
         function disconnectApp() {
             publishDataToTopic({
                 topic: IBKREVENTS.DISCONNECTED,
                 data: {},
             });
             self.status = IBKREVENTS.DISCONNECTED;
+            this.connection.next(IBKREVENTS.DISCONNECTED);
             return log(IBKREVENTS.DISCONNECTED, `Error connecting client => ${clientId}`);
         }
 
@@ -109,6 +159,7 @@ export class IBKRConnection {
                         },
                     });
                     self.status = IBKREVENTS.CONNECTED;
+                    this.connection.next(IBKREVENTS.CONNECTED);
                     log(`...... Successfully running ${clientId}'s services ..`);
                     return log(`.....................................................`);
                 }
@@ -139,10 +190,6 @@ export class IBKRConnection {
                 });
             }
         });
-
-        setTimeout(() => {
-            console.log('done');
-        }, 5000);
     };
 
     /**
