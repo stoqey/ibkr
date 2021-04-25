@@ -39,6 +39,7 @@ export class IBKRConnection {
     public init = (host: string, port: number): void => {
         if (!this.ib) {
             this.ib = new ibkr({
+                logger: log as any,
                 host,
                 port,
             });
