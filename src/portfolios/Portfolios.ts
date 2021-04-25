@@ -9,6 +9,7 @@ import {IBKRAccountSummary} from '../account/account-summary.interfaces';
 import {ORDER, OrderState} from '../orders';
 import {log, verbose} from '../log';
 import {ContractObject} from '../contracts';
+import {getRadomReqId} from '../_utils/text.utils';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -52,6 +53,8 @@ export class Portfolios {
     public init = async (): Promise<void> => {
         const self = this;
         this.ib = IBKRConnection.Instance.getIBKR();
+
+        // TODO user select
         const accountId = AccountSummary.Instance.AccountId;
 
         const ib = this.ib;
@@ -127,9 +130,13 @@ export class Portfolios {
     /**
      * getPortfolios
      */
-    public getPortfolios = async (): Promise<PortFolioUpdate[]> => {
+    public getPortfolios = async (options?: {
+        accountId: string;
+        modelCode: string;
+    }): Promise<PortFolioUpdate[]> => {
         const self = this;
         const ib = self.ib;
+        const reqId = getRadomReqId();
 
         return new Promise((resolve) => {
             let done = false;
@@ -191,6 +198,11 @@ export class Portfolios {
             ib.on('positionEnd', positionEnd);
 
             ib.on('position', handlePosition);
+
+            if (options) {
+                const {accountId, modelCode} = options;
+                return ib.reqPositionsMulti(reqId, accountId, modelCode);
+            }
 
             ib.reqPositions();
         });

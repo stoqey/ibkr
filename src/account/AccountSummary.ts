@@ -15,6 +15,8 @@ export class AccountSummary {
     accountReady = false;
     tickerId = getRadomReqId();
     AccountId;
+    accountIds = [];
+    accounts: Record<string, IBKRAccountSummary> = {};
     accountSummary: IBKRAccountSummary = {} as any;
     private static _instance: AccountSummary;
 
@@ -35,12 +37,21 @@ export class AccountSummary {
 
         // Record values from here
         ib.on('accountSummary', (reqId, account, tag, value, currency) => {
+            // TODO remove the default
             self.tickerId = reqId;
             self.AccountId = account;
             self.accountSummary.AccountId = account;
             self.accountSummary[tag] = value; // set the account value
             self.accountSummary.Currency = currency; // always set the account currency
             // log('accountSummaryEnd', { account, tag, value, });
+
+            // user accounts
+            self.accounts[account] = {
+                ...self.accounts[account],
+                [tag]: value, // set the account value
+                AccountId: account,
+                Currency: currency, // always set the account currency
+            };
         });
 
         // Return values from here
