@@ -65,7 +65,7 @@ export class IBKRConnection {
      */
     public start = (host: string = IB_HOST, port: number = IB_PORT): void => {
         if (!this.ib) {
-            this.connection = new BehaviorSubject(IBKREVENTS.DISCONNECTED);
+            this.connection = new BehaviorSubject(undefined);
             const logger = {
                 /** Log an info message. */
                 info: (tag: string, ...args: unknown[]) => log(tag, ...args),
@@ -206,7 +206,7 @@ export class IBKRConnection {
         this.status = IBKREVENTS.DISCONNECTED;
         try {
             log(`IBKR Force shutdown ${clientId} 😴😴😴`);
-            this.ib.disconnect();
+            this.ib?.disconnect();
         } catch (error) {
             log(IBKREVENTS.ERROR, error);
         }
