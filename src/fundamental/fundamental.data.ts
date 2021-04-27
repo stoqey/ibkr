@@ -1,4 +1,4 @@
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName} from '@stoqey/ib';
 import IBKRConnection from '../connection/IBKRConnection';
 import {getRadomReqId} from '../_utils/text.utils';
 
@@ -26,7 +26,7 @@ export class FundamentalData {
         const ib = IBKRConnection.Instance.getIBKR();
         this.ib = ib;
 
-        ib.on('fundamentalData', (reqId: number, xmlText: string) => {
+        ib.on(EventName.fundamentalData, (reqId: number, xmlText: string) => {
             console.log('onFundamentalData:', reqId, xmlText);
 
             const res = this.reqIdToResolver[reqId];
@@ -56,7 +56,7 @@ export class FundamentalData {
             | 'ReportsFinStatements'
             | 'RESC'
             | 'CalendarReport',
-        contract: FundamentalDataContractParams
+        contract: FundamentalDataContractParams | any
     ): Promise<string> {
         const reqId = getRadomReqId();
         return new Promise((res) => {
