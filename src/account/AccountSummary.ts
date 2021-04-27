@@ -1,3 +1,4 @@
+import {EventName} from '@stoqey/ib';
 import includes from 'lodash/includes';
 import isEmpty from 'lodash/isEmpty';
 import {LIVE_ACCOUNT_IDS} from '../config';
@@ -36,7 +37,7 @@ export class AccountSummary {
         self.ib = ib;
 
         // Record values from here
-        ib.on('accountSummary', (reqId, account, tag, value, currency) => {
+        ib.on(EventName.accountSummary, (reqId, account, tag, value, currency) => {
             // TODO remove the default
             self.tickerId = reqId;
             self.AccountId = account;
