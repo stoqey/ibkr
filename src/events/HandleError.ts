@@ -1,6 +1,7 @@
 import {IBKRConnection} from '../connection';
 import isEmpty from 'lodash/isEmpty';
 import {verbose} from '../log';
+import {EventName} from '@stoqey/ib';
 
 /**
  * Assuming IBKR returns predictable errors
@@ -45,10 +46,10 @@ export function handleEventfulError(
         }
     };
 
-    ib.on('error', handleError);
+    ib.on(EventName.error, handleError);
 
     // return remover
     return () => {
-        ib.off('error', handleError);
+        ib.off(EventName.error, handleError);
     };
 }
