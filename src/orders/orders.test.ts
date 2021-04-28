@@ -74,71 +74,71 @@ describe('Orders', () => {
         expect(results).to.be.not.null;
     });
 
-    // it('Place Order', (done) => {
+    it('Place Order', (done) => {
 
-    //     let completed = false;
-    //     const orderTrade = Orders.Instance;
+        let completed = false;
+        const orderTrade = Orders.Instance;
 
-    //     const getPlacedOrder = async () => {
-    //         const handleData = (data) => {
-    //             ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
-    //             if (!completed) {
-    //                 done()
-    //                 completed = true;
-    //             }
-    //         };
-    //         // ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
+        const getPlacedOrder = async () => {
+            const handleData = (data) => {
+                ibkrEvents.off(IBKREVENTS.ORDER_FILLED, handleData);
+                if (!completed) {
+                    done()
+                    completed = true;
+                }
+            };
+            // ibkrEvents.on(IBKREVENTS.ORDER_FILLED, handleData);
 
-    //         // ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
+            // ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data: { order: OrderWithContract, orderStatus: OrderStatus }) => {
 
-    //         //     const { order, orderStatus } = data;
+            //     const { order, orderStatus } = data;
 
-    //         //     if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
-    //         //         console.log('filled')
-    //         //         if (!completed) {
-    //         //             done()
-    //         //             completed = true;
-    //         //         }
-    //         //     }
+            //     if (['PreSubmitted', 'Filled', 'Submitted'].includes(orderStatus.status)) {
+            //         console.log('filled')
+            //         if (!completed) {
+            //             done()
+            //             completed = true;
+            //         }
+            //     }
 
-    //         // });
+            // });
 
-    //         await Orders.Instance.getOpenOrders();
+            await Orders.Instance.getOpenOrders();
 
-    //         const delayTime = 1000;
+            const delayTime = 1000;
 
-    //         const opt = { unique: true };
+            const opt = { unique: true };
 
-    //         const orders = [
-    //             async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
-    //             async () => delay(delayTime),
-    //             async () => orderTrade.placeOrder(stockOrderBuyInY, opt)
-    //         ];
+            const orders = [
+                async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInZ, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInX, opt),
+                async () => delay(delayTime),
+                async () => orderTrade.placeOrder(stockOrderBuyInY, opt)
+            ];
 
-    //         for (const order of orders) {
-    //             await order();
-    //         }
-    //     };
+            for (const order of orders) {
+                await order();
+            }
+        };
 
-    //     getPlacedOrder();
+        getPlacedOrder();
 
-    // });
+    });
 });
