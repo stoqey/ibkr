@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName} from '@stoqey/ib';
 import {IB_HOST, IB_PORT} from '../config';
 import {publishDataToTopic} from '../events/IbkrEvents.publisher';
 import {IBKREVENTS, IbkrEvents} from '../events';
@@ -39,12 +39,12 @@ export class IBKRConnection {
     public init = (host: string, port: number): void => {
         if (!this.ib) {
             this.ib = new ibkr({
-                clientId,
+                // clientId,
                 host,
                 port,
             });
 
-            this.ib.setMaxListeners(0);
+            // this.ib.setMaxListeners(0);
             this.listen();
         }
     };
@@ -94,12 +94,8 @@ export class IBKRConnection {
         }
 
         // Important listners
-        this.ib.on(IBKREVENTS.CONNECTED, function (err: Error) {
+        this.ib.on(EventName.connected, function () {
             async function connectApp() {
-                if (err) {
-                    return disconnectApp();
-                }
-
                 log(`.................................................................`);
                 log(`...... Connected client ${clientId}, initialising services ......`);
 
@@ -123,24 +119,24 @@ export class IBKRConnection {
             connectApp();
         });
 
-        this.ib.on(IBKREVENTS.ERROR, function (err: any) {
+        this.ib.on(EventName.error, function (err: any) {
             const message = err && err.message;
 
-            log(IBKREVENTS.ERROR, err && err.message);
+            log(IBKREVENTS.ERROR, `message=${err && err.message} code=${err && err.code}`);
 
             if (includes(message, 'ECONNREFUSED') || (err && err.code === 'ECONNREFUSED')) {
                 return disconnectApp();
             }
         });
 
-        this.ib.on(IBKREVENTS.DISCONNECTED, function (err: Error) {
-            log(IBKREVENTS.DISCONNECTED, `${clientId} Connection disconnected error => ${err}`);
+        this.ib.on(EventName.disconnected, function () {
+            log(IBKREVENTS.DISCONNECTED, `${clientId} Connection disconnected error`);
             disconnectApp();
             process.exit(1);
         });
 
         // connect the IBKR
-        this.ib.connect();
+        this.ib.connect(clientId);
 
         // App events
         appEvents.on(IBKREVENTS.PING, () => {

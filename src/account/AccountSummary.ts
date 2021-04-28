@@ -1,3 +1,4 @@
+import ibkr, {EventName} from '@stoqey/ib';
 import includes from 'lodash/includes';
 import isEmpty from 'lodash/isEmpty';
 import {LIVE_ACCOUNT_IDS} from '../config';
@@ -11,7 +12,7 @@ import {IBKRAccountSummary} from './account-summary.interfaces';
 const appEvents = IbkrEvents.Instance;
 
 export class AccountSummary {
-    ib: any;
+    ib: ibkr;
     accountReady = false;
     tickerId = getRadomReqId();
     AccountId;
@@ -36,7 +37,7 @@ export class AccountSummary {
         self.ib = ib;
 
         // Record values from here
-        ib.on('accountSummary', (reqId, account, tag, value, currency) => {
+        ib.on(EventName.accountSummary, (reqId, account, tag, value, currency) => {
             // TODO remove the default
             self.tickerId = reqId;
             self.AccountId = account;
@@ -55,7 +56,7 @@ export class AccountSummary {
         });
 
         // Return values from here
-        ib.once('accountSummaryEnd', () => {
+        ib.once(EventName.accountSummaryEnd, () => {
             const {AccountId = 'unknown', tickerId, accountReady, accountSummary} = self;
 
             log('accountSummaryEnd', {AccountId, tickerId, accountReady});
@@ -78,37 +79,41 @@ export class AccountSummary {
      */
     public reqAccountSummary = (): void => {
         // Request Account summary from here
-        this.ib.reqAccountSummary(this.tickerId, 'All', [
-            'AccountType',
-            'NetLiquidation',
-            'TotalCashValue',
-            'SettledCash',
-            'AccruedCash',
-            'BuyingPower',
-            'EquityWithLoanValue',
-            'PreviousEquityWithLoanValue',
-            'GrossPositionValue',
-            'RegTEquity',
-            'RegTMargin',
-            'SMA',
-            'InitMarginReq',
-            'MaintMarginReq',
-            'AvailableFunds',
-            'ExcessLiquidity',
-            'Cushion',
-            'FullInitMarginReq',
-            'FullMaintMarginReq',
-            'FullAvailableFunds',
-            'FullExcessLiquidity',
-            'LookAheadNextChange',
-            'LookAheadInitMarginReq',
-            'LookAheadMaintMarginReq',
-            'LookAheadAvailableFunds',
-            'LookAheadExcessLiquidity',
-            'HighestSeverity',
-            'DayTradesRemaining',
-            'Leverage',
-        ]);
+        this.ib.reqAccountSummary(
+            this.tickerId,
+            'All',
+            [
+                'AccountType',
+                'NetLiquidation',
+                'TotalCashValue',
+                'SettledCash',
+                'AccruedCash',
+                'BuyingPower',
+                'EquityWithLoanValue',
+                'PreviousEquityWithLoanValue',
+                'GrossPositionValue',
+                'RegTEquity',
+                'RegTMargin',
+                'SMA',
+                'InitMarginReq',
+                'MaintMarginReq',
+                'AvailableFunds',
+                'ExcessLiquidity',
+                'Cushion',
+                'FullInitMarginReq',
+                'FullMaintMarginReq',
+                'FullAvailableFunds',
+                'FullExcessLiquidity',
+                'LookAheadNextChange',
+                'LookAheadInitMarginReq',
+                'LookAheadMaintMarginReq',
+                'LookAheadAvailableFunds',
+                'LookAheadExcessLiquidity',
+                'HighestSeverity',
+                'DayTradesRemaining',
+                'Leverage',
+            ].join(',')
+        );
     };
 
     /**

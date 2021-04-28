@@ -1,15 +1,14 @@
-import IB from '@stoqey/ib';
+import IB, {EventName, Stock} from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import findIndex from 'lodash/findIndex';
 import compact from 'lodash/compact';
 import {
-    ORDER,
-    OrderState,
     CreateSale,
     OrderWithContract,
     OrderStatus,
     OrderStatusType,
     OrderStock,
+    GetOrderType,
 } from './orders.interfaces';
 
 import {publishDataToTopic, IbkrEvents, IBKREVENTS} from '../events';
@@ -95,7 +94,7 @@ export class Orders {
             const ib = IBKRConnection.Instance.getIBKR();
             self.ib = ib;
 
-            ib.on('openOrderEnd', () => {
+            ib.on(EventName.openOrderEnd, () => {
                 // Initialise OrderTrader
                 // OrderTrade.Instance.init();
                 publishDataToTopic({
@@ -105,7 +104,7 @@ export class Orders {
             });
 
             ib.on(
-                'orderStatus',
+                EventName.orderStatus,
                 (
                     id,
                     status,
@@ -121,7 +120,7 @@ export class Orders {
                     const currentOrder = self.openedOrders.find((oo) => oo.orderId === id);
 
                     const orderStatus: OrderStatus = {
-                        status,
+                        status: status as any,
                         filled,
                         remaining,
                         avgFillPrice,
@@ -129,7 +128,7 @@ export class Orders {
                         parentId,
                         lastFillPrice,
                         clientId,
-                        whyHeld,
+                        whyHeld: whyHeld as any,
                     };
 
                     publishDataToTopic({
@@ -153,7 +152,7 @@ export class Orders {
                 }
             );
 
-            ib.on('openOrder', (orderId, contract, order: ORDER, orderState: OrderState) => {
+            ib.on(EventName.openOrder, (orderId, contract, order, orderState) => {
                 // 1. Update OpenOrders
                 // Orders that need to be filled
                 // -----------------------------------------------------------------------------------
@@ -223,11 +222,11 @@ export class Orders {
                     // update this symbolTickerOrder
                     self.tickersAndOrders = self.tickersAndOrders.map((i) => {
                         if (i.tickerId === orderId) {
-                            const updatedSymbolTickerX = {
+                            const updatedSymbolTickerX: SymbolTickerOrder = {
                                 ...i,
                                 orderPermId: order.permId,
                                 symbol: thisOrderTicker.symbol,
-                                orderStatus: orderState.status, // update order state
+                                orderStatus: orderState.status as any, // update order state
                             };
                             updatedSymbolTicker = updatedSymbolTickerX;
                             return updatedSymbolTickerX;
@@ -310,8 +309,8 @@ export class Orders {
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 if (!done) {
-                    self.ib.off('openOrder', handleOpenOrders);
-                    self.ib.off('openOrderEnd', openOrderEnd);
+                    self.ib.off(EventName.openOrder, handleOpenOrders);
+                    self.ib.off(EventName.openOrderEnd, openOrderEnd);
                     done = true;
 
                     // update  openedOrders
@@ -325,14 +324,9 @@ export class Orders {
                 handleOpenOrders(openedOrders);
             };
 
-            self.ib.once('openOrderEnd', openOrderEnd);
+            self.ib.once(EventName.openOrderEnd, openOrderEnd);
 
-            self.ib.on('openOrder', function (
-                orderId,
-                contract,
-                order: ORDER,
-                orderState: OrderState
-            ) {
+            self.ib.on(EventName.openOrder, function (orderId, contract, order, orderState) {
                 // Only check pending orders
                 if (['PendingSubmit', 'PreSubmitted', 'Submitted'].includes(orderState.status)) {
                     openedOrders.push({
@@ -377,14 +371,14 @@ export class Orders {
         const shouldBeUniqueOrder = (options && options.unique) || false;
 
         const success = (): boolean => {
-            ib.off('nextValidId', handleOrderIdNext);
+            ib.off(EventName.nextValidId, handleOrderIdNext);
             self.processing = false; // reset processing
             return true;
         };
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const erroredOut = (error?: Error): boolean => {
-            ib.off('nextValidId', handleOrderIdNext);
+            ib.off(EventName.nextValidId, handleOrderIdNext);
             self.processing = false; // reset processing
             return false;
         };
@@ -488,7 +482,8 @@ export class Orders {
             const {symbol, size} = stockOrder;
 
             // eslint-disable-next-line @typescript-eslint/ban-types
-            const orderCommand: Function = ib.order[stockOrder.type];
+            const StockOrderType = GetOrderType(stockOrder.type);
+            const orderCommand: any = StockOrderType;
 
             const args = stockOrder.parameters;
 
@@ -518,8 +513,9 @@ export class Orders {
             // Place order
             ib.placeOrder(
                 tickerToUse,
-                ib.contract.stock(stockOrder.symbol),
-                orderCommand(stockOrder.action, ...args)
+                // TODO use other securities
+                new Stock(stockOrder.symbol),
+                new orderCommand(stockOrder.action, ...args)
             );
 
             // Add it
@@ -562,7 +558,7 @@ export class Orders {
                 // Start -----------------------------
                 self.processing = true;
 
-                ib.on('nextValidId', handleOrderIdNext); // start envs
+                ib.on(EventName.nextValidId, handleOrderIdNext); // start envs
                 return placingOrderNow();
             }
         }

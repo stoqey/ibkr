@@ -1,3 +1,4 @@
+import {EventName} from '@stoqey/ib';
 import {IBKRConnection} from '../connection';
 import {log} from '../log';
 import {getRadomReqId} from '../_utils/text.utils';
@@ -64,14 +65,14 @@ export function getSecDefOptParams(
     const endHandler = (reqId: number) => {
         if (reqId === reqIdSelected) {
             log('onSecDefOptParamsEnd:', reqId);
-            ib.off('securityDefinitionOptionParameter', dataHandler);
-            ib.off('securityDefinitionOptionParameterEnd', endHandler);
+            ib.off(EventName.securityDefinitionOptionParameter, dataHandler);
+            ib.off(EventName.securityDefinitionOptionParameterEnd, endHandler);
             resolver?.(datas);
         }
     };
 
-    ib.on('securityDefinitionOptionParameter', dataHandler);
-    ib.on('securityDefinitionOptionParameterEnd', endHandler);
+    ib.on(EventName.securityDefinitionOptionParameter, dataHandler);
+    ib.on(EventName.securityDefinitionOptionParameterEnd, endHandler);
     ib.reqSecDefOptParams(
         reqIdSelected,
         contract.symbol,

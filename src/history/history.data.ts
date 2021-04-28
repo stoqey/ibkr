@@ -1,7 +1,7 @@
 import includes from 'lodash/includes';
 import moment from 'moment';
 import isEmpty from 'lodash/isEmpty';
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName, Stock} from '@stoqey/ib';
 import {getRadomReqId} from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import {IbkrEvents, publishDataToTopic, IBKREVENTS} from '../events';
@@ -74,7 +74,7 @@ export class HistoricalData {
         };
 
         ib.on(
-            'historicalData',
+            EventName.historicalData,
             (reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps) => {
                 if (includes([-1], open)) {
                     endhistoricalData(reqId);
@@ -139,7 +139,8 @@ export class HistoricalData {
             let contract = ogContract;
             if (typeof ogContract === 'string' || !ogContract) {
                 // make it a stock by default
-                contract = ib.contract.stock(symbol, 'SMART', 'USD');
+
+                contract = new Stock(symbol, 'SMART', 'USD');
             }
 
             that.reqHistoryData(
@@ -215,10 +216,10 @@ export class HistoricalData {
 
             // parse contract
             const ogContract = args.contract;
-            let contract = ogContract;
+            let contract: any = ogContract;
             if (typeof ogContract === 'string' || !ogContract) {
                 // make it a stock by default
-                contract = ib.contract.stock(symbol, 'SMART', 'USD');
+                contract = new Stock(symbol, 'SMART', 'USD');
             }
 
             const endhistoricalData = (tickerId): void => {
@@ -226,7 +227,7 @@ export class HistoricalData {
                     done = true;
 
                     // remove listeners
-                    ib.off('historicalData', onHistoricalData);
+                    ib.off(EventName.historicalData, onHistoricalData);
                     eventfulError(); // close eventful errors
 
                     // cancel market data
@@ -274,7 +275,7 @@ export class HistoricalData {
                 }
             };
 
-            ib.on('historicalData', onHistoricalData);
+            ib.on(EventName.historicalData, onHistoricalData);
 
             // TODO all more error messages
             // handleError

@@ -1,3 +1,4 @@
+import {EventName, IBApiTickType, Stock} from '@stoqey/ib';
 import {isArray} from 'lodash';
 import isEmpty from 'lodash/isEmpty';
 import {IBKRConnection} from '../connection';
@@ -71,11 +72,13 @@ export class PriceUpdates {
         const that = this;
 
         ib.on(
-            'tickPrice',
+            EventName.tickPrice,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
+            (tickerId, tickType, price, _canAutoExecute) => {
                 const thisSymbol = that.tickerIdToData[tickerId];
-                const tickTypeWords = ib.util.tickTypeToString(tickType);
+                // TODO clalify if correct
+                const tickTypeWords = IBApiTickType[tickType];
+                // const tickTypeWords = ib.util.tickTypeToString(tickType);
 
                 log(
                     'PriceUpdates.tickPrice',
@@ -130,7 +133,7 @@ export class PriceUpdates {
      */
     public async subscribe(args: ISubscribe): Promise<undefined | number> {
         const that = this;
-        const ib = IBKRConnection.Instance.getIBKR();
+        // const ib = IBKRConnection.Instance.getIBKR();
 
         const tickTypes: readonly TickPrice[] | undefined = args.opt?.tickType
             ? isArray(args.opt?.tickType)
@@ -140,9 +143,7 @@ export class PriceUpdates {
 
         const contract: ContractSummary | undefined = await (async () => {
             const contractArg: ContractSummary | Partial<ContractObject> =
-                typeof args.contract === 'string'
-                    ? ib.contract.stock(args.contract)
-                    : args.contract;
+                typeof args.contract === 'string' ? new Stock(args.contract) : args.contract;
             if (isEmpty(contractArg)) {
                 // verbose('contract is not defined', contractArg);
                 return undefined;

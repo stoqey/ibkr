@@ -2,6 +2,7 @@ import {ContractDetails, ContractSummary, SecType} from './contracts.interfaces'
 import {getRadomReqId} from '../_utils/text.utils';
 import IBKRConnection from '../connection/IBKRConnection';
 import {handleEventfulError} from '../events/HandleError';
+import {EventName} from '@stoqey/ib';
 
 export interface ContractDetailsParams {
     readonly conId?: number;
@@ -58,13 +59,13 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
     return new Promise((resolve) => {
         const ib = IBKRConnection.Instance.getIBKR();
 
-        const handleContract = (reqIdX: number, contractReceived: ContractDetails) => {
+        const handleContract = (reqIdX, contractReceived) => {
             if (reqIdX === reqId) {
                 contractsLocal.push(contractReceived);
             }
         };
 
-        ib.on('contractDetails', handleContract);
+        ib.on(EventName.contractDetails, handleContract);
 
         const contractDetailsEnd = (reqIdX: number, isError?: boolean) => {
             if (reqIdX === reqId) {
@@ -73,12 +74,12 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
                 }
 
                 eventfulError(); // remove off event
-                ib.off('contractDetails', handleContract);
+                ib.off(EventName.contractDetails, handleContract);
                 return resolve(contractsLocal);
             }
         };
 
-        ib.on('contractDetailsEnd', contractDetailsEnd);
+        ib.on(EventName.contractDetailsEnd, contractDetailsEnd);
 
         // handleError
         const eventfulError = handleEventfulError(
@@ -91,7 +92,8 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
             () => contractDetailsEnd(reqId, true)
         );
 
-        ib.reqContractDetails(reqId, params);
+        // TODO Contract
+        ib.reqContractDetails(reqId, params as any);
     });
 };
 

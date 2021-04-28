@@ -1,4 +1,4 @@
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName} from '@stoqey/ib';
 import isEmpty from 'lodash/isEmpty';
 import AccountSummary from '../account/AccountSummary';
 import {IBKREVENTS, IbkrEvents} from '../events';
@@ -6,9 +6,7 @@ import {publishDataToTopic} from '../events/IbkrEvents.publisher';
 import IBKRConnection from '../connection/IBKRConnection';
 import {PortFolioUpdate} from './portfolios.interfaces';
 import {IBKRAccountSummary} from '../account/account-summary.interfaces';
-import {ORDER, OrderState} from '../orders';
 import {log, verbose} from '../log';
-import {ContractObject} from '../contracts';
 import {getRadomReqId} from '../_utils/text.utils';
 
 const appEvents = IbkrEvents.Instance;
@@ -60,7 +58,7 @@ export class Portfolios {
         const ib = this.ib;
 
         ib.on(
-            'updatePortfolio',
+            EventName.updatePortfolio,
             (
                 contract,
                 position,
@@ -81,17 +79,12 @@ export class Portfolios {
                     realizedPNL,
                     accountName,
                 };
-                logPortfolio(thisPortfolio);
+                logPortfolio(thisPortfolio as any);
                 self.getPortfolios(); // refresh portfolios
             }
         );
 
-        ib.on('openOrder', function (
-            orderId,
-            contract: ContractObject,
-            order: ORDER,
-            orderState: OrderState
-        ) {
+        ib.on(EventName.openOrder, function (orderId, contract, order, orderState) {
             if (orderState.status === 'Filled') {
                 // check if portfolio exit, if not add it
                 const existingPortfolio = self.currentPortfolios.find(
@@ -99,10 +92,11 @@ export class Portfolios {
                 );
 
                 if (isEmpty(existingPortfolio)) {
+                    // TODO
                     // Add to currentPortfolios
                     self.currentPortfolios.push({
                         ...contract,
-                    });
+                    } as any);
                 } else {
                     self.currentPortfolios = self.currentPortfolios.filter(
                         (porto) => porto.symbol !== contract.symbol
@@ -142,7 +136,7 @@ export class Portfolios {
             let done = false;
             const portfolios: {[x: string]: PortFolioUpdate} = {};
 
-            const handlePosition = (account, contract: ContractObject, position, averageCost) => {
+            const handlePosition = (account, contract, position, averageCost) => {
                 const thisPortfolio = {...contract, position, averageCost};
 
                 let symbol = contract && contract.symbol;
@@ -192,12 +186,12 @@ export class Portfolios {
                     (portfolioKey) => portfolios[portfolioKey]
                 );
                 handlePositionEnd(portfoliosData);
-                ib.off('positionEnd', positionEnd);
+                ib.off(EventName.positionEnd, positionEnd);
             };
 
-            ib.on('positionEnd', positionEnd);
+            ib.on(EventName.positionEnd, positionEnd);
 
-            ib.on('position', handlePosition);
+            ib.on(EventName.position, handlePosition);
 
             if (options) {
                 const {accountId, modelCode} = options;
