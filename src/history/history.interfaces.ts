@@ -1,3 +1,5 @@
+import {Contract} from '@stoqey/ib';
+
 export type WhatToShow =
     | 'ADJUSTED_LAST'
     | 'TRADES'
@@ -48,7 +50,7 @@ export interface HistoryData {
 }
 
 export interface ReqHistoricalData {
-    contract: string | Record<string, any>; // "IFRX", "SMART", "USD",
+    contract: string | Record<string, any> | Contract | any; // "IFRX", "SMART", "USD",
     endDateTime: string; // "20190308 12:00:00",
     durationStr: string; // "1800 S"
     barSizeSetting: BarSizeSetting; // "1 secs"

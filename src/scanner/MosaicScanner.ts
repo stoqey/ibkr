@@ -1,4 +1,4 @@
-import ibkr from '@stoqey/ib';
+import ibkr, {EventName} from '@stoqey/ib';
 import IBKRConnection from '../connection/IBKRConnection';
 import {getRadomReqId} from '../_utils/text.utils';
 import {ScanMarket, MosaicScannerData} from './scanner.interface';
@@ -21,16 +21,16 @@ export class MosaicScanner {
         return new Promise((resolve) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const handleScannerData = (tickerId) => {
-                ib.off('scannerData', handleScannerData);
+                ib.off(EventName.scannerData, handleScannerData);
                 resolve(scansedData);
             };
 
             ib.on(
-                'scannerData',
-                (tickerId, rank, contract, distance, benchmark, projection, legsStr) => {
+                EventName.scannerData,
+                (tickerId, rank, contract: any, distance, benchmark, projection, legsStr) => {
                     scansedData.push({
                         rank,
-                        ...((contract && contract.summary) || {}),
+                        ...(contract || {}),
                         distance,
                         benchmark,
                         projection,
@@ -39,7 +39,7 @@ export class MosaicScanner {
                 }
             );
 
-            ib.on('scannerDataEnd', handleScannerData);
+            ib.on(EventName.scannerDataEnd, handleScannerData);
 
             ib.reqScannerSubscription(randomTicker, {
                 instrument,

@@ -1,3 +1,4 @@
+import {EventName} from '@stoqey/ib';
 import {isArray} from 'lodash';
 import isEmpty from 'lodash/isEmpty';
 import {IBKRConnection} from '../connection';
@@ -71,9 +72,9 @@ export class PriceUpdates {
         const that = this;
 
         ib.on(
-            'tickPrice',
+            EventName.tickPrice,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            (tickerId: number, tickType: TickPrice, price: number, _canAutoExecute: boolean) => {
+            (tickerId, tickType, price, _canAutoExecute) => {
                 const thisSymbol = that.tickerIdToData[tickerId];
                 const tickTypeWords = ib.util.tickTypeToString(tickType);
 
