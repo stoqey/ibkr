@@ -6,6 +6,7 @@ import ibkr from '..';
 import { IbkrEvents, IBKREVENTS } from '../events';
 import { log } from '../log';
 import { IBKRConnection } from '../connection';
+import { Stock } from '@stoqey/ib';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -117,7 +118,7 @@ describe('Historical Data', () => {
             const data = await HistoricalData.Instance.reqHistoricalData({
                 symbol,
                 whatToShow: "BID",
-                contract: ib.contract.stock("AAPL"),
+                contract: new Stock("AAPL"),
                 durationStr: '1800 S',
                 barSizeSetting: '1 secs',
             });
