@@ -74,7 +74,7 @@ export const getContractDetails = (params: ContractDetailsParams): Promise<Contr
                 }
 
                 eventfulError(); // remove off event
-                ib.off('contractDetails', handleContract);
+                ib.off(EventName.contractDetails, handleContract);
                 return resolve(contractsLocal);
             }
         };

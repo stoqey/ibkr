@@ -227,7 +227,7 @@ export class HistoricalData {
                     done = true;
 
                     // remove listeners
-                    ib.off('historicalData', onHistoricalData);
+                    ib.off(EventName.historicalData, onHistoricalData);
                     eventfulError(); // close eventful errors
 
                     // cancel market data

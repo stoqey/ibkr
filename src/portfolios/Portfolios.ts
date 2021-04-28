@@ -186,7 +186,7 @@ export class Portfolios {
                     (portfolioKey) => portfolios[portfolioKey]
                 );
                 handlePositionEnd(portfoliosData);
-                ib.off('positionEnd', positionEnd);
+                ib.off(EventName.positionEnd, positionEnd);
             };
 
             ib.on(EventName.positionEnd, positionEnd);

@@ -309,8 +309,8 @@ export class Orders {
             // listen for account summary
             const handleOpenOrders = (ordersData) => {
                 if (!done) {
-                    self.ib.off('openOrder', handleOpenOrders);
-                    self.ib.off('openOrderEnd', openOrderEnd);
+                    self.ib.off(EventName.openOrder, handleOpenOrders);
+                    self.ib.off(EventName.openOrderEnd, openOrderEnd);
                     done = true;
 
                     // update  openedOrders
@@ -371,14 +371,14 @@ export class Orders {
         const shouldBeUniqueOrder = (options && options.unique) || false;
 
         const success = (): boolean => {
-            ib.off('nextValidId', handleOrderIdNext);
+            ib.off(EventName.nextValidId, handleOrderIdNext);
             self.processing = false; // reset processing
             return true;
         };
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const erroredOut = (error?: Error): boolean => {
-            ib.off('nextValidId', handleOrderIdNext);
+            ib.off(EventName.nextValidId, handleOrderIdNext);
             self.processing = false; // reset processing
             return false;
         };

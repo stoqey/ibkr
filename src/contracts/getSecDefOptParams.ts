@@ -65,8 +65,8 @@ export function getSecDefOptParams(
     const endHandler = (reqId: number) => {
         if (reqId === reqIdSelected) {
             log('onSecDefOptParamsEnd:', reqId);
-            ib.off('securityDefinitionOptionParameter', dataHandler);
-            ib.off('securityDefinitionOptionParameterEnd', endHandler);
+            ib.off(EventName.securityDefinitionOptionParameter, dataHandler);
+            ib.off(EventName.securityDefinitionOptionParameterEnd, endHandler);
             resolver?.(datas);
         }
     };
