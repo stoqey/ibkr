@@ -39,7 +39,7 @@ export class IBKRConnection {
     public init = (host: string, port: number): void => {
         if (!this.ib) {
             this.ib = new ibkr({
-                clientId,
+                // clientId,
                 host,
                 port,
             });
@@ -122,7 +122,7 @@ export class IBKRConnection {
         this.ib.on(EventName.error, function (err: any) {
             const message = err && err.message;
 
-            log(IBKREVENTS.ERROR, err && err.message);
+            log(IBKREVENTS.ERROR, `message=${err && err.message} code=${err && err.code}`);
 
             if (includes(message, 'ECONNREFUSED') || (err && err.code === 'ECONNREFUSED')) {
                 return disconnectApp();
@@ -136,7 +136,7 @@ export class IBKRConnection {
         });
 
         // connect the IBKR
-        this.ib.connect();
+        this.ib.connect(clientId);
 
         // App events
         appEvents.on(IBKREVENTS.PING, () => {
