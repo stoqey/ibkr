@@ -5,7 +5,7 @@ import {
     SymbolWithTicker,
 } from './history.interfaces';
 import {IBKREVENTS, IbkrEvents, publishDataToTopic} from '../events';
-import ibkr, {EventName, Stock} from '@stoqey/ib';
+import ibkr, {BarSizeSetting, EventName, Stock} from '@stoqey/ib';
 
 import IBKRConnection from '../connection/IBKRConnection';
 import {getRadomReqId} from '../_utils/text.utils';
@@ -124,8 +124,8 @@ export class HistoricalData {
                 symbol,
                 // contract = [symbol, 'SMART', 'USD'],
                 endDateTime = '',
-                durationStr = '1 D',
-                barSizeSetting = '1 min',
+                durationStr = BarSizeSetting.DAYS_ONE, // '1800 S',
+                barSizeSetting = BarSizeSetting.SECONDS_ONE, // '1 secs',
                 whatToShow = 'ASK',
             } = args;
 
@@ -175,8 +175,8 @@ export class HistoricalData {
             tickerId,
             contract,
             endDateTime,
-            durationStr || '1800 S', // @ts-ignore TODO
-            barSizeSetting || '1 secs',
+            durationStr || BarSizeSetting.SECONDS_THIRTY, // '1800 S',
+            barSizeSetting || BarSizeSetting.SECONDS_ONE, // '1 secs',
             whatToShow || 'TRADES',
             1,
             1,
@@ -210,8 +210,8 @@ export class HistoricalData {
             const {
                 symbol,
                 endDateTime = '',
-                durationStr = '1 D',
-                barSizeSetting = '1 min',
+                durationStr = BarSizeSetting.DAYS_ONE, // '1800 S',
+                barSizeSetting = BarSizeSetting.SECONDS_ONE, // '1 secs',
                 whatToShow = 'ASK',
             } = args;
 
@@ -295,8 +295,8 @@ export class HistoricalData {
                 tickerId,
                 contract,
                 endDateTime,
-                durationStr || '1800 S',  // @ts-ignore TODO 
-                barSizeSetting || '1 secs',
+                durationStr,
+                barSizeSetting,
                 whatToShow || 'TRADES',
                 1,
                 1,

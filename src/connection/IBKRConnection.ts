@@ -1,19 +1,26 @@
 import * as _ from 'lodash';
-import ibkr, {EventName} from '@stoqey/ib';
-import {IB_HOST, IB_PORT} from '../config';
-import {publishDataToTopic} from '../events/IbkrEvents.publisher';
+
 import {IBKREVENTS, IbkrEvents} from '../events';
-import {ConnectionStatus} from './connection.interfaces';
+import {IB_HOST, IB_PORT} from '../config';
+import ibkr, {EventName} from '@stoqey/ib';
+
 import AccountSummary from '../account/AccountSummary';
-import {Portfolios} from '../portfolios';
+import {ConnectionStatus} from './connection.interfaces';
 import Orders from '../orders/Orders';
+import {Portfolios} from '../portfolios';
 import includes from 'lodash/includes';
 import {log} from '../log';
+import {publishDataToTopic} from '../events/IbkrEvents.publisher';
 
 const appEvents = IbkrEvents.Instance;
 
 // This has to be unique per this execution
 const clientId = _.random(100, 100000);
+
+export interface IbkrInitOpt {
+    portfolios?: boolean;
+    orders?: boolean;
+}
 
 /**
  * Global IBKR connection
@@ -27,6 +34,11 @@ export class IBKRConnection {
 
     public ib: ibkr;
 
+    public opt: IbkrInitOpt = {
+        portfolios: true,
+        orders: true,
+    };
+
     public static get Instance(): IBKRConnection {
         return this._instance || (this._instance = new this());
     }
@@ -36,7 +48,15 @@ export class IBKRConnection {
     /**
      * init
      */
-    public init = (host: string, port: number): void => {
+    public init = (host: string, port: number, opt?: Partial<IbkrInitOpt>): void => {
+        // Add opts.
+        if (opt) {
+            this.opt = {
+                ...this.opt,
+                ...opt,
+            };
+        }
+
         if (!this.ib) {
             this.ib = new ibkr({
                 // clientId,
@@ -54,22 +74,29 @@ export class IBKRConnection {
      * Call/Initialize Account summary -> Portfolios -> OpenOrders
      */
     public initialiseDep = async (): Promise<boolean> => {
+        const {portfolios: watchPortfolios, orders: watchOrders} = this.opt;
+
         try {
             // 1. Account summary
             log('1. Account summary');
             const accountSummary = AccountSummary.Instance;
             accountSummary.init();
             await accountSummary.getAccountSummary();
-            // 2. Portfolios
-            log('2. Portfolios');
-            const portfolio = Portfolios.Instance;
-            await portfolio.init();
-            await portfolio.getPortfolios();
 
-            log('3. Orders');
-            const openOrders = Orders.Instance;
-            await openOrders.init();
-            await openOrders.getOpenOrders();
+            if (watchPortfolios) {
+                // 2. Portfolios
+                log('2. Portfolios');
+                const portfolio = Portfolios.Instance;
+                await portfolio.init();
+                await portfolio.getPortfolios();
+            }
+
+            if (watchOrders) {
+                log('3. Orders');
+                const openOrders = Orders.Instance;
+                await openOrders.init();
+                await openOrders.getOpenOrders();
+            }
 
             return true;
         } catch (error) {
