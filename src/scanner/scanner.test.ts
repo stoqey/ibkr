@@ -1,8 +1,9 @@
 import 'mocha';
-import MosaicScanner from './MosaicScanner';
-import { IbkrEvents, IBKREVENTS } from '../events';
-import ibkr from '..';
 
+import { IBKREVENTS, IbkrEvents } from '../events';
+
+import MosaicScanner from './MosaicScanner';
+import ibkr from '..';
 
 const ibkrEvents = IbkrEvents.Instance;
 
@@ -25,12 +26,12 @@ describe('Mosaic Scanner', () => {
 
         mosaicScanner.scanMarket({
             instrument: 'STK',
-            locationCode: 'STK.US.MAJOR',
-            numberOfRows: 10,
+            locationCode: 'STK.US.GLOBAL',
+            numberOfRows: 100,
             scanCode: 'TOP_PERC_LOSE',
             stockTypeFilter: 'ALL'
         }).then(data => {
-            console.log('data is ', JSON.stringify(data.map(f => f.symbol)));
+            console.log('data is ', JSON.stringify(data.map((f: any) => f.contract.symbol)));
             done();
         })
 

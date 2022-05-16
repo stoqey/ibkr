@@ -12,7 +12,6 @@ module.exports = {
     project: "./tsconfig.json",
   },
   plugins: [
-    "@typescript-eslint",
     "import",
     "json",
     "simple-import-sort",
