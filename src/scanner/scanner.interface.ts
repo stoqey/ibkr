@@ -77,19 +77,12 @@ export type SCANCODE =
     | 'WSH_PREV_EARNINGS'
     | 'WSH_PREV_EVENT';
 
-export interface MosaicScannerData extends ContractObject {
+export interface MosaicScannerData {
     rank: number; //0,
+    contract: ContractObject;
     marketName: string;
     distance: string; // "",
     benchmark: string; // "",
     projection: string; // "",
     legsStr: string; //""
-}
-
-export interface ScanMarket {
-    instrument: string; // 'STK',
-    locationCode: string; // 'STK.NASDAQ.NMS',
-    numberOfRows: number; // 5,
-    scanCode: SCANCODE; // 'TOP_PERC_GAIN',
-    stockTypeFilter: string; //  'ALL'
 }

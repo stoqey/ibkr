@@ -23,10 +23,11 @@ describe('Mosaic Scanner', () => {
         mosaicScanner
             .scanMarket({
                 instrument: 'STK',
-                locationCode: 'STK.US.GLOBAL',
-                numberOfRows: 100,
-                scanCode: 'TOP_PERC_LOSE',
+                locationCode: 'STK.US.NYSE',
+                numberOfRows: 500,
+                scanCode: 'TOP_PERC_GAIN',
                 stockTypeFilter: 'ALL',
+                // aboveVolume: 1000000
             })
             .then((data) => {
                 console.log('data is ', JSON.stringify(data.map((f: any) => f.contract.symbol)));
