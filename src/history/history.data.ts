@@ -1,19 +1,20 @@
-import includes from 'lodash/includes';
-import moment from 'moment';
-import isEmpty from 'lodash/isEmpty';
-import ibkr, {EventName, Stock} from '@stoqey/ib';
-import {getRadomReqId} from '../_utils/text.utils';
-import IBKRConnection from '../connection/IBKRConnection';
-import {IbkrEvents, publishDataToTopic, IBKREVENTS} from '../events';
 import {
-    HistoryData,
-    SymbolWithTicker,
-    ReqHistoricalData,
     GetMarketData,
+    HistoryData,
+    ReqHistoricalData,
+    SymbolWithTicker,
 } from './history.interfaces';
-import {log} from '../log';
-import {sortedMarketData} from './history.utils';
+import {IBKREVENTS, IbkrEvents, publishDataToTopic} from '../events';
+import ibkr, {BarSizeSetting, EventName, Stock} from '@stoqey/ib';
+
+import IBKRConnection from '../connection/IBKRConnection';
+import {getRadomReqId} from '../_utils/text.utils';
 import {handleEventfulError} from '../events/HandleError';
+import includes from 'lodash/includes';
+import isEmpty from 'lodash/isEmpty';
+import {log} from '../log';
+import moment from 'moment';
+import {sortedMarketData} from './history.utils';
 
 const appEvents = IbkrEvents.Instance;
 
@@ -123,8 +124,8 @@ export class HistoricalData {
                 symbol,
                 // contract = [symbol, 'SMART', 'USD'],
                 endDateTime = '',
-                durationStr = '1 D',
-                barSizeSetting = '1 min',
+                durationStr = BarSizeSetting.DAYS_ONE, // '1800 S',
+                barSizeSetting = BarSizeSetting.SECONDS_ONE, // '1 secs',
                 whatToShow = 'ASK',
             } = args;
 
@@ -174,8 +175,8 @@ export class HistoricalData {
             tickerId,
             contract,
             endDateTime,
-            durationStr || '1800 S',
-            barSizeSetting || '1 secs',
+            durationStr || BarSizeSetting.SECONDS_THIRTY, // '1800 S',
+            barSizeSetting || BarSizeSetting.SECONDS_ONE, // '1 secs',
             whatToShow || 'TRADES',
             1,
             1,
@@ -209,8 +210,8 @@ export class HistoricalData {
             const {
                 symbol,
                 endDateTime = '',
-                durationStr = '1 D',
-                barSizeSetting = '1 min',
+                durationStr = BarSizeSetting.DAYS_ONE, // '1800 S',
+                barSizeSetting = BarSizeSetting.SECONDS_ONE, // '1 secs',
                 whatToShow = 'ASK',
             } = args;
 
@@ -294,8 +295,8 @@ export class HistoricalData {
                 tickerId,
                 contract,
                 endDateTime,
-                durationStr || '1800 S',
-                barSizeSetting || '1 secs',
+                durationStr,
+                barSizeSetting,
                 whatToShow || 'TRADES',
                 1,
                 1,

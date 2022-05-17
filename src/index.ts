@@ -1,17 +1,18 @@
-import {onConnected, IBKRConnection} from './connection';
+import {IBKRConnection, IbkrInitOpt, onConnected} from './connection';
 
 interface IBKR {
-    host: string;
-    port: number;
+    host?: string; // or using process.env.IB_HOST
+    port?: number; // or using process.env.IB_PORT
+    opt?: Partial<IbkrInitOpt>;
 }
 // Export main
-const ibkr = (args?: IBKR): Promise<boolean> => {
+const ibkr = (args?: Partial<IBKR>): Promise<boolean> => {
     // Default from these envs
     const {IB_PORT = 4003, IB_HOST = 'localhost'} = process.env || {};
 
-    const {host = IB_HOST, port = IB_PORT} = args || {};
+    const {host = IB_HOST, port = IB_PORT, opt} = args || {};
 
-    IBKRConnection.Instance.init(host, +port);
+    IBKRConnection.Instance.init(host, +port, opt);
 
     return new Promise((resolve, reject) => {
         async function runIbkrApp() {

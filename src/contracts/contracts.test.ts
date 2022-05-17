@@ -1,22 +1,33 @@
 import 'mocha';
+
 import {ContractDetailsParams, getContractDetails} from './ContractDetails';
-import ibkr from '..';
-import {log} from '../log';
+import {getContractDetailsOne, getContractDetailsOneOrNone, getContractSummaryOne} from '.';
+
 import {IBKRConnection} from '../connection';
 import dotenv from 'dotenv';
-import {getContractDetailsOne, getContractDetailsOneOrNone, getContractSummaryOne} from '.';
 import {getSecDefOptParams} from './getSecDefOptParams';
+import ibkr from '..';
+import {log} from '../log';
 
-before(async () => {
-    dotenv.config({path: '.env.test'});
-    const args = {
-        port: Number(process.env.TEST_IBKR_PORT),
-        host: process.env.TEST_IBKR_HOST,
-    };
-    // console.log('args:', args);
-    await ibkr(args);
+// before(async () => {
+//     dotenv.config({path: '.env.test'});
+//     const args = {
+//         port: Number(process.env.TEST_IBKR_PORT),
+//         host: process.env.TEST_IBKR_HOST,
+//     };
+//     // console.log('args:', args);
+//     await ibkr(args);
 
-    IBKRConnection.Instance.getIBKR();
+//     IBKRConnection.Instance.getIBKR();
+// });
+
+before((done) => {
+    ibkr().then((started) => {
+        if (started) {
+            return done();
+        }
+        done(new Error('error starting ibkr'));
+    });
 });
 
 describe('Contracts', () => {
