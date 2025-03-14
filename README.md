@@ -57,9 +57,11 @@ await ibkr();
 ibkr().then(started => {
   
     if(!started){
+
           // Error IBKR has not started
           console.log('error cannot start ibkr');
-        //   Not to proceed if not connected with interactive brokers
+
+          //  Not to proceed if not connected with interactive brokers
           return process.exit(1);
     }
 
@@ -70,7 +72,8 @@ ibkr().then(started => {
 
 ### Accounts Summary e.t.c
 ```ts
-import { AccountSummary } from  "@stoqey/ibkr"
+import { AccountSummary } from  "@stoqey/ibkr";
+
 const accountInstance = AccountSummary.Instance;
 
 // account summaries is automatically updated for you
@@ -83,7 +86,7 @@ const totalCashValue = accountSummaries.TotalCashValue.value;
 ```
 ### Portfolios
 ```ts
-
+import { Portfolios } from  "@stoqey/ibkr";
 // Get current portfolios
 const portfolios = Portfolios.Instance;
 
@@ -101,7 +104,6 @@ import { MarketDataManager } from '@stoqey/ibkr';
 // 1. Get market data manager
 const mkdManager = MarketDataManager.Instance;
 
-
 // 2. Get market data async promise
 const data = await mkdManager.getHistoricalData(contract, endDateTime, durationStr, barSizeSetting, whatToShow,useRTH );
 
@@ -112,14 +114,13 @@ const data = await mkdManager.getHistoricalData(contract, endDateTime, durationS
 import { MarketDataManager, IBKREvents, IBKREVENTS } from '@stoqey/ibkr';
 
 // 1. Get IBKR events
-const ibkrEvents.Instance;
+const ibkrEvents = IBKREvents.Instance;
 
 // 2. Get market data manager
 const mkdManager = MarketDataManager.Instance;
 
 // 3. Request historical data updates
 await mkdManager.getHistoricalDataUpdates(contract,barSizeSetting, whatToShow);
-
 
 // 3. Subscribe for historical data updates
 ibkrEvents.on(IBKREVENTS.IBKR_BAR, (bar: MarketData) => {
@@ -138,9 +139,9 @@ mkdManager.removeHistoricalDataUpdates(contract);
   
 ### Contracts
 ```ts
- import { MarketDataManager } from '@stoqey/ibkr';
+import { MarketDataManager } from '@stoqey/ibkr';
 
-// 2. Get market data manager
+// 1. Get market data manager
 const mkdManager = MarketDataManager.Instance;
 
 const contract = {
@@ -171,21 +172,20 @@ const contractDetails = await mkdManager.getContract({
 
 ### Orders
 ```ts
-import { Orders, OrderStock } from '@stoqey/ibkr';
+import { Orders, OrderStock, IBKREvents, IBKREVENTS } from '@stoqey/ibkr';
 
 // 1. Get IBKR events
-const ibkrEvents.Instance;
+const ibkrEvents = IBKREvents.Instance;
 
 // 2. Get orders manager
 const ordersManager = Orders.Instance;
 
+// 3. Place order
 const contract = mkdManager.getContract({...})
 const myOrder = {...}
-
-// place order
 const placedOrder = await ordersManager.placeOrder(contract, myOrder);
 
-// modify order
+// 4. Modify order
 const modifyOrder = await ordersManager.placeOrder(id, contract, myOrder);
 
 // get orders, this is automatically updated
@@ -194,7 +194,7 @@ const orders = ordersManager.orders;
 // get filled orders(trades), this is automatically updated
 const trades = ordersManager.trades;
 
-// 3. Subscribe for trades, when orders are filled in real time
+// subscribe for trades, when orders are filled in real time
 ibkrEvents.on(IBKREVENTS.IBKR_SAVE_TRADE, (bar: Trade) => {
      // use trade here
 });

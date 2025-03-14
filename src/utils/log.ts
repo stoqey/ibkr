@@ -1,7 +1,7 @@
 import _get from 'lodash/get';
 import debug from 'debug';
 
-export const appName = process.env.APP_NAME || "IBKR";
+export const appName = process.env.APP_NAME || "ibkr";
 
 const libraryPrefix = appName;
 
