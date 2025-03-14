@@ -20,7 +20,7 @@
 
 
 ### Run IBKR in style
-This is an event-based ibkr client for node
+This is using @stoqey/ib IBKR client for node, via the newer IbApiNext in an simpler way.
 |       | Feature                                       |
 | :---: | --------------------------------------------- |
 |   ✅   | Accounts                                      |
@@ -29,7 +29,7 @@ This is an event-based ibkr client for node
 |   ✅   | Historical Data                               |
 |   ✅   | Realtime price updates                        |
 |   ✅   | Contracts (stocks/forex/options/index .e.t.c) |
-|   ✅   | Mosaic Market scanner                         |
+|   ⬜️   | Mosaic Market scanner                         |
 |   ⬜️   | News                                          |
 
 
@@ -42,19 +42,19 @@ npm i @stoqey/ibkr
 
 ### Initialize
 ```ts
-import ibkr, { AccountSummary, IBKREVENTS, IbkrEvents, PortFolioUpdate, getContractDetails } from '@stoqey/ibkr';
-
-const ibkrEvents = IbkrEvents.Instance;
+import ibkr from '@stoqey/ibkr';
 
 
-// 0. Using env process.env.IB_PORT and process.env.IB_HOST
+// Set env
+// process.env.IBKR_PORT  
+// process.env.IBKR_HOST 
+// process.env.IBKR_CLIENT_ID (optional)
+
+// 1. async
 await ibkr();
 
-// 1. Async 
-await ibkr({ port: IB_PORT, host: IB_HOST });
-
 // 2. Callback
-ibkr({ port: IB_PORT, host: IB_HOST }).then(started => {
+ibkr().then(started => {
   
     if(!started){
           // Error IBKR has not started
@@ -68,10 +68,17 @@ ibkr({ port: IB_PORT, host: IB_HOST }).then(started => {
 })
 ```
 
-### Accounts, Summary e.t.c
+### Accounts Summary e.t.c
 ```ts
-const accountId = AccountSummary.Instance.accountSummary.AccountId;
-const totalCashValue = AccountSummary.Instance.accountSummary.TotalCashValue;
+import { AccountSummary } from  "@stoqey/ibkr"
+const accountInstance = AccountSummary.Instance;
+
+// account summaries is automatically updated for you
+const accountSummaries = accountInstance.accountSummary;
+
+const accountId = accountSummaries.accountId;
+
+const totalCashValue = accountSummaries.TotalCashValue.value;
 
 ```
 ### Portfolios
@@ -79,12 +86,9 @@ const totalCashValue = AccountSummary.Instance.accountSummary.TotalCashValue;
 
 // Get current portfolios
 const portfolios = Portfolios.Instance;
-const accountPortfolios = await portfolios.getPortfolios();
 
-// Subscribe to portfolio updates
-ibkrEvents.on(IBKREVENTS.PORTFOLIOS, (porfolios: PortFolioUpdate[]) => {
-      // use porfolios  updates here
-})
+// positions is automatically updated for you
+const accountPortfolios = portfolios.positions;
 
 ```
 
@@ -92,62 +96,62 @@ ibkrEvents.on(IBKREVENTS.PORTFOLIOS, (porfolios: PortFolioUpdate[]) => {
 
 - Market data
 ```ts
-import { HistoricalData } from '@stoqey/ibkr';
+import { MarketDataManager } from '@stoqey/ibkr';
 
-// 1. Init
-const historyApi = HistoricalData.Instance;
+// 1. Get market data manager
+const mkdManager = MarketDataManager.Instance;
 
-const args = {
-  symbol,
-  // contract: ib.contract.stock("AAPL"),
-  endDateTime = '',
-  durationStr = '1 D',
-  barSizeSetting = '1 min',
-  whatToShow = 'ASK'
-};
 
 // 2. Get market data async promise
-const data = await historyApi.reqHistoricalData(args);
+const data = await mkdManager.getHistoricalData(contract, endDateTime, durationStr, barSizeSetting, whatToShow,useRTH );
 
-// OR 
-
-// 3.1 Request for market data using events
-historyApi.getHistoricalData(args);
-ibkrEvents.emit(IBKREVENTS.GET_MARKET_DATA, args); // the same
-
-// 3.2. Subscribe to market data results
-ibkrEvents.on(IBKREVENTS.ON_MARKET_DATA, ({ symbol, marketData }) => {
-    //  Use the data here
-})
 ```
 
 - Real-time price updates
 ```ts
-import { PriceUpdates } from '@stoqey/ibkr';
+import { MarketDataManager, IBKREvents, IBKREVENTS } from '@stoqey/ibkr';
 
-PriceUpdates.Instance; // init
+// 1. Get IBKR events
+const ibkrEvents.Instance;
 
-// subscribe for price updates
-ibkrEvents.on(IBKREVENTS.ON_PRICE_UPDATES, (priceUpdates) => {
-     // use the price updates here
- });
+// 2. Get market data manager
+const mkdManager = MarketDataManager.Instance;
 
-//  Request price updates
-ibkrEvents.emit(IBKREVENTS.SUBSCRIBE_PRICE_UPDATES, { symbol: 'AAPL' });
+// 3. Request historical data updates
+await mkdManager.getHistoricalDataUpdates(contract,barSizeSetting, whatToShow);
+
+
+// 3. Subscribe for historical data updates
+ibkrEvents.on(IBKREVENTS.IBKR_BAR, (bar: MarketData) => {
+     // use the historical data updates here
+});
+
+// 4. get the cached marketdata
+const cachedData = await mkdManager.historicalData(contract, start, end)
+
 ```
 
 ```ts
-// Unsubscribe from price updates
-ibkrEvents.emit(IBKREVENTS.UNSUBSCRIBE_PRICE_UPDATES, symbol);
+// Unsubscribe from historical data updates
+mkdManager.removeHistoricalDataUpdates(contract);
 ```
   
 ### Contracts
 ```ts
- 
-const contractDetails = await getContractDetails(ib.contract.stock("AAPL"));
+ import { MarketDataManager } from '@stoqey/ibkr';
+
+// 2. Get market data manager
+const mkdManager = MarketDataManager.Instance;
+
+const contract = {
+  symbol: "PLTR",
+  secType: "STK"
+};
+
+const contractDetails = await mkdManager.getContract(contract);
 
 //  or e.g options
-const contractDetails = await getContractDetails({
+const contractDetails = await mkdManager.getContract({
     currency: 'USD',
     exchange: 'SMART',
     multiplier: 100,
@@ -158,83 +162,47 @@ const contractDetails = await getContractDetails({
 });
 
 // e.g forex
-const contractDetails = await getContractDetails({
+const contractDetails = await mkdManager.getContract({
     "symbol":"GBP",
     "secType":"CASH",
     "currency":"USD",
-     // "localSymbol":"GBP.USD",
 });
-
-
-// or with just a symbol, defaults to stocks
- const contractDetails = await getContractDetails('AAPL');
 ```
 
 ### Orders
 ```ts
 import { Orders, OrderStock } from '@stoqey/ibkr';
 
-const orderTrade = Orders.Instance;
+// 1. Get IBKR events
+const ibkrEvents.Instance;
 
-const myStockOrder: OrderStock = { ... }
+// 2. Get orders manager
+const ordersManager = Orders.Instance;
 
-const placedOrder = await orderTrade.placeOrder(myStockOrder);
-          
-```
+const contract = mkdManager.getContract({...})
+const myOrder = {...}
 
-**OrderStock** 
-```ts
-const stockOrderBuyOut: OrderStock = {
-    symbol: symbol,
-    action: "SELL",
-    type: "limit",
-    parameters: ["1", "9999"], // 'SELL', 1, 9999,
-}
-```
+// place order
+const placedOrder = await ordersManager.placeOrder(contract, myOrder);
 
-**type**
-- limit `('SELL', 1, 9999)` like in example above
-- market `(action, quantity, transmitOrder, goodAfterTime, goodTillDate)`
-- marketClose `(action, quantity, price, transmitOrder)`
-- stop `(action, quantity, price, transmitOrder, parentId, tif)`
- - stopLimit `(action, quantity, limitPrice, stopPrice, transmitOrder, parentId, tif)`
-- trailingStop `(action, quantity, auxPrice, tif, transmitOrder, parentId)`
+// modify order
+const modifyOrder = await ordersManager.placeOrder(id, contract, myOrder);
 
-**Order events**
+// get orders, this is automatically updated
+const orders = ordersManager.orders;
 
-- Order filled
-```ts
-ibkrEvents.on(IBKREVENTS.ORDER_FILLED, (data) => {
+// get filled orders(trades), this is automatically updated
+const trades = ordersManager.trades;
 
+// 3. Subscribe for trades, when orders are filled in real time
+ibkrEvents.on(IBKREVENTS.IBKR_SAVE_TRADE, (bar: Trade) => {
+     // use trade here
 });
-```
 
-- Order status
-```ts
-ibkrEvents.on(IBKREVENTS.ORDER_STATUS, (data) => {
+// other methods e.t.c....
+await ordersManager.cancelOrder(orderId)
 
-});
-```
-
-- Open Orders updates
-```ts
-ibkrEvents.on(IBKREVENTS.OPEN_ORDERS, (data) => {
-
-});
-```
-
-**Mosaic Scanner**
-```ts
-import { MosaicScanner } from '@stoqey/ibkr';
-const mosaicScanner = new MosaicScanner();
-
-const scannerData = await mosaicScanner.scanMarket({
-      instrument: 'STK',
-      locationCode: 'STK.US.MAJOR',
-      numberOfRows: 10,
-      scanCode: 'TOP_PERC_GAIN',
-      stockTypeFilter: 'ALL'
-})
+await ordersManager.cancelAllOrders()        
 ```
 
 see any `.test.ts` file for examples
