@@ -11,7 +11,7 @@
   "opts": false,
   "package": "./package.json",
   "reporter": "spec",
-  "require": "ts-node/register",
+  "require": "tsx",
   "slow": 75,
   "timeout": 0,
   "ui": "bdd",

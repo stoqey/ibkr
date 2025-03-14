@@ -1,2 +1,1 @@
-export * from './portfolios.interfaces';
-export * from './Portfolios';
+export * from "./Portfolios";

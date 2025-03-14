@@ -1,2 +1,1 @@
-export * from './Orders';
-export * from './orders.interfaces';
+export * from "./Orders";
