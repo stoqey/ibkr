@@ -1,206 +1,132 @@
-import ibkr, {EventName} from '@stoqey/ib';
-import isEmpty from 'lodash/isEmpty';
-import AccountSummary from '../account/AccountSummary';
-import {IBKREVENTS, IbkrEvents} from '../events';
-import {publishDataToTopic} from '../events/IbkrEvents.publisher';
-import IBKRConnection from '../connection/IBKRConnection';
-import {PortFolioUpdate} from './portfolios.interfaces';
-import {IBKRAccountSummary} from '../account/account-summary.interfaces';
-import {log, verbose} from '../log';
-import {getRadomReqId} from '../_utils/text.utils';
-
-const appEvents = IbkrEvents.Instance;
-
-/**
- * Log portfolio to console
- * @param @interface PortFolioUpdate
- */
-const logPortfolio = ({marketPrice, averageCost, position, symbol, conId}: PortFolioUpdate) => {
-    const contractIdWithSymbol = `${symbol} ${conId}`;
-    if (Math.round(marketPrice) > Math.round(averageCost)) {
-        // We are in profit
-        verbose(
-            `logPortfolio:profit shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice} `,
-            contractIdWithSymbol
-        );
-    } else {
-        // We are in loss
-        log(
-            `logPortfolio:LOSS shares = ${position}, costPerShare -> ${averageCost} marketPrice -> ${marketPrice}`,
-            contractIdWithSymbol
-        );
-    }
-};
+import { Subscription, firstValueFrom } from 'rxjs';
+import { Position, IBApiNext, WhatToShow, BarSizeSetting } from '@stoqey/ib';
+import { IBKRConnection } from '../connection';
+import compact from 'lodash/compact';
+import MarketDataManager from '../marketdata/MarketDataManager';
+import { logPosition } from '../utils/log.utils';
 
 export class Portfolios {
-    ib: ibkr;
-
-    accountSummary: IBKRAccountSummary;
-
+    ib: IBApiNext;
     private static _instance: Portfolios;
 
-    currentPortfolios: PortFolioUpdate[] = [];
-    portfoliosSnapshot: PortFolioUpdate[] = [];
+    private currentPortfolios: Map<number, Position> = new Map();
+    private closedPositions: Map<number, Position> = new Map();
+    private entryPrices: Map<number, number> = new Map();
+
+    private GetPositions: Subscription;
 
     public static get Instance(): Portfolios {
         return this._instance || (this._instance = new this());
     }
 
-    private constructor() {}
+    private constructor() { }
 
-    public init = async (): Promise<void> => {
-        const self = this;
-        this.ib = IBKRConnection.Instance.getIBKR();
+    get positions(): Position[] {
+        return Array.from(this.currentPortfolios.values());
+    }
 
-        // TODO user select
-        const accountId = AccountSummary.Instance.AccountId;
+    updateMarketPrice = (conId: number, close: number): void => {
+        const position = this.currentPortfolios?.get(conId);
+        if (position) {
+            const newPosition = { ...position };
+            newPosition.marketPrice = close;
+            this.currentPortfolios.set(conId, newPosition);
+        }
+    };
 
-        const ib = this.ib;
+    getEntryPrice = (conId: number): number | undefined => {
+        return this.entryPrices.get(conId);
+    }
 
-        ib.on(
-            EventName.updatePortfolio,
-            (
-                contract,
-                position,
-                marketPrice,
-                marketValue,
-                averageCost,
-                unrealizedPNL,
-                realizedPNL,
-                accountName
-            ) => {
-                const thisPortfolio = {
-                    ...contract,
-                    position,
-                    marketPrice,
-                    marketValue,
-                    averageCost,
-                    unrealizedPNL,
-                    realizedPNL,
-                    accountName,
-                };
-                logPortfolio(thisPortfolio as any);
-                self.getPortfolios(); // refresh portfolios
+    getLatestClosedPosition(conId: number): Position | undefined {
+        return this.closedPositions.get(conId);
+    }
+
+    mapPositions = (positionOg: Position, subscribe = false): Position => {
+        if (!positionOg) {
+            return;
+        }
+
+        let position: any = { ...positionOg };
+
+        const contractId = position?.contract?.conId;
+        if (contractId) {
+            if (position.contract.exchange === "VALUE") {
+                return;
             }
-        );
 
-        ib.on(EventName.openOrder, function (orderId, contract, order, orderState) {
-            if (orderState.status === 'Filled') {
-                // check if portfolio exit, if not add it
-                const existingPortfolio = self.currentPortfolios.find(
-                    (porto) => porto.symbol === contract.symbol
-                );
-
-                if (isEmpty(existingPortfolio)) {
-                    // TODO
-                    // Add to currentPortfolios
-                    self.currentPortfolios.push({
-                        ...contract,
-                    } as any);
-                } else {
-                    self.currentPortfolios = self.currentPortfolios.filter(
-                        (porto) => porto.symbol !== contract.symbol
-                    );
+            if (!position.pos) {
+                const positionToClose = this.currentPortfolios.get(contractId);
+                if (positionToClose) {
+                    this.closedPositions.set(contractId, positionToClose);
+                    this.currentPortfolios.delete(contractId);
+                    this.entryPrices.delete(contractId);
+                    logPosition("Portfolios.mapPositions", positionToClose, true);
+                }
+            } else {
+                const multiplier = position.contract.multiplier;
+                if (multiplier) {
+                    position.avgCost = position.avgCost / multiplier;
                 }
 
-                log(
-                    `Portfolio > openOrder FILLED`,
-                    ` -> ${contract.symbol} ${order.action} ${order.totalQuantity}  ${orderState.status}`
-                );
-                verbose(
-                    `Portfolio > ALL PORTFOLIOS`,
-                    ` -> ${JSON.stringify(self.currentPortfolios.map((por) => por.symbol))}`
-                );
-                // refresh the portfolios
-                self.getPortfolios();
+                this.currentPortfolios.set(contractId, position);
+                this.entryPrices.set(contractId, position.avgCost);
+
+                if (this.closedPositions.has(contractId)) {
+                    this.closedPositions.delete(contractId);
+                }
+
+                // When successful
+                if (subscribe) {
+                    const isBuy = position.pos > 0;
+                    const whatToShow = isBuy ? WhatToShow.ASK : WhatToShow.BID;
+                    const barSize = "5 secs";
+                    MarketDataManager.Instance.getHistoricalDataUpdates(position.contract, barSize as BarSizeSetting, whatToShow);
+                }
+                logPosition("Portfolios.mapPositions", position);
             }
-        });
 
-        log('AccountID', accountId);
-
-        ib.reqAccountUpdates(true, accountId);
-    };
+        }
+        return position
+    }
 
     /**
-     * getPortfolios
+     * getPortfolios 
      */
-    public getPortfolios = async (options?: {
-        accountId: string;
-        modelCode: string;
-    }): Promise<PortFolioUpdate[]> => {
-        const self = this;
-        const ib = self.ib;
-        const reqId = getRadomReqId();
-
-        return new Promise((resolve) => {
-            let done = false;
-            const portfolios: {[x: string]: PortFolioUpdate} = {};
-
-            const handlePosition = (account, contract, position, averageCost) => {
-                const thisPortfolio = {...contract, position, averageCost};
-
-                let symbol = contract && contract.symbol;
-
-                // If forex use localSymbol
-                // if option use `symbol date` e.g 'AAPL  200918C00123750'
-                if (['CASH', 'OPT'].includes(contract.secType)) {
-                    symbol = contract && contract.localSymbol;
-                }
-
-                // Position has to be greater than 0
-                if (position === 0) {
-                    return;
-                }
-
-                thisPortfolio.symbol = symbol; // override symbol name
-
-                portfolios[symbol] = thisPortfolio;
-            };
-
-            const handlePositionEnd = (portfoliosData: PortFolioUpdate[]) => {
-                if (!done) {
-                    done = true;
-                    appEvents.off('position', handlePosition);
-
-                    verbose(
-                        'getPortfolios positionEnd',
-                        `********************** =`,
-                        portfoliosData && portfoliosData.length
-                    );
-
-                    self.currentPortfolios = portfoliosData;
-                    publishDataToTopic({
-                        topic: IBKREVENTS.PORTFOLIOS,
-                        data: portfoliosData,
-                    });
-                    resolve(portfoliosData);
-                }
-            };
-
-            const positionEnd = () => {
-                if (done) {
-                    return;
-                }
-
-                const portfoliosData = Object.keys(portfolios).map(
-                    (portfolioKey) => portfolios[portfolioKey]
-                );
-                handlePositionEnd(portfoliosData);
-                ib.off(EventName.positionEnd, positionEnd);
-            };
-
-            ib.on(EventName.positionEnd, positionEnd);
-
-            ib.on(EventName.position, handlePosition);
-
-            if (options) {
-                const {accountId, modelCode} = options;
-                return ib.reqPositionsMulti(reqId, accountId, modelCode);
-            }
-
-            ib.reqPositions();
+    asyncPortfolios = async (): Promise<Position[]> => {
+        const getPositions = await firstValueFrom(this.ib.getPositions());
+        let positions: Position[] = [];
+        getPositions.all.forEach((value, key) => {
+            positions = compact(value.map((position) => this.mapPositions(position)));
         });
+
+        return positions;
+    }
+
+    syncPortfolios = (): void => {
+        MarketDataManager.Instance.init();
+        this.GetPositions = this.ib.getPositions().subscribe((accountUpdates) => {
+            accountUpdates.all.forEach((value, key) => {
+                value.forEach((position) => this.mapPositions(position));
+            });
+        });
+    }
+
+    disconnect = () => {
+        this.GetPositions.unsubscribe();
+    }
+
+    getPositions = async (): Promise<Position[]> => {
+        return this.asyncPortfolios();
+    }
+
+    init = (): void => {
+        if (!this.ib) {
+            this.ib = IBKRConnection.Instance.ib;
+            this.syncPortfolios();
+        }
     };
+
 }
 
 export default Portfolios;

@@ -1,75 +1,60 @@
-import * as _ from 'lodash';
-import ibkr, {EventName} from '@stoqey/ib';
-import {IB_HOST, IB_PORT} from '../config';
-import {publishDataToTopic} from '../events/IbkrEvents.publisher';
-import {IBKREVENTS, IbkrEvents} from '../events';
-import {ConnectionStatus} from './connection.interfaces';
-import AccountSummary from '../account/AccountSummary';
-import {Portfolios} from '../portfolios';
-import Orders from '../orders/Orders';
-import includes from 'lodash/includes';
-import {log} from '../log';
+import { Subscription } from "rxjs";
+import { IBApiNextCreationOptions, IBApiNext, ConnectionState } from "@stoqey/ib"
+import { log } from "../utils/log";
+import Portfolios from "../portfolios/Portfolios";
+import Orders from "../orders/Orders";
+import MarketDataManager from "../marketdata/MarketDataManager";
+import { IBKREvents, IBKREVENTS } from "../events";
+import { AccountSummary } from "../account/AccountSummary";
 
-const appEvents = IbkrEvents.Instance;
+const ibkrEvents = IBKREvents.Instance;
 
-// This has to be unique per this execution
-const clientId = _.random(100, 100000);
-
-/**
- * Global IBKR connection
- * @singleton class
- */
 export class IBKRConnection {
-    public status: ConnectionStatus = null;
-    public IB_PORT: number = IB_PORT;
-    public IB_HOST: string = IB_HOST;
-    private static _instance: IBKRConnection;
 
-    public ib: ibkr;
+    private ibApiNext: IBApiNext;
+
+    connected: boolean = false;
+    private connection: Subscription;
+    private errors: Subscription;
+    private connectionState: ConnectionState;
+
+    private static _instance: IBKRConnection;
 
     public static get Instance(): IBKRConnection {
         return this._instance || (this._instance = new this());
     }
 
-    private constructor() {}
+    constructor() { }
 
-    /**
-     * init
-     */
-    public init = (host: string, port: number): void => {
-        if (!this.ib) {
-            this.ib = new ibkr({
-                // clientId,
-                host,
-                port,
-            });
-
-            // this.ib.setMaxListeners(0);
-            this.listen();
-        }
+    get ib(): IBApiNext {
+        return this.ibApiNext;
     };
 
     /**
-     * initialiseDep
+     * initializeDep
      * Call/Initialize Account summary -> Portfolios -> OpenOrders
      */
-    public initialiseDep = async (): Promise<boolean> => {
+    public initializeDep = async (): Promise<boolean> => {
         try {
             // 1. Account summary
             log('1. Account summary');
             const accountSummary = AccountSummary.Instance;
             accountSummary.init();
-            await accountSummary.getAccountSummary();
-            // 2. Portfolios
-            log('2. Portfolios');
+            await accountSummary.getAccountSummaryUpdates();
+            // 2. Market data
+            log('2. Market data');
+            const marketData = MarketDataManager.Instance;
+            await marketData.init();
+            // 3. Portfolios
+            log('3. Portfolios');
             const portfolio = Portfolios.Instance;
             await portfolio.init();
-            await portfolio.getPortfolios();
-
+            await portfolio.asyncPortfolios();
+            // 4. Orders
             log('3. Orders');
             const openOrders = Orders.Instance;
             await openOrders.init();
-            await openOrders.getOpenOrders();
+            await openOrders.asyncOpenOrders();
 
             return true;
         } catch (error) {
@@ -78,97 +63,128 @@ export class IBKRConnection {
         }
     };
 
-    /**
-     * On listen for IB connection
-     */
-    private listen = (): void => {
-        const self: IBKRConnection = this;
 
-        function disconnectApp() {
-            publishDataToTopic({
-                topic: IBKREVENTS.DISCONNECTED,
-                data: {},
-            });
-            self.status = IBKREVENTS.DISCONNECTED;
-            return log(IBKREVENTS.DISCONNECTED, `Error connecting client => ${clientId}`);
-        }
 
-        // Important listners
-        this.ib.on(EventName.connected, function () {
-            async function connectApp() {
-                log(`.................................................................`);
-                log(`...... Connected client ${clientId}, initialising services ......`);
+    public init(opt?: Partial<IBApiNextCreationOptions>): Promise<boolean> {
+            if (this.connected || this.ibApiNext) {
+                log('already init');
+                return Promise.resolve(true);
+            }
+            if (opt) {
+                if (!opt.reconnectInterval) opt.reconnectInterval = 1000;
+                if (!opt.connectionWatchdogInterval) opt.connectionWatchdogInterval = 1;
+                log('init with options', opt);
+                this.ibApiNext = new IBApiNext(opt);
+            } else {
+                opt = {};
+                // reconnect interval from env
+                opt.reconnectInterval = parseInt(process.env.IBKR_RECONNECT_INTERVAL) || 1000;
+                opt.connectionWatchdogInterval = parseInt(process.env.IBKR_WATCHDOG_INTERVAL) || 1;
 
-                // initialise dependencies
-                const connected = await self.initialiseDep();
+                // port and host from env
+                opt.host = process.env.IBKR_HOST || '127.0.0.1';
+                opt.port = parseInt(process.env.IBKR_PORT) || 7497;
+                log('init with env', opt);
+                this.ibApiNext = new IBApiNext(opt);
+            }
 
-                if (connected) {
-                    publishDataToTopic({
-                        topic: IBKREVENTS.CONNECTED,
-                        data: {
-                            connected: true,
-                        },
-                    });
-                    self.status = IBKREVENTS.CONNECTED;
-                    log(`...... Successfully running ${clientId}'s services ..`);
-                    return log(`.....................................................`);
+            this.ibApiNext.logLevel = 5;
+
+            return this.connect();
+    }
+
+    async connect(clientId: number = 0): Promise<boolean> {
+
+        if (process.env.IBKR_CLIENT_ID) {
+            clientId = parseInt(process.env.IBKR_CLIENT_ID);
+        };
+
+        return new Promise((resolve) => {
+            // connect to IBKR
+            if (this.connected) {
+                this.initializeDep();
+                resolve(true);
+            }
+            this.errors = this.ibApiNext.errorSubject.subscribe((error: any) => {
+                log("IBKRConnection.ibApiNext.errors", error.message)
+            })
+
+            this.ibApiNext.connectionState.subscribe((state) => {
+                log('connection state', state);
+                switch (state) {
+                    case ConnectionState.Connecting:
+                        this.connectionState = state;
+                        log('connecting to ibkr');
+                        break;
+                    case ConnectionState.Connected:
+                        this.connectionState = state;
+                        this.connected = true;
+                        log('connected to ibkr');
+                        resolve(true);
+                        break;
+                    case ConnectionState.Disconnected:
+                        log('disconnected from ibkr', this.connectionState);
+                        this.connected = false;
+                        if (this.connectionState === ConnectionState.Connecting) {
+                            this.connectionState = state;
+                            // if was connecting, then reject
+                            resolve(false);
+                        }
+                        break;
+                    default:
+                        break;
                 }
+            });
 
-                disconnectApp();
-            }
-            connectApp();
-        });
+            if (!this.connection) {
+                this.connection = this.ibApiNext.connectionState.subscribe((state) => {
+                    log('connection state', state);
+                    switch (state) {
+                        case ConnectionState.Connecting:
+                            this.connectionState = state;
+                            log('connecting to ibkr');
+                            break;
+                        case ConnectionState.Connected:
+                            this.connectionState = state;
+                            this.connected = true;
+                            this.initializeDep();
+                            ibkrEvents.emit(IBKREVENTS.IBKR_CONNECTED);
+                            log('connected to ibkr');
+                            break;
+                        case ConnectionState.Disconnected:
+                            log('disconnected from ibkr', this.connectionState);
+                            this.connected = false;
 
-        this.ib.on(EventName.error, function (err: any) {
-            const message = err && err.message;
+                            // TODO disconnect
+                            if (this.connectionState === ConnectionState.Connecting) {
+                                this.connectionState = state;
+                            }
 
-            log(IBKREVENTS.ERROR, `message=${err && err.message} code=${err && err.code}`);
+                            if (this.connectionState === ConnectionState.Disconnected) {
+                                // process.exit(0);
+                                console.log('ConnectionState.Disconnected', ConnectionState.Disconnected);
+                            }
 
-            if (includes(message, 'ECONNREFUSED') || (err && err.code === 'ECONNREFUSED')) {
-                return disconnectApp();
-            }
-        });
-
-        this.ib.on(EventName.disconnected, function () {
-            log(IBKREVENTS.DISCONNECTED, `${clientId} Connection disconnected error`);
-            disconnectApp();
-            process.exit(1);
-        });
-
-        // connect the IBKR
-        this.ib.connect(clientId);
-
-        // App events
-        appEvents.on(IBKREVENTS.PING, () => {
-            // If we have the status
-            if (self.status) {
-                // PONG the current status
-                publishDataToTopic({
-                    topic: self.status,
-                    data: {},
+                            break;
+                        default:
+                            break;
+                    }
                 });
             }
+
+
+            this.ibApiNext.connect(clientId);
+
         });
-    };
 
-    /**
-     * getIBKR instance
-     */
-    public getIBKR = (): ibkr => {
-        return this.ib;
-    };
+    }
 
-    /**
-     * disconnectIBKR
-     */
-    public disconnectIBKR(): void {
-        this.status = IBKREVENTS.DISCONNECTED;
-        try {
-            log(`IBKR Force shutdown ${clientId} 😴😴😴`);
-            this.ib.disconnect();
-        } catch (error) {
-            log(IBKREVENTS.ERROR, error);
+    disconnect() {
+        // TODO others....
+        if (this.connection) {
+            this.connection.unsubscribe();
         }
     }
 }
+
 export default IBKRConnection;

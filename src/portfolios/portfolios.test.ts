@@ -1,24 +1,30 @@
-import {expect} from 'chai';
-import dotenv from 'dotenv';
 import 'mocha';
-import ibkr from '..';
-import {log} from '../log';
+import "dotenv/config";
+import { expect, assert } from 'chai'
+import { IBKRConnection } from '../connection';
 import Portfolios from './Portfolios';
 
-before(async () => {
-    dotenv.config({path: '.env.test'});
-    const args = {
-        port: process.env.TEST_IBKR_PORT ? Number(process.env.TEST_IBKR_PORT) : undefined,
-        host: process.env.TEST_IBKR_HOST,
-    };
-    await ibkr(args);
-});
+process.env.IBKR_CLIENT_ID = "25";
+before((done) => {
+    IBKRConnection.Instance.init().then(started => {
+        if (started) {
+            Portfolios.Instance.init();
+            return done();
+        }
+        done(new Error('error starting ibkr'))
+    })
+})
 
-describe('Portfolios', () => {
-    it('should get all portfolios', async () => {
-        const portfolios = Portfolios.Instance;
-        const results = await portfolios.getPortfolios();
-        log('All portfolios are', results && results.length);
-        expect(results).to.be.not.null;
+describe('IBKR Portfolios', () => {
+    it('should connect to IBKR', (done) => {
+        expect(IBKRConnection.Instance.connected).to.be.true;
+        done();
     });
-});
+
+    it('should get portfolios', async() => {
+        const portfolios = await Portfolios.Instance.getPositions();
+        console.log("portfolios", portfolios);
+        expect(portfolios).to.be.not.empty;
+    });
+})
+
