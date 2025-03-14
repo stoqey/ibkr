@@ -20,7 +20,7 @@
 
 
 ### Run IBKR in style
-This is using @stoqey/ib IBKR client for node, via the newer IbApiNext in an simpler way.
+This is using @stoqey/ib IBKR client for node, via the newer IbApiNext in a simpler way.
 |       | Feature                                       |
 | :---: | --------------------------------------------- |
 |   ✅   | Accounts                                      |
