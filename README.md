@@ -181,7 +181,7 @@ const ibkrEvents = IBKREvents.Instance;
 const ordersManager = Orders.Instance;
 
 // 3. Place order
-const contract = mkdManager.getContract({...})
+const contract = await mkdManager.getContract({...})
 const myOrder = {...}
 const placedOrder = await ordersManager.placeOrder(contract, myOrder);
 
