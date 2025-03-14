@@ -40,34 +40,21 @@ npm i @stoqey/ibkr
 
 ## 2. Usage
 
+Create a `.env` in the root dir of your project, set `IBKR_HOST` and `IBKR_PORT`, `IBKR_CLIENT_ID`(Optional, it'll use 0 by default), and `DEBUG` for logs, like this
+```sh
+IBKR_HOST=localhost
+IBKR_PORT=7497
+IBKR_CLIENT_ID=123
+DEBUG=ibkr* 
+```
+
 ### Initialize
 ```ts
 import ibkr from '@stoqey/ibkr';
 
-
-// Set env
-// process.env.IBKR_PORT  
-// process.env.IBKR_HOST 
-// process.env.IBKR_CLIENT_ID (optional)
-
-// 1. async
 await ibkr();
 
-// 2. Callback
-ibkr().then(started => {
-  
-    if(!started){
-
-          // Error IBKR has not started
-          console.log('error cannot start ibkr');
-
-          //  Not to proceed if not connected with interactive brokers
-          return process.exit(1);
-    }
-
-    // Your code here
-
-})
+// your code
 ```
 
 ### Accounts Summary e.t.c
