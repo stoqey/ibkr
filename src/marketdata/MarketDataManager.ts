@@ -171,6 +171,9 @@ export class MarketDataManager {
                         low: bar.low,
                         close: bar.close,
                         volume: bar.volume,
+                        wap: bar.WAP,
+                        vwap: bar.WAP, // same as wap
+                        count: bar?.count,
                     };
                     if (!this.marketData[symbolId]) {
                         this.marketData[symbolId] = {};
@@ -218,6 +221,9 @@ export class MarketDataManager {
                     low: bar.low,
                     close: bar.close,
                     volume: bar.volume,
+                    wap: bar.WAP,
+                    vwap: bar.WAP, // same as wap
+                    count: bar?.count,
                 };
                 return marketDataItem;
             });

@@ -32,6 +32,11 @@ export interface MarketData {
     date: Date;
     bid?: number;
     ask?: number;
+
+    wap?: number;
+    vwap?: number;
+
+    count?: number;
 };
 
 

@@ -7,3 +7,4 @@ npm-debug.log*
 yarn-error.log*
 dist/
 .env.test
+*egx.ts
