@@ -1,9 +1,6 @@
-
 <p align="center">
   <h1 align="center"> IBKR: Interactive Brokers</h1>
 </p>
-
-
 
 <div align="center">
 
@@ -12,15 +9,14 @@
 <div style="display: flex;justify-content:center;">
 <a href="https://discord.gg/T4VjBrqGtK" aria-label="Join Stoqey #welcome"><img src="https://img.shields.io/badge/discord-join%20chat-blue.svg" alt="Join Stoqey #welcome"></a>
 <img alt="NPM" src="https://img.shields.io/npm/dt/@stoqey/ibkr.svg"></img>
- 
-
 </div>
 
 </div>
 
+## Overview
+A modern, TypeScript-based Node.js client for Interactive Brokers (IBKR) that provides a simplified interface to the IBKR API. This package is a wrapper around [@stoqey/ib](https://github.com/stoqey/ib), which implements the official IBKR API. It offers a more developer-friendly way to interact with Interactive Brokers' trading platform, abstracting away the complexity of the underlying API.
 
-### Run IBKR in style
-This is using @stoqey/ib IBKR client for node, via the newer IbApiNext in a simpler way.
+### Key Features
 |       | Feature                                       |
 | :---: | --------------------------------------------- |
 |   ✅   | Accounts                                      |
@@ -31,7 +27,6 @@ This is using @stoqey/ib IBKR client for node, via the newer IbApiNext in a simp
 |   ✅   | Contracts (stocks/forex/options/index .e.t.c) |
 |   ⬜️   | Mosaic Market scanner                         |
 |   ⬜️   | News                                          |
-
 
 ## 1. Install
 ```bash
