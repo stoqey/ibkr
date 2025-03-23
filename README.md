@@ -10,7 +10,7 @@
 <img src="./docs/ib-logo-stacked.png"></img>
 
 <div style="display: flex;justify-content:center;">
-
+<a href="https://discord.gg/T4VjBrqGtK" aria-label="Join Stoqey #welcome"><img src="https://img.shields.io/badge/discord-join%20chat-blue.svg" alt="Join Stoqey #welcome"></a>
 <img alt="NPM" src="https://img.shields.io/npm/dt/@stoqey/ibkr.svg"></img>
  
 
@@ -201,6 +201,18 @@ Run with `DEBUG=ibkr:*` to see all logs, or `DEBUG=ibkr:info` for less verbose l
 
 #### [See change log for updates](/docs/changelog/README.md)
 
+## Community
+
+Join our Discord community to get help, share ideas, and connect with other developers:
+
+[![Join our Discord server](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://discord.gg/T4VjBrqGtK)
+
+- Get help with implementation
+- Share your projects
+- Connect with other developers
+- Stay updated on new releases
+- Contribute to discussions
+  
 <div align="center" >
 <img style="background:#231f20;color:white; width:100%;padding:10px" src="./docs/logo_interactive-brokers_white.png"></img>
 <h3>Stoqey Inc<h3>
