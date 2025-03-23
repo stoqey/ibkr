@@ -15,6 +15,7 @@ export * from './orders';
 export * from './portfolios';
 
 // utils
+export * from "./interfaces";
 export * from "./utils"
 
 export default ibkr;
