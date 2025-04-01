@@ -101,7 +101,7 @@ export class IBKRConnection {
 
         // connect to IBKR
         if (this.connected) {
-            this.initializeDep();
+            await this.initializeDep();
             return true;
         }
 
