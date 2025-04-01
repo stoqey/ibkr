@@ -121,7 +121,6 @@ export class IBKRConnection {
                     this.connected = true;
                     log('connected to ibkr');
                     return true;
-                    break;
                 case ConnectionState.Disconnected:
                     log('disconnected from ibkr', this.connectionState);
                     this.connected = false;
