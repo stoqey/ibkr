@@ -97,44 +97,43 @@ export class IBKRConnection {
 
         if (process.env.IBKR_CLIENT_ID) {
             clientId = parseInt(process.env.IBKR_CLIENT_ID);
-        };
+        }
 
-        return new Promise((resolve) => {
-            // connect to IBKR
-            if (this.connected) {
-                this.initializeDep();
-                resolve(true);
+        // connect to IBKR
+        if (this.connected) {
+            this.initializeDep();
+            return true;
+        }
+
+        this.errors = this.ibApiNext.errorSubject.subscribe((error: any) => {
+            log('IBKRConnection.ibApiNext.errors', error.message);
+        });
+
+        this.ibApiNext.connectionState.subscribe((state) => {
+            log('connection state', state);
+            switch (state) {
+                case ConnectionState.Connecting:
+                    this.connectionState = state;
+                    log('connecting to ibkr');
+                    break;
+                case ConnectionState.Connected:
+                    this.connectionState = state;
+                    this.connected = true;
+                    log('connected to ibkr');
+                    return true;
+                    break;
+                case ConnectionState.Disconnected:
+                    log('disconnected from ibkr', this.connectionState);
+                    this.connected = false;
+                    if (this.connectionState === ConnectionState.Connecting) {
+                        this.connectionState = state;
+                        // if was connecting, then reject
+                        return false;
+                    }
+                    break;
+                default:
+                    break;
             }
-            this.errors = this.ibApiNext.errorSubject.subscribe((error: any) => {
-                log("IBKRConnection.ibApiNext.errors", error.message)
-            })
-
-            this.ibApiNext.connectionState.subscribe((state) => {
-                log('connection state', state);
-                switch (state) {
-                    case ConnectionState.Connecting:
-                        this.connectionState = state;
-                        log('connecting to ibkr');
-                        break;
-                    case ConnectionState.Connected:
-                        this.connectionState = state;
-                        this.connected = true;
-                        log('connected to ibkr');
-                        resolve(true);
-                        break;
-                    case ConnectionState.Disconnected:
-                        log('disconnected from ibkr', this.connectionState);
-                        this.connected = false;
-                        if (this.connectionState === ConnectionState.Connecting) {
-                            this.connectionState = state;
-                            // if was connecting, then reject
-                            resolve(false);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            });
 
             if (!this.connection) {
                 this.connection = this.ibApiNext.connectionState.subscribe((state) => {
