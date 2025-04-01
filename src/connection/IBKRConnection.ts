@@ -102,7 +102,6 @@ export class IBKRConnection {
         // connect to IBKR
         if (this.connected) {
             await this.initializeDep();
-            return true;
         }
 
         this.errors = this.ibApiNext.errorSubject.subscribe((error: any) => {
@@ -175,6 +174,7 @@ export class IBKRConnection {
 
         });
 
+        return true;
     }
 
     disconnect() {
