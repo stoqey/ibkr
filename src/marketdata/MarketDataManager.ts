@@ -245,8 +245,8 @@ export class MarketDataManager {
             return null;
         }
 
-        const startDateTime = startDate ? moment(startDate).format('YYYYMMDD HH:mm:ss') : null;
-        const endDateTime = endDate ? moment(endDate).format('YYYYMMDD HH:mm:ss') : null;
+        const startDateTime = startDate ? moment(startDate).format('YYYYMMDD-HH:mm:ss') : null;
+        const endDateTime = endDate ? moment(endDate).format('YYYYMMDD-HH:mm:ss') : null;
 
         const [contractInstrument, errContract] = await awaitP(this.getContract(contract));
         if (errContract) {
