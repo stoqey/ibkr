@@ -236,7 +236,7 @@ export class MarketDataManager {
         return null;
     };
 
-    getHistoricalTicksLast = async (contract: Contract, startDate: Date | null, endDate: Date | null, numberOfTicks = 1000, useRTH = false): Promise<TickByTickAllLast[]> => {
+    getHistoricalTicksLast = async (contract: Contract, startDate: Date | "", endDate: Date | "", numberOfTicks = 1000, useRTH = false): Promise<TickByTickAllLast[]> => {
         if (startDate && endDate) {
             warn("getHistoricalTicksLast only set either startDate or endDate, not both");
             return null;
