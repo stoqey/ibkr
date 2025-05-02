@@ -242,7 +242,7 @@ export class MarketDataManager {
             return null;
         }
 
-        if (endDate && typeof startDate !== 'string' && typeof startDate !== 'string' && startDate > endDate) {
+        if (endDate && typeof startDate !== 'string' && typeof endDate !== 'string' && startDate > endDate) {
             warn("getHistoricalTicksLast startDate cannot be great than endDate");
             return null;
         }
