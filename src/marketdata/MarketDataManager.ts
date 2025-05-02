@@ -236,17 +236,19 @@ export class MarketDataManager {
         return null;
     };
 
-    getHistoricalTicksLast = async (contract: Contract, startDate: Date | "" = "", endDate: Date | "" = "", numberOfTicks = 1000, useRTH = false): Promise<TickByTickAllLast[]> => {
-        if (startDate && endDate) {
-            warn("getHistoricalTicksLast only set either startDate or endDate, not both");
-            return null;
-        } else if (!endDate && !startDate) {
-            warn("getHistoricalTicksLast please set endDate or startDate");
+    getHistoricalTicksLast = async (contract: Contract, startDate: Date | string, endDate?: Date | string, numberOfTicks = 1000, useRTH = false): Promise<TickByTickAllLast[]> => {
+        if (!startDate) {
+            warn("getHistoricalTicksLast startDate not set");
             return null;
         }
 
-        const startDateTime = startDate ? moment(startDate).format('YYYYMMDD HH:mm:ss') : startDate;
-        const endDateTime = endDate ? moment(endDate).format('YYYYMMDD HH:mm:ss') : endDate;
+        if (endDate && typeof startDate !== 'string' && typeof startDate !== 'string' && startDate > endDate) {
+            warn("getHistoricalTicksLast startDate cannot be great than endDate");
+            return null;
+        }
+
+        const startDateTime = typeof startDate === 'string' ? startDate : moment(startDate).format('YYYYMMDD HH:mm:ss');
+        const endDateTime = typeof endDate === 'string' ? endDate : moment(endDate).format('YYYYMMDD HH:mm:ss');
 
         const [contractInstrument, errContract] = await awaitP(this.getContract(contract));
         if (errContract) {
