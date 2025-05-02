@@ -236,7 +236,7 @@ export class MarketDataManager {
         return null;
     };
 
-    getHistoricalTicksLast = async (contract: Contract, startDate: Date | "", endDate: Date | "", numberOfTicks = 1000, useRTH = false): Promise<TickByTickAllLast[]> => {
+    getHistoricalTicksLast = async (contract: Contract, startDate: Date | "" = "", endDate: Date | "" = "", numberOfTicks = 1000, useRTH = false): Promise<TickByTickAllLast[]> => {
         if (startDate && endDate) {
             warn("getHistoricalTicksLast only set either startDate or endDate, not both");
             return null;
@@ -245,8 +245,8 @@ export class MarketDataManager {
             return null;
         }
 
-        const startDateTime = startDate ? moment(startDate).format('YYYYMMDD-HH:mm:ss') : null;
-        const endDateTime = endDate ? moment(endDate).format('YYYYMMDD-HH:mm:ss') : null;
+        const startDateTime = startDate ? moment(startDate).format('YYYYMMDD HH:mm:ss') : startDate;
+        const endDateTime = endDate ? moment(endDate).format('YYYYMMDD HH:mm:ss') : endDate;
 
         const [contractInstrument, errContract] = await awaitP(this.getContract(contract));
         if (errContract) {
