@@ -92,9 +92,9 @@ export class Orders {
 
                 const orderStatus = order.orderState?.status || order.orderStatus?.status;
 
+                // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract ${orderStatus}`);
                 switch (orderStatus) {
                     case OrderStatus.Filled:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract filled`);
 
                         const entryPrice =
                             portfoliosManager.getEntryPrice(contractId) ?? //  
@@ -122,33 +122,20 @@ export class Orders {
                         break;
                     case OrderStatus.ApiCancelled:
                     case OrderStatus.Cancelled:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract cancelled`);
                         this.openOrders.delete(permId);
                         this.cancelledOrders.set(permId, order);
                     
                         break;
                     case OrderStatus.Inactive:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract inactive`);
-                        break;
                     case OrderStatus.PendingCancel:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract pending cancel`);
-                        break;
                     case OrderStatus.PendingSubmit:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract pending submit`);
-                        break;
                     case OrderStatus.ApiPending:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract api pending`);
-                        break;
                     case OrderStatus.Unknown:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract unknown`);
-                        break;
                     case OrderStatus.PreSubmitted:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract pre submitted`);
                     case OrderStatus.Submitted:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract submitted`);
                     default:
                         this.openOrders.set(permId, order);
-
+                        
                         break;
                 }
               
