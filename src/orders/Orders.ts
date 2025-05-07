@@ -137,7 +137,7 @@ export class Orders {
 
                         break;
                     default:
-                        
+
                         break;
                 }
               
@@ -222,7 +222,7 @@ export class Orders {
     placeOrder = async (contractDetails: ContractInstrument, orderToPlace: Order): Promise<boolean> => {
 
         const { order, contract } = this.parseOrder(orderToPlace, contractDetails);
-        logOrder(`Orders.placeOrder Placing order ${order.permId || ""}`, { order, contract });
+        logOrder(`Orders.placeOrder Placing order ${order.orderId || ""}`, { order, contract });
 
         const [orderPlaced, error] = await awaitP(this.ib.placeNewOrder(contractDetails, order));
         if (error) {
@@ -231,10 +231,10 @@ export class Orders {
         }
         if (orderPlaced) {
             // TODO save order tick, entry
-            logOrder(`Orders.placeOrder Order placed id=${orderPlaced || order.permId}`, { order, contract });
+            logOrder(`Orders.placeOrder Order placed id=${orderPlaced || order.orderId}`, { order, contract });
             return true;
         }
-        logOrder(`Orders.placeOrder Order NOT placed ${order.permId || ""}`, { order, contract }, true);
+        logOrder(`Orders.placeOrder Order NOT placed ${order.orderId || ""}`, { order, contract }, true);
         return false;
     }
 
