@@ -133,8 +133,10 @@ export class Orders {
                     case OrderStatus.Unknown:
                     case OrderStatus.PreSubmitted:
                     case OrderStatus.Submitted:
-                    default:
                         this.openOrders.set(permId, order);
+
+                        break;
+                    default:
                         
                         break;
                 }
