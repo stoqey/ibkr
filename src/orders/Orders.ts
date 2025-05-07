@@ -63,7 +63,8 @@ export class Orders {
             const { permId = "", action = "", totalQuantity = 0, orderType = "", lmtPrice, auxPrice } = order || {} as any;
             const avgFillPrice = openOrder.orderStatus?.avgFillPrice;
             const status = openOrder.orderStatus?.status;
-            log(`Orders.${title} symbol=${symbol} permId=${permId}`, `${action} ${totalQuantity} ${orderType} @${avgFillPrice ?? auxPrice ?? lmtPrice ?? 0} => ${status}`);
+            // TODO: Print order price based on type since stop-market orders have `lmtPrice: 0` and limit orders have `auxPrice: 0` (which is valid for options though).
+            log(`Orders.${title} symbol=${symbol} permId=${permId}`, `${action} ${totalQuantity} ${orderType} @${avgFillPrice ?? lmtPrice ?? auxPrice ?? 0} => ${status}`);
         }
         catch (error) {
         }
