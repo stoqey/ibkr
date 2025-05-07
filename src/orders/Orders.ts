@@ -24,7 +24,7 @@ export class Orders {
     private openOrders: Map<number, OpenOrder> = new Map();
     private cancelledOrders: Map<number, OpenOrder> = new Map();
 
-    private completedTrades: Map<string, SSTrade> = new Map();
+    private completedTrades: Map<number, SSTrade> = new Map();
 
     private openOrderQueue: OpenOrder[] = [];
 
@@ -79,7 +79,7 @@ export class Orders {
                 const permId = order?.order?.permId;
 
                 // Ignore if already Filled processed / completed
-                if (this.completedTrades.has(`${permId}`)) {
+                if (this.completedTrades.has(permId)) {
                     continue;
                 };
 
@@ -102,7 +102,7 @@ export class Orders {
                             order.orderStatus.avgFillPrice;
 
                         const trade: SSTrade = {
-                            id: `${permId}`,
+                            id: `${order.order.orderId}`,
                             instrument: order.contract as Instrument,
                             entryPrice,
                             type: order.order.orderType as any,
@@ -112,8 +112,8 @@ export class Orders {
                             date: new Date(),
                         };
 
-                        if (!this.completedTrades.has(trade.id)) {
-                            this.completedTrades.set(trade.id, trade);
+                        if (!this.completedTrades.has(permId)) {
+                            this.completedTrades.set(permId, trade);
                             ibkrEvents.emit(IBKREVENTS.IBKR_SAVE_TRADE, trade);
                         }
 
@@ -266,15 +266,15 @@ export class Orders {
         }
     }
 
-    cancelOrder = async (permId: number, orderCancel?: string | OrderCancel): Promise<boolean> => {
+    cancelOrder = async (orderId: number, orderCancel?: string | OrderCancel): Promise<boolean> => {
         try {
-            this.ib.cancelOrder(permId, orderCancel)
+            this.ib.cancelOrder(orderId, orderCancel)
             // TODO save order tick, entry
-            log(`Orders.cancelOrder`, `Order cancelled ${permId}`);
+            log(`Orders.cancelOrder`, `Order cancelled ${orderId}`);
             return true;
         }
         catch (e) {
-            log(`Orders.cancelOrder`, `Error modifying order ${permId}`);
+            log(`Orders.cancelOrder`, `Error modifying order ${orderId}`);
             return false;
         }
     }
