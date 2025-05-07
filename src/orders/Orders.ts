@@ -19,7 +19,7 @@ const ibkrEvents = IBKREvents.Instance;
 export class Orders {
     ib: IBApiNext = null;
 
-    // orderIdNext: number = null;
+    // permIdNext: number = null;
 
     private GetOrders: Subscription;
 
@@ -60,10 +60,10 @@ export class Orders {
         try {
             const { contract, order } = openOrder;
             const symbol = getSymbolKey(contract);
-            const { orderId = "", action = "", totalQuantity = 0, orderType = "", lmtPrice, auxPrice } = order || {} as any;
+            const { permId = "", action = "", totalQuantity = 0, orderType = "", lmtPrice, auxPrice } = order || {} as any;
             const avgFillPrice = openOrder.orderStatus?.avgFillPrice;
             const status = openOrder.orderStatus?.status;
-            log(`Orders.${title} symbol=${symbol} orderId=${orderId}`, `${action} ${totalQuantity} ${orderType} @${avgFillPrice ?? auxPrice ?? lmtPrice ?? 0} => ${status}`);
+            log(`Orders.${title} symbol=${symbol} permId=${permId}`, `${action} ${totalQuantity} ${orderType} @${avgFillPrice ?? auxPrice ?? lmtPrice ?? 0} => ${status}`);
         }
         catch (error) {
         }
@@ -77,15 +77,15 @@ export class Orders {
             while (this.openOrderQueue.length > 0) {
                 const order = this.openOrderQueue.shift();
                 const contractId = order?.contract?.conId;
-                const orderId = order?.order?.orderId;
+                const permId = order?.order?.permId;
 
                 // Ignore if already Filled processed / completed
-                if (this.completedTrades.has(`${orderId}`)) {
+                if (this.completedTrades.has(`${permId}`)) {
                     continue;
                 };
 
                 // ignore cancelled orders
-                if (this.cancelledOrders.has(orderId)) {
+                if (this.cancelledOrders.has(permId)) {
                     continue;
                 }
 
@@ -106,7 +106,7 @@ export class Orders {
 
                 switch (order.orderState?.status || order.orderStatus?.status) {
                     case OrderStatus.Filled:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract filled`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract filled`);
 
                         const entryPrice =
                             portfoliosManager.getEntryPrice(contractId) ?? //  
@@ -114,7 +114,7 @@ export class Orders {
                             order.orderStatus.avgFillPrice;
 
                         const trade: SSTrade = {
-                            id: `${order.order.orderId}`,
+                            id: `${order.order.permId}`,
                             instrument: order.contract as Instrument,
                             entryPrice,
                             type: order.order.orderType as any,
@@ -134,38 +134,38 @@ export class Orders {
                         break;
                     case OrderStatus.ApiCancelled:
                     case OrderStatus.Cancelled:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  cancelled`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  cancelled`);
                         if (contractId) {
                             this.openOrders.delete(contractId);
-                            if(!this.cancelledOrders.has(orderId)){
-                                this.cancelledOrders.set(orderId, order);
+                            if(!this.cancelledOrders.has(permId)){
+                                this.cancelledOrders.set(permId, order);
                             }
                         };
                     
                         break;
                     case OrderStatus.Submitted:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  submitted`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  submitted`);
                         break;
                     case OrderStatus.Inactive:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  inactive`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  inactive`);
                         break;
                     case OrderStatus.PendingCancel:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  pending cancel`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  pending cancel`);
                         break;
                     case OrderStatus.PendingSubmit:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  pending submit`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  pending submit`);
                         break;
                     case OrderStatus.ApiPending:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  api pending`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  api pending`);
                         break;
                     case OrderStatus.PreSubmitted:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  pre submitted`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  pre submitted`);
                         break;
                     case OrderStatus.Unknown:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  unknown`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  unknown`);
                         break;
                     default:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  in an unknown state`);
+                        // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract  in an unknown state`);
                         break;
                 }
             }
@@ -216,7 +216,6 @@ export class Orders {
             const ib = IBKRConnection.Instance.ib;
             self.ib = ib;
 
-
             this.syncOpenOrders();
         }
     };
@@ -250,7 +249,7 @@ export class Orders {
     placeOrder = async (contractDetails: ContractInstrument, orderToPlace: Order): Promise<boolean> => {
 
         const { order, contract } = this.parseOrder(orderToPlace, contractDetails);
-        logOrder(`Orders.placeOrder Placing order ${order.orderId || ""}`, { order, contract });
+        logOrder(`Orders.placeOrder Placing order ${order.permId || ""}`, { order, contract });
 
         const [orderPlaced, error] = await awaitP(this.ib.placeNewOrder(contractDetails, order));
         if (error) {
@@ -259,10 +258,10 @@ export class Orders {
         }
         if (orderPlaced) {
             // TODO save order tick, entry
-            logOrder(`Orders.placeOrder Order placed id=${orderPlaced || order.orderId}`, { order, contract });
+            logOrder(`Orders.placeOrder Order placed id=${orderPlaced || order.permId}`, { order, contract });
             return true;
         }
-        logOrder(`Orders.placeOrder Order NOT placed ${order.orderId || ""}`, { order, contract }, true);
+        logOrder(`Orders.placeOrder Order NOT placed ${order.permId || ""}`, { order, contract }, true);
         return false;
     }
 
@@ -283,15 +282,15 @@ export class Orders {
         }
     }
 
-    cancelOrder = async (orderId: number, orderCancel?: string | OrderCancel): Promise<boolean> => {
+    cancelOrder = async (permId: number, orderCancel?: string | OrderCancel): Promise<boolean> => {
         try {
-            this.ib.cancelOrder(orderId, orderCancel)
+            this.ib.cancelOrder(permId, orderCancel)
             // TODO save order tick, entry
-            log(`Orders.cancelOrder`, `Order cancelled ${orderId}`);
+            log(`Orders.cancelOrder`, `Order cancelled ${permId}`);
             return true;
         }
         catch (e) {
-            log(`Orders.cancelOrder`, `Error modifying order ${orderId}`);
+            log(`Orders.cancelOrder`, `Error modifying order ${permId}`);
             return false;
         }
     }
