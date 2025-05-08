@@ -19,14 +19,12 @@ const ibkrEvents = IBKREvents.Instance;
 export class Orders {
     ib: IBApiNext = null;
 
-    // orderIdNext: number = null;
-
     private GetOrders: Subscription;
 
     private openOrders: Map<number, OpenOrder> = new Map();
     private cancelledOrders: Map<number, OpenOrder> = new Map();
 
-    private completedTrades: Map<string, SSTrade> = new Map();
+    private completedTrades: Map<number, SSTrade> = new Map();
 
     private openOrderQueue: OpenOrder[] = [];
 
@@ -60,10 +58,11 @@ export class Orders {
         try {
             const { contract, order } = openOrder;
             const symbol = getSymbolKey(contract);
-            const { orderId = "", action = "", totalQuantity = 0, orderType = "", lmtPrice, auxPrice } = order || {} as any;
+            const { permId = "", action = "", totalQuantity = 0, orderType = "", lmtPrice, auxPrice } = order || {} as any;
             const avgFillPrice = openOrder.orderStatus?.avgFillPrice;
             const status = openOrder.orderStatus?.status;
-            log(`Orders.${title} symbol=${symbol} orderId=${orderId}`, `${action} ${totalQuantity} ${orderType} @${avgFillPrice ?? auxPrice ?? lmtPrice ?? 0} => ${status}`);
+            // TODO: Print order price based on type since stop-market orders have `lmtPrice: 0` and limit orders have `auxPrice: 0` (which is valid for options though).
+            log(`Orders.${title} symbol=${symbol} permId=${permId}`, `${action} ${totalQuantity} ${orderType} @${avgFillPrice ?? lmtPrice ?? auxPrice ?? 0} => ${status}`);
         }
         catch (error) {
         }
@@ -77,36 +76,25 @@ export class Orders {
             while (this.openOrderQueue.length > 0) {
                 const order = this.openOrderQueue.shift();
                 const contractId = order?.contract?.conId;
-                const orderId = order?.order?.orderId;
+                const permId = order?.order?.permId;
 
                 // Ignore if already Filled processed / completed
-                if (this.completedTrades.has(`${orderId}`)) {
+                if (this.completedTrades.has(permId)) {
                     continue;
                 };
 
-                // ignore cancelled orders
-                if (this.cancelledOrders.has(orderId)) {
+                // Ignore cancelled orders
+                if (this.cancelledOrders.has(permId)) {
                     continue;
                 }
 
-                // ignore pre - submitted orders but update it in openOrders
-                if (order?.orderState?.status === OrderStatus.PreSubmitted) {
-                    this.openOrders.set(contractId, order);
-                    continue;
-                };
-
-                // no logs here ------------------------------------------------
-                // no logs here ------------------------------------------------
-
                 this.logOpenOrder("processOrderQueue", order);
 
-                if (contractId) {
-                    this.openOrders.set(contractId, order);
-                };
+                const orderStatus = order.orderState?.status || order.orderStatus?.status;
 
-                switch (order.orderState?.status || order.orderStatus?.status) {
+                // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract ${orderStatus}`);
+                switch (orderStatus) {
                     case OrderStatus.Filled:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract filled`);
 
                         const entryPrice =
                             portfoliosManager.getEntryPrice(contractId) ?? //  
@@ -124,50 +112,35 @@ export class Orders {
                             date: new Date(),
                         };
 
-                        if (!this.completedTrades.has(trade.id)) {
-                            this.completedTrades.set(trade.id, trade);
+                        if (!this.completedTrades.has(permId)) {
+                            this.completedTrades.set(permId, trade);
                             ibkrEvents.emit(IBKREVENTS.IBKR_SAVE_TRADE, trade);
                         }
 
-                        if (contractId) this.openOrders.delete(contractId);
+                        this.openOrders.delete(permId);
 
                         break;
                     case OrderStatus.ApiCancelled:
                     case OrderStatus.Cancelled:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  cancelled`);
-                        if (contractId) {
-                            this.openOrders.delete(contractId);
-                            if(!this.cancelledOrders.has(orderId)){
-                                this.cancelledOrders.set(orderId, order);
-                            }
-                        };
+                        this.openOrders.delete(permId);
+                        this.cancelledOrders.set(permId, order);
                     
                         break;
-                    case OrderStatus.Submitted:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  submitted`);
-                        break;
                     case OrderStatus.Inactive:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  inactive`);
-                        break;
                     case OrderStatus.PendingCancel:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  pending cancel`);
-                        break;
                     case OrderStatus.PendingSubmit:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  pending submit`);
-                        break;
                     case OrderStatus.ApiPending:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  api pending`);
-                        break;
-                    case OrderStatus.PreSubmitted:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  pre submitted`);
-                        break;
                     case OrderStatus.Unknown:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  unknown`);
+                    case OrderStatus.PreSubmitted:
+                    case OrderStatus.Submitted:
+                        this.openOrders.set(permId, order);
+
                         break;
                     default:
-                        // log(`Orders.syncOpenOrders`, `Order ${order.orderId} for contract  in an unknown state`);
+
                         break;
                 }
+              
             }
         });
     }
@@ -215,7 +188,6 @@ export class Orders {
         if (!self.ib) {
             const ib = IBKRConnection.Instance.ib;
             self.ib = ib;
-
 
             this.syncOpenOrders();
         }
