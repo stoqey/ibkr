@@ -182,7 +182,7 @@ const myOrder = {
 const placedOrder = await ordersManager.placeOrder(contract, myOrder);
 
 // 4. Modify order
-const modifyOrder = await ordersManager.placeOrder(id, contract, myOrder);
+const modifyOrder = await ordersManager.modifyOrder(id, contract, myOrder);
 
 // get orders, this is automatically updated
 const orders = ordersManager.orders;
