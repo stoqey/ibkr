@@ -163,8 +163,22 @@ const ibkrEvents = IBKREvents.Instance;
 const ordersManager = Orders.Instance;
 
 // 3. Place order
-const contract = await mkdManager.getContract({...})
-const myOrder = {...}
+const contract = await mkdManager.getContract({
+  symbol: ticker,
+  secType: "STK" /* STK, OPT, FUT, etc. */,
+  exchange: "SMART" /* SMART, NYSE, NASDAQ, etc. */,
+  currency: "USD"  /* USD, EUR, GBP, etc. */
+})
+const myOrder = {
+  action, // 1. BUY, 2. SELL
+  totalQuantity: quantity,
+  orderType: price ? OrderType.LIMIT : OrderType.MARKET, // 1. MARKET, 2. LIMIT, 3. STOP, etc.
+  ...(price && { lmtPrice: price }),
+  transmit: true, // true to submit order immediately, false to save as draft
+  outsideRth: false, // true to allow execution outside regular trading hours, false otherwise
+  tif: "DAY", // DAY (day order), GTC (good till canceled), IOC (immediate or cancel), etc.
+};
+
 const placedOrder = await ordersManager.placeOrder(contract, myOrder);
 
 // 4. Modify order
