@@ -201,7 +201,8 @@ await ordersManager.cancelOrder(orderId)
 await ordersManager.cancelAllOrders()        
 ```
 
-see any `.test.ts` file for examples
+Quickstart Sample App: See this API in action with our companion [Sample Application](https://github.com/stoqey/ibkr-sample).
+Also, see any `.test.ts` file for examples
 
 ## 3. Debug
 
