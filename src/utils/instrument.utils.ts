@@ -3,9 +3,10 @@ import type { Instrument, MarketData } from "../interfaces";
 
 export const getSymbolKey = (contract: Contract | Instrument): string => {
     if (!contract) {
-        return null;
+        return "";
     }
-    return `${contract.symbol}${!!contract?.secType? `-${contract.secType}` : ""}${!!contract?.lastTradeDate? `-${contract.lastTradeDate}`: ''}`;
+    const lastTradeDate = contract?.lastTradeDate || contract?.lastTradeDateOrContractMonth;
+    return `${contract.symbol}${!!contract?.secType? `-${contract.secType}` : ""}${!!lastTradeDate? `-${lastTradeDate}`: ''}`;
 };
 
 export interface GetHistoricalData {
