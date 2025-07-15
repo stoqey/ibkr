@@ -1,9 +1,13 @@
 import { Subscription, firstValueFrom } from 'rxjs';
-import { Position, IBApiNext, WhatToShow, BarSizeSetting } from '@stoqey/ib';
+import { Position as IBPOSITION, IBApiNext, WhatToShow, BarSizeSetting } from '@stoqey/ib';
 import { IBKRConnection } from '../connection';
 import compact from 'lodash/compact';
 import MarketDataManager from '../marketdata/MarketDataManager';
 import { logPosition } from '../utils/log.utils';
+
+interface Position extends IBPOSITION {
+    entryDate?: Date; // Date when the position was opened, imaginary when ibkr sees position first.
+}
 
 export class Portfolios {
     ib: IBApiNext;
@@ -12,6 +16,7 @@ export class Portfolios {
     private currentPortfolios: Map<number, Position> = new Map();
     private closedPositions: Map<number, Position> = new Map();
     private entryPrices: Map<number, number> = new Map();
+    private entryDates: Map<number, Date> = new Map();
 
     private GetPositions: Subscription;
 
@@ -38,6 +43,10 @@ export class Portfolios {
         return this.entryPrices.get(conId);
     }
 
+    getEntryDate = (conId: number): Date | undefined => {
+        return this.entryDates.get(conId);
+    }
+
     getLatestClosedPosition(conId: number): Position | undefined {
         return this.closedPositions.get(conId);
     }
@@ -61,9 +70,12 @@ export class Portfolios {
                     this.closedPositions.set(contractId, positionToClose);
                     this.currentPortfolios.delete(contractId);
                     this.entryPrices.delete(contractId);
+                    this.entryDates.delete(contractId);
                     logPosition("Portfolios.mapPositions", positionToClose, true);
                 }
             } else {
+                // TODO: use this.entryDates or position.entryDate
+                position.entryDate = new Date();
                 const multiplier = position.contract.multiplier;
                 if (multiplier) {
                     position.avgCost = position.avgCost / multiplier;
@@ -71,6 +83,7 @@ export class Portfolios {
 
                 this.currentPortfolios.set(contractId, position);
                 this.entryPrices.set(contractId, position.avgCost);
+                this.entryDates.set(contractId, position.entryDate);
 
                 if (this.closedPositions.has(contractId)) {
                     this.closedPositions.delete(contractId);
