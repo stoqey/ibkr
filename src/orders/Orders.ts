@@ -101,15 +101,21 @@ export class Orders {
                             portfoliosManager.getLatestClosedPosition(contractId)?.avgCost ??
                             order.orderStatus.avgFillPrice;
 
+                        const entryDate =
+                            portfoliosManager.getEntryDate(contractId) ??
+                            portfoliosManager.getLatestClosedPosition(contractId)?.entryDate ??
+                            new Date(); // for new positions
+
                         const trade: SSTrade = {
                             id: `${order.order.orderId}`,
                             instrument: order.contract as Instrument,
                             entryPrice,
+                            entryDate,
                             type: order.order.orderType as any,
                             price: order.orderStatus.avgFillPrice,
                             quantity: order.order.totalQuantity,
                             action: order.order.action as SsOrderAction,
-                            date: new Date(),
+                            date: new Date()
                         };
 
                         if (!this.completedTrades.has(permId)) {

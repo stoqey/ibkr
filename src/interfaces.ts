@@ -91,6 +91,7 @@ export interface Trade {
     action: OrderAction,
     type: OrderType,
     date: Date,
+    entryDate?: Date,
 }
 
 export const ibkrPositionTossPosition = (position: IbkrPosition): Position => {
