@@ -30,6 +30,10 @@ export class MarketDataManager {
 
     private GetHistoricalDataUpdates: Map<string, Subscription> = new Map();
 
+
+    private previousBarData: Map<string, { barTime: number, barMinute: number, cumulativeVolume: number }> = new Map();
+
+
     private static _instance: MarketDataManager;
 
     public static get Instance(): MarketDataManager {
@@ -100,6 +104,7 @@ export class MarketDataManager {
             subscription.unsubscribe();
             this.GetHistoricalDataUpdates.delete(symbolId);
         }
+        this.previousBarData.delete(symbolId);
     };
 
 
@@ -124,7 +129,7 @@ export class MarketDataManager {
                 const durationStr = '3600 S';
                 const barSizeSetting5Sec = '5 secs';
                 const [historicalData] = await awaitP(this.getHistoricalData(contract, endDateTime, durationStr, barSizeSetting5Sec as BarSizeSetting, whatToShow));
-                // set market data
+
                 if (!isEmpty(historicalData)) {
                     const first = historicalData && historicalData[0];
                     const last = (historicalData || [])[historicalData.length - 1];
@@ -154,33 +159,46 @@ export class MarketDataManager {
 
             log(`${logsNames}.getHistoricalDataUpdates`, `Subscribing to ${symbolId}`);
             this.GetHistoricalDataUpdates.set(symbolId, IBKRConnection.Instance.ib.getHistoricalDataUpdates(contract, barSizeSetting, whatToShow, 2)
-                // .pipe(
-                //     catchError((error) => {
-                //         log(`${logsNames}.HDU`, `Error fetching historical data for ${symbolId}: ${error.message}`);
-                //         return of(); // Return an empty observable to complete the stream
-                //     })
-                // )
                 .subscribe((bar) => {
-                    const date = new Date(+bar.time * 1000);
-                    const dateIso = date.toISOString();
+                    const currentTime = new Date(); // Use current time for consistent bar-to-bar timing
+                    const barTime = +bar.time * 1000; // IBKR's bar timestamp
+                    const barMinute = new Date(currentTime).setSeconds(0, 0); // use current time since bigger intervals send same timestamp for each bar
+                    const prevBarData = this.previousBarData.get(symbolId);
+
+                    let incrementalVolume = bar.volume;
+
+                    if (prevBarData && prevBarData?.barMinute === barMinute) {
+                        incrementalVolume = Math.max(0, bar.volume - prevBarData.cumulativeVolume);
+                    }
+
+                    this.previousBarData.set(symbolId, {
+                        barTime: barTime,
+                        cumulativeVolume: bar.volume,
+                        barMinute
+                    });
+
                     const marketDataItem: MarketData = {
                         instrument: contract as Instrument,
-                        date,
+                        date: currentTime, // Use current time instead of bar.time
                         open: bar.open,
                         high: bar.high,
                         low: bar.low,
                         close: bar.close,
-                        volume: bar.volume,
+                        volume: incrementalVolume, // Use incremental volume
                         wap: bar.WAP,
-                        vwap: bar.WAP, // same as wap
+                        vwap: bar.WAP,
                         count: bar?.count,
                     };
+
+                    const currentTimeIso = currentTime.toISOString();
+
                     if (!this.marketData[symbolId]) {
                         this.marketData[symbolId] = {};
                     }
+
                     this.marketData[symbolId] = {
                         ...this.marketData[symbolId],
-                        [dateIso]: marketDataItem
+                        [currentTimeIso]: marketDataItem
                     };
 
                     if (bar?.close) {
@@ -188,7 +206,12 @@ export class MarketDataManager {
                     }
 
                     appEvents.emit(IBKREVENTS.IBKR_BAR, marketDataItem);
-                    log(`${logsNames}.HDU`, `bar for ${symbolId} at ${formatDateStr(new Date(dateIso))} @${bar.close} ${bar.volume? `vol=${bar.volume}` : ''}`);
+
+                    const volumeStr = incrementalVolume > 0 ? `vol=${incrementalVolume}` : '';
+                    const cumulativeStr = bar.volume !== incrementalVolume ? `cumVol=${bar.volume}` : '';
+                    const isNewBar = !prevBarData || prevBarData.barMinute !== barMinute;
+                    const barStatus = isNewBar ? '[NEW]' : '[UPD]';
+                    log(`${logsNames}.HDU`, `bar for ${symbolId} at ${formatDateStr(currentTime)} @${bar.close} ${volumeStr} ${cumulativeStr} ${barStatus}`.trim());
                 }));
 
         } catch (e) {
@@ -196,6 +219,7 @@ export class MarketDataManager {
             return;
         }
     }
+
 
     getHistoricalData = async (contract: Contract, endDateTime: string | undefined, durationStr: string, barSizeSetting: BarSizeSetting, whatToShow: WhatToShow, useRTH = false): Promise<MarketData[]> => {
         const [contractInstrument, errContract] = await awaitP(this.getContract(contract));
