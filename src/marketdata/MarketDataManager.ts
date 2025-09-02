@@ -114,7 +114,6 @@ export class MarketDataManager {
             this.GetHistoricalDataUpdates.delete(symbolId);
         }
         this.currentBarData.delete(symbolId);
-        this.currentTickBarData.delete(symbolId);
     };
 
 
@@ -400,7 +399,7 @@ export class MarketDataManager {
         }
     }
 
-    public onTickByTickDataUpdates = (tick: TickByTickAllLast) => {
+    private onTickByTickDataUpdates = (tick: TickByTickAllLast) => {
         const symbolKey = getSymbolKey(tick.contract);
         const tickDate = tick.date;
         const tickSecond = new Date(tickDate.setMilliseconds(0));
@@ -462,6 +461,16 @@ export class MarketDataManager {
             Portfolios.Instance.updateMarketPrice(tick.contract.conId, tick.price);
         }
     }
+
+    removeTickByTickDataUpdates = (contract: Contract): void => {
+        const symbolId = this.getSymbolKey(contract);
+        const subscription = this.GetTickByTickDataUpdates.get(symbolId);
+        if (subscription) {
+            subscription.unsubscribe();
+            this.GetTickByTickDataUpdates.delete(symbolId);
+        }
+        this.currentTickBarData.delete(symbolId);
+    };
 
     public cacheBarData = (barData: CurrentBarData) => {
         const symbolId = this.getSymbolKey(barData.instrument as Contract);
