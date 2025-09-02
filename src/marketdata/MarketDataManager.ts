@@ -14,6 +14,7 @@ import { getSymbolKey } from '../utils/instrument.utils';
 import { formatDec } from '../utils/data.utils';
 import { plotMkdCli } from '../utils/chart';
 import sortBy from 'lodash/sortBy';
+import { logBar } from '../utils';
 
 const appEvents = IBKREvents.Instance;
 
@@ -23,15 +24,23 @@ export interface ContractInstrument extends Contract, ContractDetails {
 
 const logsNames = 'MkdMgr';
 
+interface CurrentBarData extends Partial<MarketData> {
+    barTime: number;
+    barMinute?: number;
+    barSecond?: number;
+    cumulativeVolume?: number;
+}
+
 export class MarketDataManager {
     ib: IBApiNext;
 
     marketData: Record<string, { [date: string]: MarketData }> = {};
 
     private GetHistoricalDataUpdates: Map<string, Subscription> = new Map();
+    private GetTickByTickDataUpdates: Map<string, Subscription> = new Map();
 
-
-    private previousBarData: Map<string, { barTime: number, barMinute: number, cumulativeVolume: number }> = new Map();
+    private currentBarData: Map<string, CurrentBarData> = new Map();
+    private currentTickBarData: Map<string, CurrentBarData> = new Map();
 
 
     private static _instance: MarketDataManager;
@@ -104,7 +113,8 @@ export class MarketDataManager {
             subscription.unsubscribe();
             this.GetHistoricalDataUpdates.delete(symbolId);
         }
-        this.previousBarData.delete(symbolId);
+        this.currentBarData.delete(symbolId);
+        this.currentTickBarData.delete(symbolId);
     };
 
 
@@ -163,7 +173,7 @@ export class MarketDataManager {
                     const currentTime = new Date(); // Use current time for consistent bar-to-bar timing
                     const barTime = +bar.time * 1000; // IBKR's bar timestamp
                     const barMinute = new Date(currentTime).setSeconds(0, 0); // use current time since bigger intervals send same timestamp for each bar
-                    const prevBarData = this.previousBarData.get(symbolId);
+                    const prevBarData = this.currentBarData.get(symbolId);
 
                     let incrementalVolume = bar.volume;
 
@@ -171,7 +181,7 @@ export class MarketDataManager {
                         incrementalVolume = Math.max(0, bar.volume - prevBarData.cumulativeVolume);
                     }
 
-                    this.previousBarData.set(symbolId, {
+                    this.currentBarData.set(symbolId, {
                         barTime: barTime,
                         cumulativeVolume: bar.volume,
                         barMinute
@@ -317,6 +327,155 @@ export class MarketDataManager {
         }
         return null;
     };
+
+    getTickByTickDataUpdates = async (contract: Contract): Promise<void> => {
+        try {
+            const portfoliosManager = Portfolios.Instance;
+
+            if (!contract.conId || !contract.exchange) {
+                contract = (await this.getContract(contract as Contract)).contract;
+            }
+            const symbolId = getSymbolKey(contract);
+
+            if (this.GetTickByTickDataUpdates.has(symbolId)) {
+                warn(`${logsNames}.getTickByTickDataUpdates`, `Already subscribed to ${symbolId}`);
+                return;
+            }
+
+            const getMarketDataLast30Minutes = async () => {
+                log(`${logsNames}.getTickByTickDataUpdates.getMarketDataLast30Minutes`, `${symbolId}`);
+                const endDateTime = moment().format('YYYYMMDD HH:mm:ss');
+                const durationStr = '3600 S';
+                const barSizeSetting5Sec = '5 secs';
+                const [historicalData] = await awaitP(this.getHistoricalData(contract, endDateTime, durationStr, barSizeSetting5Sec as BarSizeSetting, WhatToShow.TRADES));
+
+                if (!isEmpty(historicalData)) {
+                    const first = historicalData && historicalData[0];
+                    const last = (historicalData || [])[historicalData.length - 1];
+
+                    plotMkdCli(historicalData);
+
+                    log(`${logsNames}.getTickByTickDataUpdates.getMarketDataLast30Minutes.length`, `${historicalData?.length} data points for ${symbolId} from ${formatDateStr(first?.date)} to ${formatDateStr(last?.date)} @${formatDec(first?.close)} -> @${formatDec(last?.close)} whatToShow=TRADES`);
+
+                    if (!this.marketData[symbolId]) {
+                        this.marketData[symbolId] = {};
+                    }
+                    historicalData.forEach((marketDataItem) => {
+                        const dateIso = marketDataItem.date.toISOString();
+                        this.marketData[symbolId] = {
+                            ...this.marketData[symbolId],
+                            [dateIso]: marketDataItem
+                        };
+                    });
+                    const lastMarketData = historicalData[historicalData.length - 1];
+                    if (lastMarketData) {
+                        portfoliosManager.updateMarketPrice(contract.conId, lastMarketData.close);
+                    }
+                }
+            }
+
+            await getMarketDataLast30Minutes();
+
+            log(`${logsNames}.getTickByTickDataUpdates`, `Subscribing to ${symbolId}`);
+            this.GetTickByTickDataUpdates.set(symbolId, this.ib.getTickByTickAllLastDataUpdates(contract, 0, false)
+                .subscribe((tick) => {
+                    const tickData: TickByTickAllLast = {
+                        contract,
+                        date: new Date(+tick.time * 1000),
+                        price: tick.price,
+                        size: tick.size,
+                        exchange: tick.exchange,
+                        specialConditions: tick.specialConditions,
+                    }
+                    this.onTickByTickDataUpdates(tickData);
+                    // log(`${logsNames}.TDU`, `tick for ${symbolId} at ${formatDateStr(new Date(tickData.date))} @${tickData.price} size=${tickData.size}  ${tickData.exchange ? `exchange=${tickData.exchange}` : ''} ${tickData.specialConditions ? `specialConditions=${tickData.specialConditions}` : ''}`);
+                }));
+
+            log(`${logsNames}.getTickByTickDataUpdates`, `Subscribed to ${symbolId}`);
+
+
+        } catch (e) {
+            warn("getTickByTickDataUpdates error", e);
+            return;
+        }
+    }
+
+    public onTickByTickDataUpdates = (tick: TickByTickAllLast) => {
+        const symbolKey = getSymbolKey(tick.contract);
+        const tickDate = tick.date;
+        const tickSecond = new Date(tickDate.setMilliseconds(0));
+        const currentBarData = this.currentTickBarData.get(symbolKey);
+    
+        // If we have existing data for this symbol
+        if (currentBarData) {
+            if (currentBarData.barSecond === tickSecond.getTime()) {
+                // SAME SECOND: Update the existing bar
+                currentBarData.close = tick.price;
+                currentBarData.volume += (tick.size || 0);
+                currentBarData.count++;
+                currentBarData.high = Math.max(currentBarData.high, tick.price);
+                currentBarData.low = Math.min(currentBarData.low, tick.price);
+                
+                this.currentTickBarData.set(symbolKey, currentBarData);
+                
+            } else {
+                // NEW SECOND: Send completed bar, start fresh
+                this.cacheBarData(currentBarData); // saves it just like the historical data updates
+                appEvents.emit(IBKREVENTS.IBKR_BAR, currentBarData);
+                logBar(`${logsNames}.TDU`, currentBarData as MarketData);
+                
+                // Create new bar for this tick
+                const newBar: CurrentBarData = {
+                    instrument: tick.contract as Instrument,
+                    date: tickDate,
+                    barTime: tickDate.getTime(),
+                    barSecond: tickSecond.getTime(),
+                    count: 1,
+                    open: tick.price,
+                    high: tick.price,
+                    low: tick.price,
+                    close: tick.price,
+                    volume: tick.size
+                };
+                
+                this.currentTickBarData.set(symbolKey, newBar);
+            }
+        } else {
+            // FIRST TICK: Create initial bar
+            const newBar: CurrentBarData = {
+                instrument: tick.contract as Instrument,
+                date: tickDate,
+                barTime: tickDate.getTime(),
+                barSecond: tickSecond.getTime(),
+                count: 1,
+                open: tick.price,
+                high: tick.price,
+                low: tick.price,
+                close: tick.price,
+                volume: tick.size
+            };
+            
+            this.currentTickBarData.set(symbolKey, newBar);
+        }
+
+        if (tick?.price) {
+            Portfolios.Instance.updateMarketPrice(tick.contract.conId, tick.price);
+        }
+    }
+
+    public cacheBarData = (barData: CurrentBarData) => {
+        const symbolId = this.getSymbolKey(barData.instrument as Contract);
+        const currentTimeIso = barData.date.toISOString();
+
+        if (!this.marketData[symbolId]) {
+            this.marketData[symbolId] = {};
+        }
+
+        this.marketData[symbolId] = {
+            ...this.marketData[symbolId],
+            [currentTimeIso]: barData as MarketData
+        };
+    }
 
     getContract = async (contract: Partial<Contract | any>): Promise<ContractInstrument> => {
         if ((contract as ContractInstrument)?.contract) {
