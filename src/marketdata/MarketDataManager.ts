@@ -152,7 +152,7 @@ export class MarketDataManager {
     };
 
     // Get closest quote to timestamp
-    getQuote(contract: Contract, date: Date): MarketDataItem | null {
+    getQuote(contract: Contract, date: Date): MarketData | null {
         const symbol = this.getSymbolKey(contract);
         const timestamp = date.getTime();
         const data = this.marketData[symbol];
