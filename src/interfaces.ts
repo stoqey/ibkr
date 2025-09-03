@@ -37,6 +37,8 @@ export interface MarketData {
     vwap?: number;
 
     count?: number;
+
+    timestamp?: number;
 };
 
 
