@@ -125,7 +125,8 @@ export class MarketDataManager {
     }
 
     // Fast range query using binary search
-    historicalData(symbol: string, startDate: Date, endDate: Date): MarketDataItem[] {
+    historicalData(contract: Contract, startDate: Date, endDate: Date, interval?: string): MarketData[] {
+        const symbol = this.getSymbolKey(contract);
         const data = this.marketData[symbol];
         if (!data || data.length === 0) return [];
 
@@ -151,7 +152,9 @@ export class MarketDataManager {
     };
 
     // Get closest quote to timestamp
-    getQuote(symbol: string, timestamp: number): MarketDataItem | null {
+    getQuote(contract: Contract, date: Date): MarketDataItem | null {
+        const symbol = this.getSymbolKey(contract);
+        const timestamp = date.getTime();
         const data = this.marketData[symbol];
         if (!data || data.length === 0) return null;
 
