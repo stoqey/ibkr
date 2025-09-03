@@ -31,10 +31,14 @@ interface CurrentBarData extends Partial<MarketData> {
     cumulativeVolume?: number;
 }
 
+interface MarketDataItem extends MarketData {
+    timestamp?: number;
+}
+
 export class MarketDataManager {
     ib: IBApiNext;
 
-    marketData: Record<string, { [date: string]: MarketData }> = {};
+    marketData: Record<string, MarketData[]> = {};
 
     private GetHistoricalDataUpdates: Map<string, Subscription> = new Map();
     private GetTickByTickDataUpdates: Map<string, Subscription> = new Map();
@@ -53,57 +57,126 @@ export class MarketDataManager {
         return getSymbolKey(contract);
     }
 
-    // TODO api data
-    historicalData = async (contract: Contract, startDate: Date, endDate: Date, interval: string): Promise<MarketData[]> => {
-        // throw new Error("Method not implemented.");
-        // i have the data as this.marketData: Record<string, { [date: string]: MarketData }> = {};
-        // convert to array using key as the date, then filter by start and end date
+    cacheBar(data: MarketData): void {
+        const symbol = getSymbolKey(data.instrument);
 
-        if (!contract) {
-            log("instrument not found", contract);
-            return [];
+        if (!this.marketData[symbol]) {
+            this.marketData[symbol] = [];
         }
 
-        const symbol = this.getSymbolKey(contract);
-        // Retrieve the market data for the given instrument
-        const instrumentData = this.marketData[symbol];
-        if (!instrumentData) {
-            log("instrument data not found", symbol);
-            return [];
+        const buffer = this.marketData[symbol];
+        const ts = new Date(data.date).getTime();
+        const bar: MarketDataItem = {
+            timestamp: ts,
+            date: data.date,
+            open: data.open ?? data.close,
+            high: data.high ?? data.close,
+            low: data.low ?? data.close,
+            close: data.close,
+            volume: data.volume ?? 0,
+            vwap: data.vwap ?? data.close,
+        };
+
+        // Fast append if in order
+        if (buffer.length === 0 || buffer[buffer.length - 1].timestamp <= ts) {
+            buffer.push(bar);
+            return;
         }
 
-        // Convert the market data to an array using the date as the key
-        const dataArray: MarketData[] = Object.keys(instrumentData).filter(date => {
-            const dataDate = new Date(date);
-            return dataDate >= new Date(startDate) && dataDate <= new Date(endDate);
-        }).map(date => instrumentData[date]);
-
-        // Filter the data by the provided start and end dates
-        const filteredData = dataArray.filter(data => {
-            const dataDate = new Date(data.date);
-            return dataDate >= new Date(startDate) && dataDate <= new Date(endDate);
-        });
-
-        const first = filteredData && filteredData[0];
-        const last = (filteredData || [])[filteredData?.length - 1];
-
-        plotMkdCli(filteredData);
-
-        log(`${logsNames}.historicalData`, `${filteredData.length} data points for ${symbol} from ${formatDateStr(first.date)} to ${formatDateStr(last.date)} @${formatDec(first.close)} -> @${formatDec(last.close)}`);
-
-        return filteredData;
+        // Otherwise insert at correct index using binary search
+        const idx = this.findIndex(symbol, ts);
+        if (idx === -1) {
+            buffer.push(bar);
+        } else {
+            buffer.splice(idx, 0, bar);
+        }
     }
 
-    // TODO api data
-    getQuote = async (contract: Contract, date: Date): Promise<MarketData> => {
-        try {
-            const symbol = this.getSymbolKey(contract);
-            return this.marketData[symbol] ? this.marketData[symbol][date.toISOString()] : null;
+
+    private findIndex(symbol: string, targetTimestamp: number, last = false): number {
+        const data = this.marketData[symbol];
+        if (!data || data.length === 0) return -1;
+
+        let left = 0;
+        let right = data.length - 1;
+        let result = -1;
+
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+
+            if (last) {
+                if (data[mid].timestamp <= targetTimestamp) {
+                    result = mid;
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
+            } else {
+                if (data[mid].timestamp >= targetTimestamp) {
+                    result = mid;
+                    right = mid - 1;
+                } else {
+                    left = mid + 1;
+                }
+            }
+
         }
-        catch (e) {
-            log(`error getting quote ${JSON.stringify(contract || {})}`, e);
-            return null;
+        return result;
+    }
+
+    // Fast range query using binary search
+    historicalData(symbol: string, startDate: Date, endDate: Date): MarketDataItem[] {
+        const data = this.marketData[symbol];
+        if (!data || data.length === 0) return [];
+
+        const startTimestamp = startDate.getTime();
+        const endTimestamp = endDate.getTime();
+
+        const startIdx = this.findIndex(symbol, startTimestamp);
+        if (startIdx === -1) return [];
+
+        const endIdx = this.findIndex(symbol, endTimestamp, true);
+        if (endIdx === -1 || endIdx < startIdx) return [];
+
+        const slicedData = data.slice(startIdx, endIdx + 1);
+
+        const first = slicedData && slicedData[0];
+        const last = (slicedData || [])[slicedData?.length - 1];
+
+        plotMkdCli(slicedData);
+
+        log(`${logsNames}.historicalData`, `${slicedData.length} data points for ${symbol} from ${formatDateStr(first.date)} to ${formatDateStr(last.date)} @${formatDec(first.close)} -> @${formatDec(last.close)}`);
+
+        return slicedData;
+    };
+
+    // Get closest quote to timestamp
+    getQuote(symbol: string, timestamp: number): MarketDataItem | null {
+        const data = this.marketData[symbol];
+        if (!data || data.length === 0) return null;
+
+        let left = 0;
+        let right = data.length - 1;
+        let closest = 0;
+        let minDiff = Math.abs(data[0].timestamp - timestamp);
+
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const diff = Math.abs(data[mid].timestamp - timestamp);
+
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = mid;
+            }
+
+            if (data[mid].timestamp < timestamp) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
         }
+
+        return data[closest];
     }
 
     removeHistoricalDataUpdates = (contract: Contract): void => {
@@ -146,16 +219,8 @@ export class MarketDataManager {
                     plotMkdCli(historicalData);
 
                     log(`${logsNames}.getHistoricalDataUpdates.getMarketDataLast30Minutes.length`, `${historicalData?.length} data points for ${symbolId} from ${formatDateStr(first?.date)} to ${formatDateStr(last?.date)} @${formatDec(first?.close)} -> @${formatDec(last?.close)} whatToShow=${whatToShow}`);
-
-                    if (!this.marketData[symbolId]) {
-                        this.marketData[symbolId] = {};
-                    }
                     historicalData.forEach((marketDataItem) => {
-                        const dateIso = marketDataItem.date.toISOString();
-                        this.marketData[symbolId] = {
-                            ...this.marketData[symbolId],
-                            [dateIso]: marketDataItem
-                        };
+                        this.cacheBar(marketDataItem);
                     });
                     const lastMarketData = historicalData[historicalData.length - 1];
                     if (lastMarketData) {
@@ -199,16 +264,8 @@ export class MarketDataManager {
                         count: bar?.count,
                     };
 
-                    const currentTimeIso = currentTime.toISOString();
+                    this.cacheBar(marketDataItem);
 
-                    if (!this.marketData[symbolId]) {
-                        this.marketData[symbolId] = {};
-                    }
-
-                    this.marketData[symbolId] = {
-                        ...this.marketData[symbolId],
-                        [currentTimeIso]: marketDataItem
-                    };
 
                     if (bar?.close) {
                         portfoliosManager.updateMarketPrice(contract.conId, bar.close);
@@ -356,15 +413,8 @@ export class MarketDataManager {
 
                     log(`${logsNames}.getTickByTickDataUpdates.getMarketDataLast30Minutes.length`, `${historicalData?.length} data points for ${symbolId} from ${formatDateStr(first?.date)} to ${formatDateStr(last?.date)} @${formatDec(first?.close)} -> @${formatDec(last?.close)} whatToShow=TRADES`);
 
-                    if (!this.marketData[symbolId]) {
-                        this.marketData[symbolId] = {};
-                    }
                     historicalData.forEach((marketDataItem) => {
-                        const dateIso = marketDataItem.date.toISOString();
-                        this.marketData[symbolId] = {
-                            ...this.marketData[symbolId],
-                            [dateIso]: marketDataItem
-                        };
+                        this.cacheBar(marketDataItem);
                     });
                     const lastMarketData = historicalData[historicalData.length - 1];
                     if (lastMarketData) {
@@ -419,7 +469,7 @@ export class MarketDataManager {
                 
             } else {
                 // NEW SECOND: Send completed bar, start fresh
-                this.cacheBarData(currentBarData); // saves it just like the historical data updates
+                this.cacheBar(currentBarData as MarketData); // saves it just like the historical data updates
                 appEvents.emit(IBKREVENTS.IBKR_BAR, currentBarData);
                 logBar(`${logsNames}.TDU`, currentBarData as MarketData);
                 
@@ -471,20 +521,6 @@ export class MarketDataManager {
         }
         this.currentTickBarData.delete(symbolId);
     };
-
-    public cacheBarData = (barData: CurrentBarData) => {
-        const symbolId = this.getSymbolKey(barData.instrument as Contract);
-        const currentTimeIso = barData.date.toISOString();
-
-        if (!this.marketData[symbolId]) {
-            this.marketData[symbolId] = {};
-        }
-
-        this.marketData[symbolId] = {
-            ...this.marketData[symbolId],
-            [currentTimeIso]: barData as MarketData
-        };
-    }
 
     getContract = async (contract: Partial<Contract | any>): Promise<ContractInstrument> => {
         if ((contract as ContractInstrument)?.contract) {
