@@ -1,9 +1,10 @@
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription, catchError, firstValueFrom, of } from 'rxjs';
 import { Position as IBPOSITION, IBApiNext, WhatToShow, BarSizeSetting } from '@stoqey/ib';
 import { IBKRConnection } from '../connection';
 import compact from 'lodash/compact';
 import MarketDataManager from '../marketdata/MarketDataManager';
 import { logPosition } from '../utils/log.utils';
+import { warn } from '../utils/log';
 
 interface Position extends IBPOSITION {
     entryDate?: Date; // Date when the position was opened, imaginary when ibkr sees position first.
@@ -118,7 +119,15 @@ export class Portfolios {
 
     syncPortfolios = (): void => {
         MarketDataManager.Instance.init();
-        this.GetPositions = this.ib.getPositions().subscribe((accountUpdates) => {
+        this.GetPositions = this.ib.getPositions()
+        
+        .pipe(
+            catchError((error) => {
+                warn(`syncPortfolios`, `Error subscribing to positions`, error);
+                return of(null);
+            })
+        )
+        .subscribe((accountUpdates) => {
             accountUpdates.all.forEach((value, key) => {
                 value.forEach((position) => this.mapPositions(position));
             });

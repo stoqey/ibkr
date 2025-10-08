@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { lastValueFrom, Subscription } from "rxjs";
+import { catchError, lastValueFrom, of, Subscription } from "rxjs";
 import IBKRConnection from '../connection/IBKRConnection';
 import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast } from '@stoqey/ib';
 import { MarketData, TickByTickAllLast } from '../interfaces';
@@ -236,7 +236,15 @@ export class MarketDataManager {
 
             log(`${logsNames}.getHistoricalDataUpdates`, `Subscribing to ${symbolId}`);
             this.GetHistoricalDataUpdates.set(symbolId, IBKRConnection.Instance.ib.getHistoricalDataUpdates(contract, barSizeSetting, whatToShow, 2)
+                .pipe(
+                    catchError((error) => {
+                        warn(`${logsNames}.getHistoricalDataUpdates`, `Error subscribing to ${symbolId}`, error);
+                        this.GetHistoricalDataUpdates.delete(symbolId);
+                        return of(null);
+                    })
+                )
                 .subscribe((bar) => {
+                    if(!bar) return;
                     const currentTime = new Date(); // Use current time for consistent bar-to-bar timing
                     const barTime = +bar.time * 1000; // IBKR's bar timestamp
                     const barMinute = new Date(currentTime).setSeconds(0, 0); // use current time since bigger intervals send same timestamp for each bar
@@ -392,7 +400,12 @@ export class MarketDataManager {
             const portfoliosManager = Portfolios.Instance;
 
             if (!contract.conId || !contract.exchange) {
-                contract = (await this.getContract(contract as Contract)).contract;
+                const contractInstrument = (await this.getContract(contract as Contract));
+                if(!contractInstrument) {
+                    warn(`${logsNames}.getTickByTickDataUpdates`, `Contract not found ${contract}`);
+                    return;
+                }
+                contract = contractInstrument.contract;
             }
             const symbolId = getSymbolKey(contract);
 
@@ -430,6 +443,13 @@ export class MarketDataManager {
 
             log(`${logsNames}.getTickByTickDataUpdates`, `Subscribing to ${symbolId}`);
             this.GetTickByTickDataUpdates.set(symbolId, this.ib.getTickByTickAllLastDataUpdates(contract, 0, false)
+                .pipe(
+                    catchError((error) => {
+                        warn(`${logsNames}.getTickByTickDataUpdates`, `Error subscribing to ${symbolId}`, error);
+                        this.GetTickByTickDataUpdates.delete(symbolId);
+                        return of(null);
+                    })
+                )
                 .subscribe((tick) => {
                     const tickData: TickByTickAllLast = {
                         contract,
