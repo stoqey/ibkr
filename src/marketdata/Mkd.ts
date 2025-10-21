@@ -24,6 +24,7 @@ export class MkdManager {
 
         if (!this.marketData[symbol]) {
             this.marketData[symbol] = [];
+            this._cleanUp[symbol] = data.date;
         }
 
         const buffer = this.marketData[symbol];
@@ -42,6 +43,7 @@ export class MkdManager {
         // Fast append if in order
         if (buffer.length === 0 || buffer[buffer.length - 1].timestamp <= ts) {
             buffer.push(bar);
+            this.doCleanUp(symbol, data, buffer);
             return;
         }
 
@@ -52,6 +54,7 @@ export class MkdManager {
         } else {
             buffer.splice(idx, 0, bar);
         }
+        this.doCleanUp(symbol, data, buffer);
     }
 
     public findIndex(symbol: string, targetTimestamp: number, last = false): number {
@@ -185,7 +188,7 @@ export class MkdManager {
         const lastCleanUp = this._cleanUp[symbol];
         if (lastCleanUp && now.getTime() - lastCleanUp.getTime() > CLEAN_UP_INTERVAL) {
             this._cleanUp[symbol] = now;
-            // MarketData = [dateNew, dateOld, dateOld, ...]
+            // MarketData = [dateOld, ..., dateNew] (chronological order)
             // slice items before CLEAN_UP_INTERVAL,
             // aggregate the sliced items by minute,
             // add them back to the marketData 
