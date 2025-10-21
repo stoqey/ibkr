@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { buffer, catchError, lastValueFrom, of, Subscription } from "rxjs";
+import { catchError, lastValueFrom, of, Subscription } from "rxjs";
 import IBKRConnection from '../connection/IBKRConnection';
 import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast } from '@stoqey/ib';
 import { MarketData, TickByTickAllLast } from '../interfaces';
