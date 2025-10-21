@@ -9,7 +9,7 @@ import { log, warn } from '../utils/log';
 import { IBKREvents, IBKREVENTS } from "../events";
 import Portfolios from '../portfolios/Portfolios';
 import isEmpty from 'lodash/isEmpty';
-import { aggregatedMarketDataToMin, formatDateStr } from '../utils/time.utils';
+import { formatDateStr } from '../utils/time.utils';
 import { getSymbolKey } from '../utils/instrument.utils';
 import { formatDec } from '../utils/data.utils';
 import { plotMkdCli } from '../utils/chart';
