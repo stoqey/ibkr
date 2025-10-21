@@ -19,26 +19,3 @@ export const formatDateStr = (date: Date) => {
     }
     return moment(d).format("YYYY-MM-DD HH:mm:ss");
 }
-
-
-type MarketDataWithCount = MarketData & { count: number };
-
-export const aggregatedMarketDataToMin = (mkd: MarketData[]): MarketData[] => {
-    // Aggregate market data by minutes
-    const aggregatedData = [...mkd].reduce((acc, data) => {
-        const minute = new Date(data.date).setSeconds(0, 0).toString();
-        if (!acc[minute]) {
-            acc[minute] = { ...data, count: 1 };
-        } else {
-            acc[minute].close += data.close;
-            acc[minute].count += 1;
-        }
-        return acc;
-    }, {});
-
-    return Object.values(aggregatedData).map((data: MarketDataWithCount) => ({
-        ...data,
-        close: data.close / data.count,
-    }));
-
-};

@@ -1,11 +1,11 @@
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription, catchError, firstValueFrom, of } from 'rxjs';
 import { IBApiNext, OpenOrder, Order, Contract, OrderCancel, OrderStatus, OrderType } from '@stoqey/ib';
 import IBKRConnection from '../connection/IBKRConnection';
 import compact from 'lodash/compact';
 import identity from 'lodash/identity';
 import omit from 'lodash/omit';
 import pickBy from 'lodash/pickBy';
-import { log } from '../utils/log';
+import { log, warn } from '../utils/log';
 import awaitP from '../utils/awaitP';
 import { Instrument, Trade as SSTrade, OrderAction as SsOrderAction } from '../interfaces';
 import Portfolios from '../portfolios/Portfolios';
@@ -174,7 +174,14 @@ export class Orders {
         const portfoliosManager = Portfolios.Instance;
         portfoliosManager.init();
 
-        this.GetOrders = this.ib.getAutoOpenOrders(true).subscribe((openOrders) => {
+        this.GetOrders = this.ib.getAutoOpenOrders(true)
+        .pipe(
+            catchError((error) => {
+                warn(`syncOpenOrders`, `Error subscribing to open orders`, error);
+                return of(null);
+            })
+        )
+        .subscribe((openOrders) => {
             openOrders.all.forEach((order) => {
                 if (!order) {
                     return;

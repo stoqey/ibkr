@@ -20,6 +20,9 @@
     "portfolios": "mocha src/portfolios/*test.ts --exit",
     "orders": "mocha src/orders/*test.ts --exit",
     "test": "mocha src/*test.ts --exit",
+    "test:mkd:cleanup": "mocha src/marketdata/MarketDataManager.cleanup.test.ts --exit",
+    "test:mkd:findIndex": "mocha src/marketdata/MarketDataManager.findIndex.test.ts --exit",
+    "test:mkd": "mocha src/marketdata/Mkd.test.ts --exit",
     "prepublishOnly": "npm run build",
     "eslint": "eslint ./src --fix --ext=ts"
   },
@@ -92,7 +95,7 @@
     "typescript": ">=2.0"
   },
   "dependencies": {
-    "@stoqey/ib": "^1.5.0",
+    "@stoqey/ib": "^1.5.1",
     "asciichart": "^1.5.25",
     "async-mutex": "^0.5.0",
     "debug": "^4.4.0",
