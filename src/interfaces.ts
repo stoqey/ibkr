@@ -30,6 +30,8 @@ export interface MarketData {
     volume?: number;
 
     date: Date;
+
+    price?: number; // tick data
     bid?: number;
     ask?: number;
 

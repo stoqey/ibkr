@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { catchError, lastValueFrom, of, Subscription } from "rxjs";
+import { buffer, catchError, lastValueFrom, of, Subscription } from "rxjs";
 import IBKRConnection from '../connection/IBKRConnection';
 import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast } from '@stoqey/ib';
 import { MarketData, TickByTickAllLast } from '../interfaces';
@@ -9,12 +9,14 @@ import { log, warn } from '../utils/log';
 import { IBKREvents, IBKREVENTS } from "../events";
 import Portfolios from '../portfolios/Portfolios';
 import isEmpty from 'lodash/isEmpty';
-import { formatDateStr } from '../utils/time.utils';
+import { aggregatedMarketDataToMin, formatDateStr } from '../utils/time.utils';
 import { getSymbolKey } from '../utils/instrument.utils';
 import { formatDec } from '../utils/data.utils';
 import { plotMkdCli } from '../utils/chart';
 import sortBy from 'lodash/sortBy';
 import { logBar } from '../utils';
+import { createAggregator } from '../utils/mkd.utils';
+import { MkdManager } from './Mkd';
 
 const appEvents = IBKREvents.Instance;
 
@@ -35,10 +37,9 @@ interface MarketDataItem extends MarketData {
     timestamp?: number;
 }
 
-export class MarketDataManager {
+export class MarketDataManager extends MkdManager {
+    logsNames = logsNames;
     ib: IBApiNext;
-
-    marketData: Record<string, MarketData[]> = {};
 
     private GetHistoricalDataUpdates: Map<string, Subscription> = new Map();
     private GetTickByTickDataUpdates: Map<string, Subscription> = new Map();
@@ -51,135 +52,6 @@ export class MarketDataManager {
 
     public static get Instance(): MarketDataManager {
         return this._instance || (this._instance = new this());
-    }
-
-    public getSymbolKey = (contract: Contract): string => {
-        return getSymbolKey(contract);
-    }
-
-    cacheBar(data: MarketData): void {
-        const symbol = getSymbolKey(data.instrument);
-
-        if (!this.marketData[symbol]) {
-            this.marketData[symbol] = [];
-        }
-
-        const buffer = this.marketData[symbol];
-        const ts = new Date(data.date).getTime();
-        const bar: MarketDataItem = {
-            timestamp: ts,
-            date: data.date,
-            open: data.open ?? data.close,
-            high: data.high ?? data.close,
-            low: data.low ?? data.close,
-            close: data.close,
-            volume: data.volume ?? 0,
-            vwap: data.vwap ?? data.close,
-        };
-
-        // Fast append if in order
-        if (buffer.length === 0 || buffer[buffer.length - 1].timestamp <= ts) {
-            buffer.push(bar);
-            return;
-        }
-
-        // Otherwise insert at correct index using binary search
-        const idx = this.findIndex(symbol, ts);
-        if (idx === -1) {
-            buffer.push(bar);
-        } else {
-            buffer.splice(idx, 0, bar);
-        }
-    }
-
-
-    private findIndex(symbol: string, targetTimestamp: number, last = false): number {
-        const data = this.marketData[symbol];
-        if (!data || data.length === 0) return -1;
-
-        let left = 0;
-        let right = data.length - 1;
-        let result = -1;
-
-        while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-
-            if (last) {
-                if (data[mid].timestamp <= targetTimestamp) {
-                    result = mid;
-                    left = mid + 1;
-                } else {
-                    right = mid - 1;
-                }
-            } else {
-                if (data[mid].timestamp >= targetTimestamp) {
-                    result = mid;
-                    right = mid - 1;
-                } else {
-                    left = mid + 1;
-                }
-            }
-
-        }
-        return result;
-    }
-
-    // Fast range query using binary search
-    historicalData(contract: Contract, startDate: Date, endDate: Date, interval?: string): MarketData[] {
-        const symbol = this.getSymbolKey(contract);
-        const data = this.marketData[symbol];
-        if (!data || data.length === 0) return [];
-
-        const startTimestamp = startDate.getTime();
-        const endTimestamp = endDate.getTime();
-
-        const startIdx = this.findIndex(symbol, startTimestamp);
-        if (startIdx === -1) return [];
-
-        const endIdx = this.findIndex(symbol, endTimestamp, true);
-        if (endIdx === -1 || endIdx < startIdx) return [];
-
-        const slicedData = data.slice(startIdx, endIdx + 1);
-
-        const first = slicedData && slicedData[0];
-        const last = (slicedData || [])[slicedData?.length - 1];
-
-        plotMkdCli(slicedData);
-
-        log(`${logsNames}.historicalData`, `${slicedData.length} data points for ${symbol} from ${formatDateStr(first.date)} to ${formatDateStr(last.date)} @${formatDec(first.close)} -> @${formatDec(last.close)}`);
-
-        return slicedData;
-    };
-
-    // Get closest quote to timestamp
-    getQuote(contract: Contract, date: Date): MarketData | null {
-        const symbol = this.getSymbolKey(contract);
-        const timestamp = date.getTime();
-        const data = this.marketData[symbol];
-        if (!data || data.length === 0) return null;
-
-        let left = 0;
-        let right = data.length - 1;
-        let closest = 0;
-        let minDiff = Math.abs(data[0].timestamp - timestamp);
-
-        while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-            const diff = Math.abs(data[mid].timestamp - timestamp);
-
-            if (diff < minDiff) {
-                minDiff = diff;
-                closest = mid;
-            }
-
-            if (data[mid].timestamp < timestamp) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
-        }
-
-        return data[closest];
     }
 
     removeHistoricalDataUpdates = (contract: Contract): void => {
@@ -244,7 +116,7 @@ export class MarketDataManager {
                     })
                 )
                 .subscribe((bar) => {
-                    if(!bar) return;
+                    if (!bar) return;
                     const currentTime = new Date(); // Use current time for consistent bar-to-bar timing
                     const barTime = +bar.time * 1000; // IBKR's bar timestamp
                     const barMinute = new Date(currentTime).setSeconds(0, 0); // use current time since bigger intervals send same timestamp for each bar
@@ -401,7 +273,7 @@ export class MarketDataManager {
 
             if (!contract.conId || !contract.exchange) {
                 const contractInstrument = (await this.getContract(contract as Contract));
-                if(!contractInstrument) {
+                if (!contractInstrument) {
                     warn(`${logsNames}.getTickByTickDataUpdates`, `Contract not found ${contract}`);
                     return;
                 }
@@ -477,7 +349,7 @@ export class MarketDataManager {
         const tickDate = tick.date;
         const tickSecond = new Date(tickDate.setMilliseconds(0));
         const currentBarData = this.currentTickBarData.get(symbolKey);
-    
+
         // If we have existing data for this symbol
         if (currentBarData) {
             if (currentBarData.barSecond === tickSecond.getTime()) {
@@ -487,15 +359,15 @@ export class MarketDataManager {
                 currentBarData.count++;
                 currentBarData.high = Math.max(currentBarData.high, tick.price);
                 currentBarData.low = Math.min(currentBarData.low, tick.price);
-                
+
                 this.currentTickBarData.set(symbolKey, currentBarData);
-                
+
             } else {
                 // NEW SECOND: Send completed bar, start fresh
                 this.cacheBar(currentBarData as MarketData); // saves it just like the historical data updates
                 appEvents.emit(IBKREVENTS.IBKR_BAR, currentBarData);
                 logBar(`${logsNames}.TDU`, currentBarData as MarketData);
-                
+
                 // Create new bar for this tick
                 const newBar: CurrentBarData = {
                     instrument: tick.contract as Instrument,
@@ -509,7 +381,7 @@ export class MarketDataManager {
                     close: tick.price,
                     volume: tick.size
                 };
-                
+
                 this.currentTickBarData.set(symbolKey, newBar);
             }
         } else {
@@ -526,7 +398,7 @@ export class MarketDataManager {
                 close: tick.price,
                 volume: tick.size
             };
-            
+
             this.currentTickBarData.set(symbolKey, newBar);
         }
 
@@ -595,6 +467,7 @@ export class MarketDataManager {
     }
 
     private constructor() {
+        super();
     }
 
 }

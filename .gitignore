@@ -9,3 +9,4 @@ dist/
 .env.test
 *egx.ts
 .idea
+*.txt
