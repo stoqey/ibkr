@@ -95,7 +95,7 @@ export class MkdManager {
     }
 
     // Fast range query using binary search
-    public async historicalData(contract: Instrument, startDate: Date, endDate: Date, interval?: string): Promise<MarketData[]> {
+    public async historicalData(contract: Instrument | Contract, startDate: Date, endDate: Date, interval?: string): Promise<MarketData[]> {
         const symbol = this.getSymbolKey(contract);
         const data = this.marketData[symbol];
         if (!data || data.length === 0) return [];
@@ -121,66 +121,55 @@ export class MkdManager {
         return slicedData;
     };
 
-    // Get closest quote to timestamp
-    public async getQuote(contract: Instrument, date: Date): Promise<MarketData> {
+    /**
+     * Get quote at or before specified timestamp (point-in-time lookup)
+     * Returns the most recent data point at or before the requested time.
+     * If no data exists before the requested time, returns the first available data point.
+     * 
+     * @param contract - The instrument to query
+     * @param date - The timestamp to query (defaults to current time)
+     * @returns The market data at or before the specified time, or null if no data exists
+     * 
+     * @example
+     * // Get current quote
+     * const quote = await manager.getQuote(instrument);
+     * 
+     * @example
+     * // Get historical quote at specific time
+     * const quote = await manager.getQuote(instrument, new Date('2024-01-15T10:32:00Z'));
+     */
+    public async getQuote(contract: Instrument | Contract, date?: Date): Promise<MarketData> {
         const symbol = this.getSymbolKey(contract);
-        const timestamp = date.getTime();
+        const timestamp = date?.getTime() ?? Date.now();
+        
+        // Validate timestamp (check for NaN from invalid Date)
+        if (isNaN(timestamp)) {
+            log(`${this.logsNames}.getQuote`, `Invalid date provided for ${symbol}`);
+            return null;
+        }
+        
         const data = this.marketData[symbol];
         if (!data || data.length === 0) return null;
 
-        let left = 0;
-        let right = data.length - 1;
-        let closest = 0;
-        let minDiff = Math.abs(data[0].timestamp - timestamp);
-
-        while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-            const diff = Math.abs(data[mid].timestamp - timestamp);
-
-            if (diff < minDiff) {
-                minDiff = diff;
-                closest = mid;
+        const closest = this.findIndex(symbol, timestamp, true);
+        if (closest === -1) {
+            const firstItem = data[0];
+            const lastItem = data[data.length - 1];
+            
+            // If query timestamp is before first item, return first item
+            if (firstItem && timestamp < firstItem.timestamp) {
+                return firstItem;
             }
-
-            if (data[mid].timestamp < timestamp) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
+            
+            // If query timestamp is at or after last item, return last item
+            if (lastItem && timestamp >= lastItem.timestamp) {
+                return lastItem;
             }
+            
+            // Fallback (should not reach here)
+            return lastItem ?? null;
         }
-
-        return data[closest];
-    }
-
-    // TODO: getClosest or exact?
-    public async getQuoteClosest(contract: Instrument, date: Date): Promise<MarketData> {
-        const symbol = this.getSymbolKey(contract);
-        const timestamp = date.getTime();
-        const data = this.marketData[symbol];
-        if (!data || data.length === 0) return null;
-
-        let left = 0;
-        let right = data.length - 1;
-        let closest = 0;
-        let minDiff = Math.abs(data[0].timestamp - timestamp);
-
-        while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-            const diff = Math.abs(data[mid].timestamp - timestamp);
-
-            if (diff < minDiff) {
-                minDiff = diff;
-                closest = mid;
-            }
-
-            if (data[mid].timestamp < timestamp) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
-        }
-
-        return data[closest];
+        return data[closest] ?? null;
     }
 
     doCleanUp = (symbol, data: MarketData, buffer: MarketData[]) => {
