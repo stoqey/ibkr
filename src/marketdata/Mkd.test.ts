@@ -31,7 +31,6 @@ describe('MkdManager with Arrays', () => {
         it('should return correct range using binary search', async () => {
             const startDate = new Date('2024-01-15T10:32:00Z'); // 3rd item
             const endDate = new Date('2024-01-15T10:35:00Z');   // 6th item
-            console.log(manager.marketData[getSymbolKey(instrument)])
             const result = await manager.historicalData(instrument, startDate, endDate);
             
             expect(result).to.have.length(4); // items 2, 3, 4, 5 (0-indexed)
