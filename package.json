@@ -95,7 +95,7 @@
     "typescript": ">=2.0"
   },
   "dependencies": {
-    "@stoqey/ib": "^1.5.1",
+    "@stoqey/ib": "^1.5.2",
     "asciichart": "^1.5.25",
     "async-mutex": "^0.5.0",
     "debug": "^4.4.0",
