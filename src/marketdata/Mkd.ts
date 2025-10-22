@@ -94,7 +94,22 @@ export class MkdManager {
         return result;
     }
 
-    // Fast range query using binary search
+    /**
+     * Get historical data for a given time range using binary search
+     * 
+     * @param contract - The instrument to query
+     * @param startDate - Start of the range
+     * @param endDate - End of the range
+     * @param interval - Optional interval for aggregation (not yet implemented)
+     * @returns Array of market data within the range
+     * 
+     * @example
+     * const data = await manager.historicalData(
+     *   instrument,
+     *   new Date('2024-01-15T10:30:00Z'),
+     *   new Date('2024-01-15T10:35:00Z')
+     * );
+     */
     public async historicalData(contract: Instrument | Contract, startDate: Date, endDate: Date, interval?: string): Promise<MarketData[]> {
         const symbol = this.getSymbolKey(contract);
         const data = this.marketData[symbol];
@@ -103,11 +118,37 @@ export class MkdManager {
         const startTimestamp = startDate.getTime();
         const endTimestamp = endDate.getTime();
 
-        const startIdx = this.findIndex(symbol, startTimestamp);
-        if (startIdx === -1) return [];
+        // Validate timestamps
+        if (isNaN(startTimestamp) || isNaN(endTimestamp)) {
+            log(`${this.logsNames}.historicalData`, `Invalid date provided for ${symbol}`);
+            return [];
+        }
 
-        const endIdx = this.findIndex(symbol, endTimestamp, true);
-        if (endIdx === -1 || endIdx < startIdx) return [];
+        // Validate date range
+        if (startTimestamp > endTimestamp) {
+            log(`${this.logsNames}.historicalData`, `Start date is after end date for ${symbol}`);
+            return [];
+        }
+
+        let startIdx = this.findIndex(symbol, startTimestamp);
+        let endIdx = this.findIndex(symbol, endTimestamp, true);
+
+        // If startIdx is -1, it means startDate is before all data points
+        // Use first item (index 0)
+        if (startIdx === -1) {
+            startIdx = 0;
+        }
+
+        // If endIdx is -1, it means endDate is after all data points
+        // Use last item
+        if (endIdx === -1) {
+            endIdx = data.length - 1;
+        }
+
+        // Final validation
+        if (endIdx < startIdx) {
+            return [];
+        }
 
         const slicedData = data.slice(startIdx, endIdx + 1);
 
