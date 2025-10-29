@@ -6,6 +6,7 @@ import { log } from "../utils/log";
 import { formatDateStr } from "../utils/time.utils";
 import { formatDec } from "../utils/data.utils";
 import { createAggregator } from "../utils/mkd.utils";
+import omit from 'lodash/omit';
 
 const CLEAN_UP_INTERVAL = process.env.CLEAN_UP_INTERVAL ? parseInt(process.env.CLEAN_UP_INTERVAL) : 1000 * 60 * 60 * 1; // 1 hour
 
@@ -30,6 +31,7 @@ export class MkdManager {
         const buffer = this.marketData[symbol];
         const ts = new Date(data.date).getTime();
         const bar: MarketData = {
+            ...omit(data, ['instrument']), // copy all other properties from other data sources, bid, reachedZero, maxSize, e.t.c....
             timestamp: ts,
             date: data.date,
             open: data.open ?? data.close,
