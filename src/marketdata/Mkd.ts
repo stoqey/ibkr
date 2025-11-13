@@ -8,7 +8,7 @@ import { formatDec } from "../utils/data.utils";
 import { createAggregator } from "../utils/mkd.utils";
 import omit from 'lodash/omit';
 
-const CLEAN_UP_INTERVAL = process.env.CLEAN_UP_INTERVAL ? parseInt(process.env.CLEAN_UP_INTERVAL) : 1000 * 60 * 60 * 1; // 1 hour
+const MKD_CLEAN_UP_INTERVAL = process.env.MKD_CLEAN_UP_INTERVAL ? parseInt(process.env.MKD_CLEAN_UP_INTERVAL) : 1000 * 60 * 30; // 30 minutes
 
 export class MkdManager {
     logsNames = MkdManager.name;
@@ -218,13 +218,13 @@ export class MkdManager {
     doCleanUp = (symbol, data: MarketData, buffer: MarketData[]) => {
         const now = data.date;
         const lastCleanUp = this._cleanUp[symbol];
-        if (lastCleanUp && now.getTime() - lastCleanUp.getTime() > CLEAN_UP_INTERVAL) {
+        if (lastCleanUp && now.getTime() - lastCleanUp.getTime() > MKD_CLEAN_UP_INTERVAL) {
             this._cleanUp[symbol] = now;
             // MarketData = [dateOld, ..., dateNew] (chronological order)
             // slice items before CLEAN_UP_INTERVAL,
             // aggregate the sliced items by minute,
             // add them back to the marketData 
-            const lastCleanUpTimestamp = now.getTime() - CLEAN_UP_INTERVAL;
+            const lastCleanUpTimestamp = now.getTime() - MKD_CLEAN_UP_INTERVAL;
             const oldItemsIndex = this.findIndex(symbol, lastCleanUpTimestamp, false);
             const oldItems = buffer.slice(0, oldItemsIndex);
             const lastNewItem = buffer.slice(oldItemsIndex);
