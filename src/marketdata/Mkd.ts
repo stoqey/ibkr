@@ -7,6 +7,7 @@ import { formatDateStr } from "../utils/time.utils";
 import { formatDec } from "../utils/data.utils";
 import { createAggregator } from "../utils/mkd.utils";
 import omit from 'lodash/omit';
+import isEmpty from 'lodash/isEmpty';
 
 const MKD_CLEAN_UP_INTERVAL = process.env.MKD_CLEAN_UP_INTERVAL ? parseInt(process.env.MKD_CLEAN_UP_INTERVAL) : 1000 * 60 * 30; // 30 minutes
 
@@ -21,7 +22,11 @@ export class MkdManager {
     };
 
     cacheBar(data: MarketData): void {
-        const symbol = getSymbolKey(data.instrument);
+        const symbol = getSymbolKey(data?.instrument);
+
+        if(isEmpty(symbol) || isEmpty(data)) {
+            return;
+        }
 
         if (!this.marketData[symbol]) {
             this.marketData[symbol] = [];
@@ -216,6 +221,9 @@ export class MkdManager {
     }
 
     doCleanUp = (symbol, data: MarketData, buffer: MarketData[]) => {
+        if(isEmpty(symbol) || isEmpty(data) || isEmpty(buffer)) {
+            return;
+        }
         const now = data.date;
         const lastCleanUp = this._cleanUp[symbol];
         if (lastCleanUp && now.getTime() - lastCleanUp.getTime() > MKD_CLEAN_UP_INTERVAL) {
