@@ -1,5 +1,5 @@
 import { IBApiNext } from "@stoqey/ib";
-import IBKRConnection from "../connection/IBKRConnection";
+import IBKRConnection, { isMarketDataOnly } from "../connection/IBKRConnection";
 import { Subscription } from "rxjs";
 import { log } from "../utils";
 const DEFAULT_TAGS = "AccountType,NetLiquidation,TotalCashValue,SettledCash,AccruedCash,BuyingPower,EquityWithLoanValue,PreviousDayEquityWithLoanValue,GrossPositionValue,RegTEquity,RegTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
@@ -144,6 +144,10 @@ export class AccountSummary {
     }
 
     init = () => {
+        if (isMarketDataOnly()) {
+            log("AccountSummary.init", "MD_ONLY enabled, skipping account summary init");
+            return;
+        }
         const ib = IBKRConnection.Instance.ib;
         if (!this.ib) {
             this.ib = ib;
@@ -158,6 +162,10 @@ export class AccountSummary {
     }
 
     getAccountSummaryUpdates = (group: string = "All", tags: string = DEFAULT_TAGS) => {
+        if (isMarketDataOnly()) {
+            log("AccountSummary.getAccountSummaryUpdates", "MD_ONLY enabled, skipping account summary subscription");
+            return;
+        }
         this.GetAccountSummaryUpdates = this.ib.getAccountSummary(group, tags).subscribe((accountSummaryUpdate) => {
             const firstAccount = accountSummaryUpdate.all.values().next().value;
             const accountId = accountSummaryUpdate.all.keys().next().value;
@@ -184,7 +192,7 @@ export class AccountSummary {
     }
 
     unsubscribeAccountSummary = () => {
-        this.GetAccountSummaryUpdates.unsubscribe();
+        this.GetAccountSummaryUpdates?.unsubscribe();
     }
     
 }

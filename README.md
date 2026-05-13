@@ -52,6 +52,30 @@ await ibkr();
 // your code
 ```
 
+### Market-data-only mode
+
+Set `MD_ONLY=true` or `IBKR_MD_ONLY=true` before initialization when a process only needs contract lookup and market data:
+
+```sh
+IBKR_MD_ONLY=true
+```
+
+```ts
+import ibkr, { MarketDataManager } from '@stoqey/ibkr';
+
+await ibkr();
+
+const mkdManager = MarketDataManager.Instance;
+const contractDetails = await mkdManager.getContract({
+  symbol: "ES",
+  secType: "FUT",
+});
+```
+
+In market-data-only mode, the package still connects to IBKR and initializes `MarketDataManager`. Contract lookup, contract details, historical data, realtime bars, and tick-by-tick market data remain available.
+
+It skips account summary updates, account/portfolio subscriptions, open-order subscriptions, and order/trade event state. Use this for scanners, feeders, and symbol-search clients. Do not use it for execution clients that place orders or need live portfolio/order state.
+
 ### Accounts Summary e.t.c
 ```ts
 import { AccountSummary } from  "@stoqey/ibkr";

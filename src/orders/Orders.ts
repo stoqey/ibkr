@@ -1,6 +1,6 @@
 import { Subscription, catchError, firstValueFrom, of } from 'rxjs';
 import { IBApiNext, OpenOrder, Order, Contract, OrderCancel, OrderStatus, OrderType } from '@stoqey/ib';
-import IBKRConnection from '../connection/IBKRConnection';
+import IBKRConnection, { isMarketDataOnly } from '../connection/IBKRConnection';
 import compact from 'lodash/compact';
 import identity from 'lodash/identity';
 import omit from 'lodash/omit';
@@ -69,6 +69,10 @@ export class Orders {
     };
 
     processOrderQueue = async () => {
+        if (isMarketDataOnly()) {
+            log("Orders.processOrderQueue", "MD_ONLY enabled, skipping order queue processing");
+            return;
+        }
         const portfoliosManager = Portfolios.Instance;
         await portfoliosManager.init();
 
@@ -155,6 +159,10 @@ export class Orders {
      * getOpenOrders
      */
     asyncOpenOrders = async (): Promise<OpenOrder[]> => {
+        if (isMarketDataOnly()) {
+            log("Orders.asyncOpenOrders", "MD_ONLY enabled, skipping open order snapshot");
+            return [];
+        }
         const openOrders = await firstValueFrom(this.ib.getOpenOrders());
 
         const orders: OpenOrder[] = compact(openOrders.all.map((order) => {
@@ -171,6 +179,10 @@ export class Orders {
     }
 
     syncOpenOrders = (): void => {
+        if (isMarketDataOnly()) {
+            log("Orders.syncOpenOrders", "MD_ONLY enabled, skipping open order subscription");
+            return;
+        }
         const portfoliosManager = Portfolios.Instance;
         portfoliosManager.init();
 
@@ -196,6 +208,10 @@ export class Orders {
      * init
      */
     public init = async (): Promise<void> => {
+        if (isMarketDataOnly()) {
+            log("Orders.init", "MD_ONLY enabled, skipping orders init");
+            return;
+        }
         const self = this;
 
         if (!self.ib) {

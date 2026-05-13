@@ -1,10 +1,10 @@
 import { Subscription, catchError, firstValueFrom, of } from 'rxjs';
 import { Position as IBPOSITION, IBApiNext, WhatToShow, BarSizeSetting } from '@stoqey/ib';
-import { IBKRConnection } from '../connection';
+import IBKRConnection, { isMarketDataOnly } from '../connection/IBKRConnection';
 import compact from 'lodash/compact';
 import MarketDataManager from '../marketdata/MarketDataManager';
 import { logPosition } from '../utils/log.utils';
-import { warn } from '../utils/log';
+import { log, warn } from '../utils/log';
 
 interface Position extends IBPOSITION {
     entryDate?: Date; // Date when the position was opened, imaginary when ibkr sees position first.
@@ -108,6 +108,10 @@ export class Portfolios {
      * getPortfolios 
      */
     asyncPortfolios = async (): Promise<Position[]> => {
+        if (isMarketDataOnly()) {
+            log("Portfolios.asyncPortfolios", "MD_ONLY enabled, skipping portfolio snapshot");
+            return [];
+        }
         const getPositions = await firstValueFrom(this.ib.getPositions());
         let positions: Position[] = [];
         getPositions.all.forEach((value, key) => {
@@ -118,6 +122,10 @@ export class Portfolios {
     }
 
     syncPortfolios = (): void => {
+        if (isMarketDataOnly()) {
+            log("Portfolios.syncPortfolios", "MD_ONLY enabled, skipping portfolio subscription");
+            return;
+        }
         MarketDataManager.Instance.init();
         this.GetPositions = this.ib.getPositions()
         
@@ -135,7 +143,7 @@ export class Portfolios {
     }
 
     disconnect = () => {
-        this.GetPositions.unsubscribe();
+        this.GetPositions?.unsubscribe();
     }
 
     getPositions = async (): Promise<Position[]> => {
@@ -143,6 +151,10 @@ export class Portfolios {
     }
 
     init = (): void => {
+        if (isMarketDataOnly()) {
+            log("Portfolios.init", "MD_ONLY enabled, skipping portfolio init");
+            return;
+        }
         if (!this.ib) {
             this.ib = IBKRConnection.Instance.ib;
             this.syncPortfolios();
