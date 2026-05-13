@@ -9,6 +9,15 @@ import { AccountSummary } from "../account/AccountSummary";
 
 const ibkrEvents = IBKREvents.Instance;
 
+const isEnabledEnvValue = (value?: string): boolean => {
+    const normalized = `${value || ""}`.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+};
+
+export const isMarketDataOnly = (env: Record<string, string | undefined> = process.env): boolean => {
+    return isEnabledEnvValue(env.MD_ONLY) || isEnabledEnvValue(env.IBKR_MD_ONLY);
+};
+
 export class IBKRConnection {
 
     private ibApiNext: IBApiNext;
@@ -36,25 +45,37 @@ export class IBKRConnection {
      */
     public initializeDep = async (): Promise<boolean> => {
         try {
-            // 1. Account summary
-            log('1. Account summary');
-            const accountSummary = AccountSummary.Instance;
-            accountSummary.init();
-            await accountSummary.getAccountSummaryUpdates();
-            // 2. Market data
+            const marketDataOnly = isMarketDataOnly();
+
+            if (!marketDataOnly) {
+                // 1. Account summary
+                log('1. Account summary');
+                const accountSummary = AccountSummary.Instance;
+                accountSummary.init();
+                await accountSummary.getAccountSummaryUpdates();
+            } else {
+                log('MD_ONLY enabled, skipping account summary');
+            }
+
+            // Market data is always initialized.
             log('2. Market data');
             const marketData = MarketDataManager.Instance;
             await marketData.init();
-            // 3. Portfolios
-            log('3. Portfolios');
-            const portfolio = Portfolios.Instance;
-            await portfolio.init();
-            await portfolio.asyncPortfolios();
-            // 4. Orders
-            log('3. Orders');
-            const openOrders = Orders.Instance;
-            await openOrders.init();
-            await openOrders.asyncOpenOrders();
+
+            if (!marketDataOnly) {
+                // 3. Portfolios
+                log('3. Portfolios');
+                const portfolio = Portfolios.Instance;
+                await portfolio.init();
+                await portfolio.asyncPortfolios();
+                // 4. Orders
+                log('4. Orders');
+                const openOrders = Orders.Instance;
+                await openOrders.init();
+                await openOrders.asyncOpenOrders();
+            } else {
+                log('MD_ONLY enabled, skipping portfolios and orders');
+            }
 
             return true;
         } catch (error) {
