@@ -75,8 +75,11 @@ export class Portfolios {
                     logPosition("Portfolios.mapPositions", positionToClose, true);
                 }
             } else {
-                // TODO: use this.entryDates or position.entryDate
-                position.entryDate = new Date();
+                const existingEntryDate = this.entryDates.get(contractId)
+                    ?? this.currentPortfolios.get(contractId)?.entryDate
+                    ?? position.entryDate;
+                const entryDate = existingEntryDate ? new Date(existingEntryDate as Date) : new Date();
+                position.entryDate = Number.isFinite(entryDate.getTime()) ? entryDate : new Date();
                 const multiplier = position.contract.multiplier;
                 if (multiplier) {
                     position.avgCost = position.avgCost / multiplier;
