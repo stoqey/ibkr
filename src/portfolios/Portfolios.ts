@@ -5,6 +5,7 @@ import compact from 'lodash/compact';
 import MarketDataManager from '../marketdata/MarketDataManager';
 import { logPosition } from '../utils/log.utils';
 import { log, warn } from '../utils/log';
+import { isContractAllowed } from '../utils/contract-filter.utils';
 
 interface Position extends IBPOSITION {
     entryDate?: Date; // Date when the position was opened, imaginary when ibkr sees position first.
@@ -28,7 +29,9 @@ export class Portfolios {
     private constructor() { }
 
     get positions(): Position[] {
-        return Array.from(this.currentPortfolios.values());
+        return Array.from(this.currentPortfolios.values()).filter((position) => {
+            return isContractAllowed(position?.contract, "positions");
+        });
     }
 
     updateMarketPrice = (conId: number, close: number): void => {
@@ -60,6 +63,15 @@ export class Portfolios {
         let position: any = { ...positionOg };
 
         const contractId = position?.contract?.conId;
+        if (position?.contract && !isContractAllowed(position.contract, "positions")) {
+            if (contractId) {
+                this.currentPortfolios.delete(contractId);
+                this.entryPrices.delete(contractId);
+                this.entryDates.delete(contractId);
+            }
+            return;
+        }
+
         if (contractId) {
             if (position.contract.exchange === "VALUE") {
                 return;
