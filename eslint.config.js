@@ -1,6 +1,6 @@
 const tsParser = require("@typescript-eslint/parser");
 const tsPlugin = require("@typescript-eslint/eslint-plugin");
-const importPlugin = require("eslint-plugin-import");
+const importPlugin = require("eslint-plugin-import-x");
 
 module.exports = [
   {
@@ -17,7 +17,7 @@ module.exports = [
     },
     plugins: {
       "@typescript-eslint": tsPlugin,
-      import: importPlugin,
+      "import-x": importPlugin,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
@@ -31,14 +31,14 @@ module.exports = [
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/no-this-alias": "off",
       "@typescript-eslint/no-wrapper-object-types": "off",
-      "import/default": "off",
-      "import/order": "off",
-      "import/no-duplicates": "off",
-      "import/no-named-as-default": "off",
-      "import/no-named-as-default-member": "off",
-      "import/no-unresolved": "off",
-      "import/named": "off",
-      "import/namespace": "off",
+      "import-x/default": "off",
+      "import-x/order": "off",
+      "import-x/no-duplicates": "off",
+      "import-x/no-named-as-default": "off",
+      "import-x/no-named-as-default-member": "off",
+      "import-x/no-unresolved": "off",
+      "import-x/named": "off",
+      "import-x/namespace": "off",
       "sort-imports": "off",
     },
   },
