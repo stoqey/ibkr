@@ -17,6 +17,7 @@ import sortBy from 'lodash/sortBy';
 import { logBar } from '../utils';
 import { createAggregator } from '../utils/mkd.utils';
 import { MkdManager } from './Mkd';
+import { getContractFilterLabel, isContractAllowed } from '../utils/contract-filter.utils';
 
 const appEvents = IBKREvents.Instance;
 
@@ -74,6 +75,10 @@ export class MarketDataManager extends MkdManager {
                 contract = await this.getContract(contract as Contract);
             }
             const symbolId = this.getSymbolKey(contract);
+            if (!isContractAllowed(contract, "marketdata")) {
+                warn(`${logsNames}.getHistoricalDataUpdates`, `Contract ${symbolId} filtered by IBKR contract filter=${getContractFilterLabel("marketdata")}`);
+                return;
+            }
 
             if (this.GetHistoricalDataUpdates.has(symbolId)) {
                 warn(`${logsNames}.getHistoricalDataUpdates`, `Already subscribed to ${symbolId}`);
@@ -182,6 +187,11 @@ export class MarketDataManager extends MkdManager {
         }
 
         const symbol = this.getSymbolKey(contractInstrument);
+        if (!isContractAllowed(contractInstrument, "marketdata")) {
+            warn(`${logsNames}.getHistoricalData`, `Contract ${symbol} filtered by IBKR contract filter=${getContractFilterLabel("marketdata")}`);
+            return null;
+        }
+
         const [bars, err] = await awaitP(IBKRConnection.Instance.ib.getHistoricalData(contractInstrument, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, 2));
         if (bars && bars.length > 0) {
             const mkd = bars.map(bar => {
@@ -234,6 +244,10 @@ export class MarketDataManager extends MkdManager {
         }
 
         const symbol = this.getSymbolKey(contractInstrument);
+        if (!isContractAllowed(contractInstrument, "marketdata")) {
+            warn(`${logsNames}.getHistoricalTicksLast`, `Contract ${symbol} filtered by IBKR contract filter=${getContractFilterLabel("marketdata")}`);
+            return null;
+        }
 
         const [ticks, err] = await awaitP(lastValueFrom(
             IBKRConnection.Instance.ib.getHistoricalTicksLast(
@@ -280,6 +294,10 @@ export class MarketDataManager extends MkdManager {
                 contract = contractInstrument.contract;
             }
             const symbolId = getSymbolKey(contract);
+            if (!isContractAllowed(contract, "marketdata")) {
+                warn(`${logsNames}.getTickByTickDataUpdates`, `Contract ${symbolId} filtered by IBKR contract filter=${getContractFilterLabel("marketdata")}`);
+                return;
+            }
 
             if (this.GetTickByTickDataUpdates.has(symbolId)) {
                 warn(`${logsNames}.getTickByTickDataUpdates`, `Already subscribed to ${symbolId}`);
@@ -345,6 +363,10 @@ export class MarketDataManager extends MkdManager {
     }
 
     private onTickByTickDataUpdates = (tick: TickByTickAllLast) => {
+        if (!isContractAllowed(tick?.contract, "marketdata")) {
+            return;
+        }
+
         const symbolKey = getSymbolKey(tick.contract);
         const tickDate = tick.date;
         const tickSecond = new Date(tickDate.setMilliseconds(0));

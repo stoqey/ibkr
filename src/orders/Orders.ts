@@ -1,7 +1,6 @@
 import { Subscription, catchError, firstValueFrom, of } from 'rxjs';
 import { IBApiNext, OpenOrder, Order, Contract, OrderCancel, OrderStatus, OrderType } from '@stoqey/ib';
 import IBKRConnection, { isMarketDataOnly } from '../connection/IBKRConnection';
-import compact from 'lodash/compact';
 import identity from 'lodash/identity';
 import omit from 'lodash/omit';
 import pickBy from 'lodash/pickBy';
@@ -14,8 +13,19 @@ import { getSymbolKey } from '../utils/instrument.utils';
 import { Mutex } from 'async-mutex';
 import { logOrder } from '../utils/log.utils';
 import { IBKREvents, IBKREVENTS } from '../events';
+import { getContractFilterLabel, isContractAllowed } from '../utils/contract-filter.utils';
 
 const ibkrEvents = IBKREvents.Instance;
+
+const ACTIVE_OPEN_ORDER_STATUSES = new Set<OrderStatus>([
+    OrderStatus.PendingCancel,
+    OrderStatus.PendingSubmit,
+    OrderStatus.ApiPending,
+    OrderStatus.Unknown,
+    OrderStatus.PreSubmitted,
+    OrderStatus.Submitted,
+]);
+
 export class Orders {
     ib: IBApiNext = null;
 
@@ -40,7 +50,7 @@ export class Orders {
     }
 
     get orders(): OpenOrder[] {
-        return Array.from(this.openOrders.values());
+        return Array.from(this.openOrders.values()).filter(this.isActiveOpenOrder);
     }
 
     get trades(): SSTrade[] {
@@ -68,6 +78,19 @@ export class Orders {
         }
     };
 
+    private getOrderStatus = (order: OpenOrder): OrderStatus => {
+        return order?.orderState?.status || order?.orderStatus?.status;
+    }
+
+    private getPermId = (order: OpenOrder): number => {
+        return order?.order?.permId;
+    }
+
+    private isActiveOpenOrder = (order: OpenOrder): boolean => {
+        const orderStatus = this.getOrderStatus(order);
+        return ACTIVE_OPEN_ORDER_STATUSES.has(orderStatus) && isContractAllowed(order?.contract, "orders");
+    }
+
     processOrderQueue = async () => {
         if (isMarketDataOnly()) {
             log("Orders.processOrderQueue", "MD_ONLY enabled, skipping order queue processing");
@@ -80,7 +103,16 @@ export class Orders {
             while (this.openOrderQueue.length > 0) {
                 const order = this.openOrderQueue.shift();
                 const contractId = order?.contract?.conId;
-                const permId = order?.order?.permId;
+                const permId = this.getPermId(order);
+
+                if (!order || permId === undefined || permId === null) {
+                    continue;
+                }
+
+                if (!isContractAllowed(order.contract, "orders")) {
+                    this.openOrders.delete(permId);
+                    continue;
+                }
 
                 // Ignore if already Filled processed / completed
                 if (this.completedTrades.has(permId)) {
@@ -94,7 +126,7 @@ export class Orders {
 
                 this.logOpenOrder("processOrderQueue", order);
 
-                const orderStatus = order.orderState?.status || order.orderStatus?.status;
+                const orderStatus = this.getOrderStatus(order);
 
                 // log(`Orders.syncOpenOrders`, `Order ${order.permId} for contract ${orderStatus}`);
                 switch (orderStatus) {
@@ -137,6 +169,9 @@ export class Orders {
                     
                         break;
                     case OrderStatus.Inactive:
+                        this.openOrders.delete(permId);
+
+                        break;
                     case OrderStatus.PendingCancel:
                     case OrderStatus.PendingSubmit:
                     case OrderStatus.ApiPending:
@@ -165,17 +200,16 @@ export class Orders {
         }
         const openOrders = await firstValueFrom(this.ib.getOpenOrders());
 
-        const orders: OpenOrder[] = compact(openOrders.all.map((order) => {
+        openOrders.all.forEach((order) => {
             if (!order) {
                 return;
             }
             this.openOrderQueue.push(order);
-            return order;
-        }));
+        });
 
         await this.processOrderQueue();
 
-        return orders;
+        return this.orders;
     }
 
     syncOpenOrders = (): void => {
@@ -194,6 +228,9 @@ export class Orders {
             })
         )
         .subscribe((openOrders) => {
+            if (!openOrders) {
+                return;
+            }
             openOrders.all.forEach((order) => {
                 if (!order) {
                     return;
@@ -251,6 +288,11 @@ export class Orders {
     placeOrder = async (contractDetails: ContractInstrument, orderToPlace: Order): Promise<boolean> => {
 
         const { order, contract } = this.parseOrder(orderToPlace, contractDetails);
+        if (!isContractAllowed(contractDetails, "orders")) {
+            logOrder(`Orders.placeOrder Contract filtered by IBKR contract filter=${getContractFilterLabel("orders")}`, { order, contract }, true);
+            return false;
+        }
+
         logOrder(`Orders.placeOrder Placing order ${order.orderId || ""}`, { order, contract });
 
         const [orderPlaced, error] = await awaitP(this.ib.placeNewOrder(contractDetails, order));
@@ -273,6 +315,11 @@ export class Orders {
     modifyOrder = async (id: number, contractDetails: ContractInstrument, orderToPlace: Order): Promise<boolean> => {
         try {
             const { order, contract } = this.parseOrder(orderToPlace, contractDetails);
+            if (!isContractAllowed(contractDetails, "orders")) {
+                logOrder(`Orders.modifyOrder Contract filtered by IBKR contract filter=${getContractFilterLabel("orders")}`, { order, contract }, true);
+                return false;
+            }
+
             this.ib.modifyOrder(id, contractDetails, order)
             // TODO save order tick, entry
             logOrder(`Orders.modifyOrder ${id}`, { order, contract });

@@ -76,6 +76,26 @@ In market-data-only mode, the package still connects to IBKR and initializes `Ma
 
 It skips account summary updates, account/portfolio subscriptions, open-order subscriptions, and order/trade event state. Use this for scanners, feeders, and symbol-search clients. Do not use it for execution clients that place orders or need live portfolio/order state.
 
+### Contract filtering
+
+Set `IBKR_CONTRACTS` to a comma-separated allowlist when multiple apps share the same broker session but should only see or trade selected contracts:
+
+```env
+IBKR_CONTRACTS=NQ-FUT,AAPL-STK,GC-FUT
+```
+
+The filter applies to orders, positions, and market data. Futures can be filtered at the symbol/security-type level (`NQ-FUT`) or by expiry (`NQ-FUT-202606` / `NQ-FUT-20260622`).
+
+If one area needs a different allowlist, use a scoped override:
+
+```env
+IBKR_CONTRACTS_ORDERS=NQ-FUT
+IBKR_CONTRACTS_POSITIONS=NQ-FUT,GC-FUT
+IBKR_CONTRACTS_MARKETDATA=*
+```
+
+`*` disables filtering for that scope. Account summary is account-level data from IBKR, so it is intentionally not contract-filtered; use separate accounts, allocation groups, or app-side risk budgets when each app needs isolated buying power.
+
 ### Accounts Summary e.t.c
 ```ts
 import { AccountSummary } from  "@stoqey/ibkr";

@@ -7,3 +7,4 @@ export * from "./instrument.utils";
 export * from "./log.utils";
 export * from "./portfolio.utils";
 export * from "./text.utils";
+export * from "./contract-filter.utils";

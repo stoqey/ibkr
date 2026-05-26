@@ -8,6 +8,7 @@ import { formatDec } from "../utils/data.utils";
 import { createAggregator } from "../utils/mkd.utils";
 import omit from 'lodash/omit';
 import isEmpty from 'lodash/isEmpty';
+import { isContractAllowed } from "../utils/contract-filter.utils";
 
 const MKD_CLEAN_UP_INTERVAL = process.env.MKD_CLEAN_UP_INTERVAL ? parseInt(process.env.MKD_CLEAN_UP_INTERVAL) : 1000 * 60 * 30; // 30 minutes
 
@@ -23,6 +24,10 @@ export class MkdManager {
 
     cacheBar(data: MarketData): void {
         const symbol = getSymbolKey(data?.instrument);
+
+        if (!isContractAllowed(data?.instrument, "marketdata")) {
+            return;
+        }
 
         if(isEmpty(symbol) || isEmpty(data)) {
             return;
@@ -119,6 +124,10 @@ export class MkdManager {
      */
     public async historicalData(contract: Instrument | Contract, startDate: Date, endDate: Date, interval?: string): Promise<MarketData[]> {
         const symbol = this.getSymbolKey(contract);
+        if (!isContractAllowed(contract, "marketdata")) {
+            return [];
+        }
+
         const data = this.marketData[symbol];
         if (!data || data.length === 0) return [];
 
@@ -188,6 +197,10 @@ export class MkdManager {
      */
     public async getQuote(contract: Instrument | Contract, date?: Date): Promise<MarketData> {
         const symbol = this.getSymbolKey(contract);
+        if (!isContractAllowed(contract, "marketdata")) {
+            return null;
+        }
+
         const timestamp = date?.getTime() ?? Date.now();
         
         // Validate timestamp (check for NaN from invalid Date)
