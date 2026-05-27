@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { OrderStatus } from '@stoqey/ib';
 import Orders from './Orders';
 import Portfolios from '../portfolios/Portfolios';
+import { IBKREvents, IBKREVENTS } from '../events';
 
 const buildOpenOrder = (permId: number, status: OrderStatus, contract = {
     conId: permId,
@@ -33,6 +34,7 @@ describe('IBKR Orders active order cache', () => {
     const originalOrderContracts = process.env.IBKR_CONTRACTS_ORDERS;
     const portfolios = Portfolios.Instance as any;
     const originalPortfolioInit = portfolios.init;
+    const ibkrEvents = IBKREvents.Instance;
 
     beforeEach(() => {
         const orders = Orders.Instance as any;
@@ -40,6 +42,7 @@ describe('IBKR Orders active order cache', () => {
         orders.cancelledOrders = new Map();
         orders.completedTrades = new Map();
         orders.openOrderQueue = [];
+        ibkrEvents.removeAllListeners(IBKREVENTS.IBKR_OPEN_ORDERS_UPDATED);
         portfolios.init = () => undefined;
         delete process.env.IBKR_CONTRACTS;
         delete process.env.IBKR_CONTRACTS_ORDERS;
@@ -57,6 +60,7 @@ describe('IBKR Orders active order cache', () => {
         } else {
             process.env.IBKR_CONTRACTS_ORDERS = originalOrderContracts;
         }
+        ibkrEvents.removeAllListeners(IBKREVENTS.IBKR_OPEN_ORDERS_UPDATED);
     });
 
     it('should remove inactive orders from active orders', async () => {
@@ -104,5 +108,22 @@ describe('IBKR Orders active order cache', () => {
         await orders.processOrderQueue();
 
         expect(orders.orders.map((order) => order.contract.symbol)).to.deep.equal(['NQ']);
+    });
+
+    it('should emit open orders updated after processing the queue', async () => {
+        const orders = Orders.Instance as any;
+        let eventPayload: { updatedAt: number };
+        let observedOrderIds: number[];
+
+        ibkrEvents.once(IBKREVENTS.IBKR_OPEN_ORDERS_UPDATED, (payload) => {
+            eventPayload = payload;
+            observedOrderIds = orders.orders.map((order) => order.order.permId);
+        });
+
+        orders.openOrderQueue.push(buildOpenOrder(1001, OrderStatus.Submitted));
+        await orders.processOrderQueue();
+
+        expect(eventPayload.updatedAt).to.be.a('number');
+        expect(observedOrderIds).to.deep.equal([1001]);
     });
 });
