@@ -2,6 +2,9 @@ import { IBApiNext } from "@stoqey/ib";
 import IBKRConnection, { isMarketDataOnly } from "../connection/IBKRConnection";
 import { Subscription } from "rxjs";
 import { log } from "../utils";
+import { IBKREvents, IBKREVENTS } from "../events";
+
+const ibkrEvents = IBKREvents.Instance;
 const DEFAULT_TAGS = "AccountType,NetLiquidation,TotalCashValue,SettledCash,AccruedCash,BuyingPower,EquityWithLoanValue,PreviousDayEquityWithLoanValue,GrossPositionValue,RegTEquity,RegTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
 
 interface IAccountSummaryValue {
@@ -178,7 +181,7 @@ export class AccountSummary {
                     if (!accountSummary[tagName]) {
                         accountSummary[tagName] = {} as IAccountSummaryValue;
                     };
-                    if (tagValue) {
+                    if (tagValue !== undefined && tagValue !== null) {
                         accountSummary[tagName].value = tagValue;
                     }
                     if (tagCurrency) {
@@ -188,6 +191,7 @@ export class AccountSummary {
             });
             log(`AccountSummary: ${accountId}`, `NetLiquidation: ${accountSummary.NetLiquidation.value}(${accountSummary.NetLiquidation.currency})`);
             this.accountSummary = accountSummary;
+            ibkrEvents.emit(IBKREVENTS.IBKR_ACCOUNT_UPDATED, { updatedAt: Date.now() });
         });
     }
 

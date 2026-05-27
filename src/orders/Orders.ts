@@ -99,8 +99,11 @@ export class Orders {
         const portfoliosManager = Portfolios.Instance;
         await portfoliosManager.init();
 
-        await this.mutex.runExclusive(async () => {
+        const processedQueue = await this.mutex.runExclusive(async () => {
+            let processedQueue = false;
+
             while (this.openOrderQueue.length > 0) {
+                processedQueue = true;
                 const order = this.openOrderQueue.shift();
                 const contractId = order?.contract?.conId;
                 const permId = this.getPermId(order);
@@ -187,7 +190,13 @@ export class Orders {
                 }
               
             }
+
+            return processedQueue;
         });
+
+        if (processedQueue) {
+            ibkrEvents.emit(IBKREVENTS.IBKR_OPEN_ORDERS_UPDATED, { updatedAt: Date.now() });
+        }
     }
 
     /**

@@ -6,6 +6,9 @@ import MarketDataManager from '../marketdata/MarketDataManager';
 import { logPosition } from '../utils/log.utils';
 import { log, warn } from '../utils/log';
 import { isContractAllowed } from '../utils/contract-filter.utils';
+import { IBKREvents, IBKREVENTS } from '../events';
+
+const ibkrEvents = IBKREvents.Instance;
 
 interface Position extends IBPOSITION {
     entryDate?: Date; // Date when the position was opened, imaginary when ibkr sees position first.
@@ -53,6 +56,10 @@ export class Portfolios {
 
     getLatestClosedPosition(conId: number): Position | undefined {
         return this.closedPositions.get(conId);
+    }
+
+    private emitPositionsUpdated = (): void => {
+        ibkrEvents.emit(IBKREVENTS.IBKR_POSITIONS_UPDATED, { updatedAt: Date.now() });
     }
 
     mapPositions = (positionOg: Position, subscribe = false): Position => {
@@ -132,6 +139,7 @@ export class Portfolios {
         getPositions.all.forEach((value, key) => {
             positions = compact(value.map((position) => this.mapPositions(position)));
         });
+        this.emitPositionsUpdated();
 
         return positions;
     }
@@ -151,9 +159,13 @@ export class Portfolios {
             })
         )
         .subscribe((accountUpdates) => {
+            if (!accountUpdates) {
+                return;
+            }
             accountUpdates.all.forEach((value, key) => {
                 value.forEach((position) => this.mapPositions(position));
             });
+            this.emitPositionsUpdated();
         });
     }
 
