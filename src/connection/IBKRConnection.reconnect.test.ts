@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { ConnectionState } from "@stoqey/ib";
+import { ConnectionState, WhatToShow, type BarSizeSetting, type Contract } from "@stoqey/ib";
 import { IBKRConnection, normalizeReconnectInterval } from "./IBKRConnection";
 import { AccountSummary } from "../account/AccountSummary";
 import MarketDataManager from "../marketdata/MarketDataManager";
@@ -153,6 +153,89 @@ describe("IBKRConnection reconnect loop", () => {
             portfolios.init = originalPortfolioInit;
         }
     });
+
+    it("should not duplicate historical market-data subscriptions while a request is pending", async () => {
+        const marketData = MarketDataManager.Instance as any;
+        const connection = IBKRConnection.Instance as any;
+        const originalIbApiNext = connection.ibApiNext;
+        const originalGetHistoricalData = marketData.getHistoricalData;
+        const originalHistoricalUpdates = marketData.GetHistoricalDataUpdates;
+        const originalPendingHistoricalUpdates = marketData.PendingHistoricalDataUpdates;
+        const originalCurrentBarData = marketData.currentBarData;
+        const deferredHistory = createDeferred<unknown[]>();
+        let subscribeCalls = 0;
+
+        connection.ibApiNext = {
+            getHistoricalDataUpdates: () => createObservable(() => {
+                subscribeCalls += 1;
+            }),
+        };
+        marketData.GetHistoricalDataUpdates = new Map();
+        marketData.PendingHistoricalDataUpdates = new Set();
+        marketData.currentBarData = new Map();
+        marketData.getHistoricalData = async () => deferredHistory.promise;
+
+        try {
+            const first = marketData.getHistoricalDataUpdates(
+                createContract(),
+                "5 secs" as BarSizeSetting,
+                WhatToShow.TRADES,
+            );
+            const second = marketData.getHistoricalDataUpdates(
+                createContract(),
+                "5 secs" as BarSizeSetting,
+                WhatToShow.TRADES,
+            );
+
+            deferredHistory.resolve([]);
+            await Promise.all([first, second]);
+
+            expect(subscribeCalls).to.equal(1);
+        } finally {
+            connection.ibApiNext = originalIbApiNext;
+            marketData.getHistoricalData = originalGetHistoricalData;
+            marketData.GetHistoricalDataUpdates = originalHistoricalUpdates;
+            marketData.PendingHistoricalDataUpdates = originalPendingHistoricalUpdates;
+            marketData.currentBarData = originalCurrentBarData;
+        }
+    });
+
+    it("should not duplicate tick market-data subscriptions while a request is pending", async () => {
+        const marketData = MarketDataManager.Instance as any;
+        const originalIb = marketData.ib;
+        const originalGetHistoricalData = marketData.getHistoricalData;
+        const originalTickUpdates = marketData.GetTickByTickDataUpdates;
+        const originalPendingTickUpdates = marketData.PendingTickByTickDataUpdates;
+        const originalCurrentTickBarData = marketData.currentTickBarData;
+        const deferredHistory = createDeferred<unknown[]>();
+        let subscribeCalls = 0;
+
+        marketData.ib = {
+            getTickByTickAllLastDataUpdates: () => createObservable(() => {
+                subscribeCalls += 1;
+            }),
+        };
+        marketData.GetTickByTickDataUpdates = new Map();
+        marketData.PendingTickByTickDataUpdates = new Set();
+        marketData.currentTickBarData = new Map();
+        marketData.getHistoricalData = async () => deferredHistory.promise;
+
+        try {
+            const first = marketData.getTickByTickDataUpdates(createContract());
+            const second = marketData.getTickByTickDataUpdates(createContract());
+
+            deferredHistory.resolve([]);
+            await Promise.all([first, second]);
+
+            expect(subscribeCalls).to.equal(1);
+        } finally {
+            marketData.ib = originalIb;
+            marketData.getHistoricalData = originalGetHistoricalData;
+            marketData.GetTickByTickDataUpdates = originalTickUpdates;
+            marketData.PendingTickByTickDataUpdates = originalPendingTickUpdates;
+            marketData.currentTickBarData = originalCurrentTickBarData;
+        }
+    });
 });
 
 function createConnectionState(): {
@@ -212,4 +295,26 @@ function createSubscription(): { closed: boolean; unsubscribe: () => void } {
             this.closed = true;
         },
     };
+}
+
+function createContract(): Contract {
+    return {
+        conId: 123456,
+        symbol: "RDXT",
+        secType: "STK",
+        exchange: "SMART",
+        currency: "USD",
+    } as Contract;
+}
+
+function createDeferred<TValue>(): {
+    promise: Promise<TValue>;
+    resolve: (value: TValue) => void;
+} {
+    let resolve!: (value: TValue) => void;
+    const promise = new Promise<TValue>((res) => {
+        resolve = res;
+    });
+
+    return { promise, resolve };
 }

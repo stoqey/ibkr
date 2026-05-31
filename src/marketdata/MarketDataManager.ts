@@ -44,6 +44,8 @@ export class MarketDataManager extends MkdManager {
 
     private GetHistoricalDataUpdates: Map<string, Subscription> = new Map();
     private GetTickByTickDataUpdates: Map<string, Subscription> = new Map();
+    private PendingHistoricalDataUpdates: Set<string> = new Set();
+    private PendingTickByTickDataUpdates: Set<string> = new Set();
 
     private currentBarData: Map<string, CurrentBarData> = new Map();
     private currentTickBarData: Map<string, CurrentBarData> = new Map();
@@ -62,6 +64,7 @@ export class MarketDataManager extends MkdManager {
             subscription.unsubscribe();
             this.GetHistoricalDataUpdates.delete(symbolId);
         }
+        this.PendingHistoricalDataUpdates.delete(symbolId);
         this.currentBarData.delete(symbolId);
     };
 
@@ -80,10 +83,19 @@ export class MarketDataManager extends MkdManager {
                 return;
             }
 
-            if (this.GetHistoricalDataUpdates.has(symbolId)) {
+            const existingHistoricalSubscription = this.GetHistoricalDataUpdates.get(symbolId);
+            if (existingHistoricalSubscription && !existingHistoricalSubscription.closed) {
                 warn(`${logsNames}.getHistoricalDataUpdates`, `Already subscribed to ${symbolId}`);
                 return;
             }
+            if (existingHistoricalSubscription?.closed) {
+                this.GetHistoricalDataUpdates.delete(symbolId);
+            }
+            if (this.PendingHistoricalDataUpdates.has(symbolId)) {
+                warn(`${logsNames}.getHistoricalDataUpdates`, `Subscription already pending for ${symbolId}`);
+                return;
+            }
+            this.PendingHistoricalDataUpdates.add(symbolId);
 
             const getMarketDataLast30Minutes = async () => {
                 log(`${logsNames}.getHistoricalDataUpdates.getMarketDataLast30Minutes`, `${symbolId}`);
@@ -112,11 +124,12 @@ export class MarketDataManager extends MkdManager {
             await getMarketDataLast30Minutes();
 
             log(`${logsNames}.getHistoricalDataUpdates`, `Subscribing to ${symbolId}`);
-            this.GetHistoricalDataUpdates.set(symbolId, IBKRConnection.Instance.ib.getHistoricalDataUpdates(contract, barSizeSetting, whatToShow, 2)
+            const subscription = IBKRConnection.Instance.ib.getHistoricalDataUpdates(contract, barSizeSetting, whatToShow, 2)
                 .pipe(
                     catchError((error) => {
                         warn(`${logsNames}.getHistoricalDataUpdates`, `Error subscribing to ${symbolId}`, error);
                         this.GetHistoricalDataUpdates.delete(symbolId);
+                        this.currentBarData.delete(symbolId);
                         return of(null);
                     })
                 )
@@ -166,9 +179,19 @@ export class MarketDataManager extends MkdManager {
                     const isNewBar = !prevBarData || prevBarData.barMinute !== barMinute;
                     const barStatus = isNewBar ? '[NEW]' : '[UPD]';
                     log(`${logsNames}.HDU`, `bar for ${symbolId} at ${formatDateStr(currentTime)} @${bar.close} ${volumeStr} ${cumulativeStr} ${barStatus}`.trim());
-                }));
+                });
+            if (!subscription.closed) {
+                this.GetHistoricalDataUpdates.set(symbolId, subscription);
+            }
+            this.PendingHistoricalDataUpdates.delete(symbolId);
 
         } catch (e) {
+            if (contract) {
+                try {
+                    this.PendingHistoricalDataUpdates.delete(this.getSymbolKey(contract));
+                } catch {
+                }
+            }
             warn("getHistoricalDataUpdates error", e);
             return;
         }
@@ -299,10 +322,19 @@ export class MarketDataManager extends MkdManager {
                 return;
             }
 
-            if (this.GetTickByTickDataUpdates.has(symbolId)) {
+            const existingTickSubscription = this.GetTickByTickDataUpdates.get(symbolId);
+            if (existingTickSubscription && !existingTickSubscription.closed) {
                 warn(`${logsNames}.getTickByTickDataUpdates`, `Already subscribed to ${symbolId}`);
                 return;
             }
+            if (existingTickSubscription?.closed) {
+                this.GetTickByTickDataUpdates.delete(symbolId);
+            }
+            if (this.PendingTickByTickDataUpdates.has(symbolId)) {
+                warn(`${logsNames}.getTickByTickDataUpdates`, `Subscription already pending for ${symbolId}`);
+                return;
+            }
+            this.PendingTickByTickDataUpdates.add(symbolId);
 
             const getMarketDataLast30Minutes = async () => {
                 log(`${logsNames}.getTickByTickDataUpdates.getMarketDataLast30Minutes`, `${symbolId}`);
@@ -332,15 +364,17 @@ export class MarketDataManager extends MkdManager {
             await getMarketDataLast30Minutes();
 
             log(`${logsNames}.getTickByTickDataUpdates`, `Subscribing to ${symbolId}`);
-            this.GetTickByTickDataUpdates.set(symbolId, this.ib.getTickByTickAllLastDataUpdates(contract, 0, false)
+            const subscription = this.ib.getTickByTickAllLastDataUpdates(contract, 0, false)
                 .pipe(
                     catchError((error) => {
                         warn(`${logsNames}.getTickByTickDataUpdates`, `Error subscribing to ${symbolId}`, error);
                         this.GetTickByTickDataUpdates.delete(symbolId);
+                        this.currentTickBarData.delete(symbolId);
                         return of(null);
                     })
                 )
                 .subscribe((tick) => {
+                    if (!tick) return;
                     const tickData: TickByTickAllLast = {
                         contract,
                         date: new Date(+tick.time * 1000),
@@ -351,12 +385,22 @@ export class MarketDataManager extends MkdManager {
                     }
                     this.onTickByTickDataUpdates(tickData);
                     // log(`${logsNames}.TDU`, `tick for ${symbolId} at ${formatDateStr(new Date(tickData.date))} @${tickData.price} size=${tickData.size}  ${tickData.exchange ? `exchange=${tickData.exchange}` : ''} ${tickData.specialConditions ? `specialConditions=${tickData.specialConditions}` : ''}`);
-                }));
+                });
+            if (!subscription.closed) {
+                this.GetTickByTickDataUpdates.set(symbolId, subscription);
+            }
+            this.PendingTickByTickDataUpdates.delete(symbolId);
 
             log(`${logsNames}.getTickByTickDataUpdates`, `Subscribed to ${symbolId}`);
 
 
         } catch (e) {
+            if (contract) {
+                try {
+                    this.PendingTickByTickDataUpdates.delete(getSymbolKey(contract));
+                } catch {
+                }
+            }
             warn("getTickByTickDataUpdates error", e);
             return;
         }
@@ -436,6 +480,7 @@ export class MarketDataManager extends MkdManager {
             subscription.unsubscribe();
             this.GetTickByTickDataUpdates.delete(symbolId);
         }
+        this.PendingTickByTickDataUpdates.delete(symbolId);
         this.currentTickBarData.delete(symbolId);
     };
 
