@@ -228,6 +228,10 @@ export class Orders {
         }
         const portfoliosManager = Portfolios.Instance;
         portfoliosManager.init();
+        if (this.GetOrders && !this.GetOrders.closed) {
+            log("Orders.syncOpenOrders", "open orders subscription already active");
+            return;
+        }
 
         this.GetOrders = this.ib.getAutoOpenOrders(true)
         .pipe(

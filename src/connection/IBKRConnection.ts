@@ -8,6 +8,7 @@ import { IBKREvents, IBKREVENTS } from "../events";
 import { AccountSummary } from "../account/AccountSummary";
 
 const ibkrEvents = IBKREvents.Instance;
+const MIN_RECONNECT_INTERVAL_MS = 1000;
 
 const isEnabledEnvValue = (value?: string): boolean => {
     const normalized = `${value || ""}`.trim().toLowerCase();
@@ -18,14 +19,26 @@ export const isMarketDataOnly = (env: Record<string, string | undefined> = proce
     return isEnabledEnvValue(env.MD_ONLY) || isEnabledEnvValue(env.IBKR_MD_ONLY);
 };
 
+export const normalizeReconnectInterval = (reconnectInterval?: number): number => {
+    if (!reconnectInterval || !Number.isFinite(reconnectInterval)) {
+        return MIN_RECONNECT_INTERVAL_MS;
+    }
+
+    return Math.max(reconnectInterval, MIN_RECONNECT_INTERVAL_MS);
+};
+
 export class IBKRConnection {
 
     private ibApiNext: IBApiNext;
 
     connected: boolean = false;
-    private connection: Subscription;
-    private errors: Subscription;
-    private connectionState: ConnectionState;
+    private connection?: Subscription;
+    private errors?: Subscription;
+    private connectionState?: ConnectionState;
+    private reconnectLoop?: NodeJS.Timeout;
+    private reconnectClientId: number = 0;
+    private reconnectIntervalMs?: number;
+    private shouldReconnect: boolean = false;
 
     private static _instance: IBKRConnection;
 
@@ -89,18 +102,24 @@ export class IBKRConnection {
     public init(opt?: Partial<IBApiNextCreationOptions>): Promise<boolean> {
             if (this.connected || this.ibApiNext) {
                 log('already init');
-                return Promise.resolve(true);
+                if (!this.connected) {
+                    this.shouldReconnect = true;
+                    this.startReconnectLoop();
+                }
+                return Promise.resolve(this.connected);
             }
             if (opt) {
-                if (!opt.reconnectInterval) opt.reconnectInterval = 1000;
+                opt.reconnectInterval = normalizeReconnectInterval(opt.reconnectInterval);
                 if (!opt.connectionWatchdogInterval) opt.connectionWatchdogInterval = 1;
+                this.reconnectIntervalMs = opt.reconnectInterval;
                 log('init with options', opt);
                 this.ibApiNext = new IBApiNext(opt);
             } else {
                 opt = {};
                 // reconnect interval from env
-                opt.reconnectInterval = parseInt(process.env.IBKR_RECONNECT_INTERVAL) || 1000;
+                opt.reconnectInterval = normalizeReconnectInterval(parseInt(process.env.IBKR_RECONNECT_INTERVAL));
                 opt.connectionWatchdogInterval = parseInt(process.env.IBKR_WATCHDOG_INTERVAL) || 1;
+                this.reconnectIntervalMs = opt.reconnectInterval;
 
                 // port and host from env
                 opt.host = process.env.IBKR_HOST || '127.0.0.1';
@@ -120,42 +139,69 @@ export class IBKRConnection {
             clientId = parseInt(process.env.IBKR_CLIENT_ID);
         };
 
+        this.reconnectClientId = clientId;
+        this.shouldReconnect = true;
+        this.startReconnectLoop();
+
         return new Promise((resolve) => {
             // connect to IBKR
             if (this.connected) {
                 this.initializeDep();
                 resolve(true);
+                return;
             }
-            this.errors = this.ibApiNext.errorSubject.subscribe((error: any) => {
-                log("IBKRConnection.ibApiNext.errors", error.message)
-            })
+            if (!this.errors) {
+                this.errors = this.ibApiNext.errorSubject.subscribe((error: any) => {
+                    log("IBKRConnection.ibApiNext.errors", error.message)
+                })
+            }
 
-            this.ibApiNext.connectionState.subscribe((state) => {
+            let settled = false;
+            let startupConnectionState: ConnectionState | undefined;
+            let startupConnection: Subscription | undefined;
+            let unsubscribeStartupAfterSubscribe = false;
+            const finish = (started: boolean) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                if (startupConnection) {
+                    startupConnection.unsubscribe();
+                } else {
+                    unsubscribeStartupAfterSubscribe = true;
+                }
+                resolve(started);
+            };
+
+            startupConnection = this.ibApiNext.connectionState.subscribe((state) => {
                 log('connection state', state);
                 switch (state) {
                     case ConnectionState.Connecting:
-                        this.connectionState = state;
+                        startupConnectionState = state;
                         log('connecting to ibkr');
                         break;
                     case ConnectionState.Connected:
-                        this.connectionState = state;
                         this.connected = true;
                         log('connected to ibkr');
-                        resolve(true);
+                        finish(true);
                         break;
                     case ConnectionState.Disconnected:
-                        log('disconnected from ibkr', this.connectionState);
+                        log('disconnected from ibkr', startupConnectionState);
                         this.connected = false;
-                        if (this.connectionState === ConnectionState.Connecting) {
-                            this.connectionState = state;
+                        if (startupConnectionState === ConnectionState.Connecting) {
+                            startupConnectionState = state;
                             // if was connecting, then reject
-                            resolve(false);
+                            this.startReconnectLoop();
+                            finish(false);
                         }
                         break;
                     default:
                         break;
                 }
             });
+            if (unsubscribeStartupAfterSubscribe) {
+                startupConnection.unsubscribe();
+            }
 
             if (!this.connection) {
                 this.connection = this.ibApiNext.connectionState.subscribe((state) => {
@@ -168,6 +214,7 @@ export class IBKRConnection {
                         case ConnectionState.Connected:
                             this.connectionState = state;
                             this.connected = true;
+                            this.stopReconnectLoop();
                             this.initializeDep();
                             ibkrEvents.emit(IBKREVENTS.IBKR_CONNECTED);
                             log('connected to ibkr');
@@ -175,6 +222,7 @@ export class IBKRConnection {
                         case ConnectionState.Disconnected:
                             log('disconnected from ibkr', this.connectionState);
                             this.connected = false;
+                            this.startReconnectLoop();
 
                             // TODO disconnect
                             if (this.connectionState === ConnectionState.Connecting) {
@@ -202,9 +250,46 @@ export class IBKRConnection {
 
     disconnect() {
         // TODO others....
+        this.shouldReconnect = false;
+        this.stopReconnectLoop();
         if (this.connection) {
             this.connection.unsubscribe();
+            this.connection = undefined;
         }
+        if (this.errors) {
+            this.errors.unsubscribe();
+            this.errors = undefined;
+        }
+        this.ibApiNext?.disconnect();
+        this.connected = false;
+    }
+
+    private startReconnectLoop(): void {
+        if (!this.shouldReconnect || this.connected || this.reconnectLoop || !this.ibApiNext) {
+            return;
+        }
+
+        const reconnectInterval = normalizeReconnectInterval(
+            this.reconnectIntervalMs ?? parseInt(process.env.IBKR_RECONNECT_INTERVAL),
+        );
+
+        this.reconnectLoop = setInterval(() => {
+            if (!this.shouldReconnect || this.connected || !this.ibApiNext) {
+                return;
+            }
+
+            log('reconnecting to ibkr');
+            this.ibApiNext.connect(this.reconnectClientId);
+        }, reconnectInterval);
+    }
+
+    private stopReconnectLoop(): void {
+        if (!this.reconnectLoop) {
+            return;
+        }
+
+        clearInterval(this.reconnectLoop);
+        this.reconnectLoop = undefined;
     }
 }
 

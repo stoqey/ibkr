@@ -150,6 +150,11 @@ export class Portfolios {
             return;
         }
         MarketDataManager.Instance.init();
+        if (this.GetPositions && !this.GetPositions.closed) {
+            log("Portfolios.syncPortfolios", "positions subscription already active");
+            return;
+        }
+
         this.GetPositions = this.ib.getPositions()
         
         .pipe(
@@ -171,6 +176,7 @@ export class Portfolios {
 
     disconnect = () => {
         this.GetPositions?.unsubscribe();
+        this.GetPositions = undefined;
     }
 
     getPositions = async (): Promise<Position[]> => {

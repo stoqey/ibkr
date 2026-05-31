@@ -169,6 +169,11 @@ export class AccountSummary {
             log("AccountSummary.getAccountSummaryUpdates", "MD_ONLY enabled, skipping account summary subscription");
             return;
         }
+        if (this.GetAccountSummaryUpdates && !this.GetAccountSummaryUpdates.closed) {
+            log("AccountSummary.getAccountSummaryUpdates", "account summary subscription already active");
+            return;
+        }
+
         this.GetAccountSummaryUpdates = this.ib.getAccountSummary(group, tags).subscribe((accountSummaryUpdate) => {
             const firstAccount = accountSummaryUpdate.all.values().next().value;
             const accountId = accountSummaryUpdate.all.keys().next().value;
@@ -197,6 +202,7 @@ export class AccountSummary {
 
     unsubscribeAccountSummary = () => {
         this.GetAccountSummaryUpdates?.unsubscribe();
+        this.GetAccountSummaryUpdates = undefined;
     }
     
 }
