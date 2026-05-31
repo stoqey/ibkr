@@ -228,11 +228,16 @@ export class Orders {
         }
         const portfoliosManager = Portfolios.Instance;
         portfoliosManager.init();
+        if (this.GetOrders && !this.GetOrders.closed) {
+            log("Orders.syncOpenOrders", "open orders subscription already active");
+            return;
+        }
 
-        this.GetOrders = this.ib.getAutoOpenOrders(true)
+        const subscription = this.ib.getAutoOpenOrders(true)
         .pipe(
             catchError((error) => {
                 warn(`syncOpenOrders`, `Error subscribing to open orders`, error);
+                this.GetOrders = undefined;
                 return of(null);
             })
         )
@@ -248,6 +253,7 @@ export class Orders {
             });
             this.processOrderQueue();
         });
+        this.GetOrders = subscription.closed ? undefined : subscription;
     }
 
     /**

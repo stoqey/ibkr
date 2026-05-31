@@ -150,11 +150,17 @@ export class Portfolios {
             return;
         }
         MarketDataManager.Instance.init();
-        this.GetPositions = this.ib.getPositions()
+        if (this.GetPositions && !this.GetPositions.closed) {
+            log("Portfolios.syncPortfolios", "positions subscription already active");
+            return;
+        }
+
+        const subscription = this.ib.getPositions()
         
         .pipe(
             catchError((error) => {
                 warn(`syncPortfolios`, `Error subscribing to positions`, error);
+                this.GetPositions = undefined;
                 return of(null);
             })
         )
@@ -167,10 +173,12 @@ export class Portfolios {
             });
             this.emitPositionsUpdated();
         });
+        this.GetPositions = subscription.closed ? undefined : subscription;
     }
 
     disconnect = () => {
         this.GetPositions?.unsubscribe();
+        this.GetPositions = undefined;
     }
 
     getPositions = async (): Promise<Position[]> => {

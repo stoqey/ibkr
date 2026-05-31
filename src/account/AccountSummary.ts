@@ -1,7 +1,7 @@
 import { IBApiNext } from "@stoqey/ib";
 import IBKRConnection, { isMarketDataOnly } from "../connection/IBKRConnection";
-import { Subscription } from "rxjs";
-import { log } from "../utils";
+import { Subscription, catchError, of } from "rxjs";
+import { log, warn } from "../utils";
 import { IBKREvents, IBKREVENTS } from "../events";
 
 const ibkrEvents = IBKREvents.Instance;
@@ -169,7 +169,23 @@ export class AccountSummary {
             log("AccountSummary.getAccountSummaryUpdates", "MD_ONLY enabled, skipping account summary subscription");
             return;
         }
-        this.GetAccountSummaryUpdates = this.ib.getAccountSummary(group, tags).subscribe((accountSummaryUpdate) => {
+        if (this.GetAccountSummaryUpdates && !this.GetAccountSummaryUpdates.closed) {
+            log("AccountSummary.getAccountSummaryUpdates", "account summary subscription already active");
+            return;
+        }
+
+        const subscription = this.ib.getAccountSummary(group, tags)
+        .pipe(
+            catchError((error) => {
+                warn("AccountSummary.getAccountSummaryUpdates", "Error subscribing to account summary", error);
+                this.GetAccountSummaryUpdates = undefined;
+                return of(null);
+            })
+        )
+        .subscribe((accountSummaryUpdate) => {
+            if (!accountSummaryUpdate) {
+                return;
+            }
             const firstAccount = accountSummaryUpdate.all.values().next().value;
             const accountId = accountSummaryUpdate.all.keys().next().value;
             const accountSummary = this.accountSummary;
@@ -193,10 +209,12 @@ export class AccountSummary {
             this.accountSummary = accountSummary;
             ibkrEvents.emit(IBKREVENTS.IBKR_ACCOUNT_UPDATED, { updatedAt: Date.now() });
         });
+        this.GetAccountSummaryUpdates = subscription.closed ? undefined : subscription;
     }
 
     unsubscribeAccountSummary = () => {
         this.GetAccountSummaryUpdates?.unsubscribe();
+        this.GetAccountSummaryUpdates = undefined;
     }
     
 }
