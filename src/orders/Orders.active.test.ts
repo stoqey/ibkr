@@ -43,6 +43,7 @@ describe('IBKR Orders active order cache', () => {
         orders.completedTrades = new Map();
         orders.openOrderQueue = [];
         ibkrEvents.removeAllListeners(IBKREVENTS.IBKR_OPEN_ORDERS_UPDATED);
+        ibkrEvents.removeAllListeners(IBKREVENTS.IBKR_COMPLETED_TRADES_UPDATED);
         portfolios.init = () => undefined;
         delete process.env.IBKR_CONTRACTS;
         delete process.env.IBKR_CONTRACTS_ORDERS;
@@ -61,6 +62,7 @@ describe('IBKR Orders active order cache', () => {
             process.env.IBKR_CONTRACTS_ORDERS = originalOrderContracts;
         }
         ibkrEvents.removeAllListeners(IBKREVENTS.IBKR_OPEN_ORDERS_UPDATED);
+        ibkrEvents.removeAllListeners(IBKREVENTS.IBKR_COMPLETED_TRADES_UPDATED);
     });
 
     it('should remove inactive orders from active orders', async () => {
@@ -125,5 +127,31 @@ describe('IBKR Orders active order cache', () => {
 
         expect(eventPayload.updatedAt).to.be.a('number');
         expect(observedOrderIds).to.deep.equal([1001]);
+    });
+
+    it('should emit completed trades updated after adding a filled trade', async () => {
+        const orders = Orders.Instance as any;
+        let eventPayload: { updatedAt: number };
+        let observedTradeIds: string[];
+        let eventCount = 0;
+
+        const listener = (payload) => {
+            eventCount += 1;
+            eventPayload = payload;
+            observedTradeIds = orders.trades.map((trade) => trade.id);
+        };
+
+        ibkrEvents.on(IBKREVENTS.IBKR_COMPLETED_TRADES_UPDATED, listener);
+        orders.openOrders.set(1001, buildOpenOrder(1001, OrderStatus.Submitted));
+        orders.openOrderQueue.push(buildOpenOrder(1001, OrderStatus.Filled));
+        orders.openOrderQueue.push(buildOpenOrder(1001, OrderStatus.Filled));
+
+        await orders.processOrderQueue();
+        ibkrEvents.removeListener(IBKREVENTS.IBKR_COMPLETED_TRADES_UPDATED, listener);
+
+        expect(eventCount).to.equal(1);
+        expect(eventPayload.updatedAt).to.be.a('number');
+        expect(observedTradeIds).to.deep.equal(['1001']);
+        expect(orders.orders).to.deep.equal([]);
     });
 });
