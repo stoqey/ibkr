@@ -160,6 +160,7 @@ export class Orders {
                         if (!this.completedTrades.has(permId)) {
                             this.completedTrades.set(permId, trade);
                             ibkrEvents.emit(IBKREVENTS.IBKR_SAVE_TRADE, trade);
+                            ibkrEvents.emit(IBKREVENTS.IBKR_COMPLETED_TRADES_UPDATED, { updatedAt: Date.now() });
                         }
 
                         this.openOrders.delete(permId);
