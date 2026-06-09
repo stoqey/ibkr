@@ -527,8 +527,9 @@ describe('MkdManager with Arrays', () => {
             
             const duration = Date.now() - startTime;
 
-            // Due to aggregation/cleanup, we may not get exact count, but should get data
-            expect(result.length).to.be.greaterThan(100); // At least some data
+            // Cleanup aggregates old seconds into minute bars, so this 50-minute range returns minute windows.
+            expect(result.length).to.equal(50);
+            expect(result.every((item) => typeof item.timestamp === 'number')).to.equal(true);
             expect(duration).to.be.lessThan(20); // Should be fast (binary search)
         });
 

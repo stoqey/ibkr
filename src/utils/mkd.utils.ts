@@ -166,9 +166,11 @@ export function aggregateByInterval(
       };
     }
     
+    const intervalDate = new Date(intervalKey);
     const aggregated: AggregatedData = {
-      interval: new Date(intervalKey),
-      date: new Date(intervalKey),
+      interval: intervalDate,
+      date: intervalDate,
+      timestamp: intervalDate.getTime(),
       ...ohlc as { open: number; high: number; low: number; close: number },
       volume: _.sumBy(sortedItems, 'volume') || 0,
       count: sortedItems.length
