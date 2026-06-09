@@ -435,5 +435,55 @@ describe('MarketDataManager - doCleanUp', () => {
             // Old data should be aggregated (last 2 items)
             expect(result.length).to.be.eq(4); // Same as original, but with aggregation
         });
+
+        it('should keep timestamps on aggregated cleanup windows for binary search lookups', async () => {
+            const cleanupInstrument = {
+                symbol: "CLEANUP_TS",
+                secType: 'STK'
+            } as Instrument;
+            const cleanupSymbol = getSymbolKey(cleanupInstrument);
+            const baseTime = new Date('2024-01-01T10:00:00Z').getTime();
+            const currentTime = new Date('2024-01-01T12:00:00Z');
+
+            delete manager.marketData[cleanupSymbol];
+            delete manager._cleanUp[cleanupSymbol];
+
+            [0, 15, 30, 45].forEach((seconds, index) => {
+                manager.cacheBar({
+                    instrument: cleanupInstrument,
+                    date: new Date(baseTime + seconds * 1000),
+                    open: 100 + index,
+                    high: 101 + index,
+                    low: 99 + index,
+                    close: 100 + index,
+                    volume: 10,
+                    vwap: 100 + index,
+                });
+            });
+
+            manager.cacheBar({
+                instrument: cleanupInstrument,
+                date: currentTime,
+                open: 200,
+                high: 201,
+                low: 199,
+                close: 200,
+                volume: 20,
+                vwap: 200,
+            });
+
+            const result = manager.marketData[cleanupSymbol];
+            const aggregatedWindow = result[0];
+
+            expect(result).to.have.length(2);
+            expect(aggregatedWindow.date.getTime()).to.equal(baseTime);
+            expect(aggregatedWindow.timestamp).to.equal(baseTime);
+            expect(manager.findIndex(cleanupSymbol, baseTime + 30 * 1000, true)).to.equal(0);
+
+            const quote = await manager.getQuote(cleanupInstrument, new Date(baseTime + 60 * 1000));
+            expect(quote).to.not.be.null;
+            expect(quote.close).to.equal(103);
+            expect(quote.timestamp).to.equal(baseTime);
+        });
     });
 });
