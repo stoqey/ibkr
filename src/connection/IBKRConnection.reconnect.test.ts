@@ -70,6 +70,24 @@ describe("IBKRConnection reconnect loop", () => {
         expect(normalizeReconnectInterval(999)).to.equal(1000);
         expect(normalizeReconnectInterval(1001)).to.equal(1001);
     });
+    it("should release the underlying API instance on disconnect", () => {
+        const connection = new IBKRConnection();
+        let disconnectCalls = 0;
+
+        (connection as any).ibApiNext = {
+            disconnect: () => {
+                disconnectCalls += 1;
+            },
+        };
+        connection.connected = true;
+
+        connection.disconnect();
+
+        expect(disconnectCalls).to.equal(1);
+        expect((connection as any).ibApiNext).to.equal(undefined);
+        expect(connection.connected).to.equal(false);
+    });
+
 
     it("should not duplicate account summary subscriptions when dependencies reinitialize", () => {
         const accountSummary = AccountSummary.Instance as any;
