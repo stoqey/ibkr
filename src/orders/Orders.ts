@@ -1,7 +1,6 @@
 import { Subscription, catchError, firstValueFrom, of } from 'rxjs';
 import { IBApiNext, OpenOrder, Order, Contract, OrderCancel, OrderStatus, OrderType } from '@stoqey/ib';
 import IBKRConnection, { isMarketDataOnly } from '../connection/IBKRConnection';
-import identity from 'lodash/identity';
 import omit from 'lodash/omit';
 import pickBy from 'lodash/pickBy';
 import { log, warn } from '../utils/log';
@@ -16,6 +15,8 @@ import { IBKREvents, IBKREVENTS } from '../events';
 import { getContractFilterLabel, isContractAllowed } from '../utils/contract-filter.utils';
 
 const ibkrEvents = IBKREvents.Instance;
+
+const hasValue = (value: unknown): boolean => value !== undefined && value !== null && value !== "" && !(typeof value === "number" && Number.isNaN(value));
 
 const ACTIVE_OPEN_ORDER_STATUSES = new Set<OrderStatus>([
     OrderStatus.PendingCancel,
@@ -291,9 +292,9 @@ export class Orders {
             }
         };
 
-        const contract = pickBy(omit(contractDetails.contract, ["primaryExch"]), identity);
+        const contract = pickBy(omit(contractDetails.contract, ["primaryExch"]), hasValue);
 
-        const order = pickBy(orderPlaced, identity);
+        const order = pickBy(orderPlaced, hasValue);
 
         return { order, contract };
     }

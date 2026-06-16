@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { of } from 'rxjs';
-import { OrderStatus } from '@stoqey/ib';
+import { OrderStatus, OrderType } from '@stoqey/ib';
 import Orders from './Orders';
 import Portfolios from '../portfolios/Portfolios';
 import { IBKREvents, IBKREVENTS } from '../events';
@@ -153,5 +153,51 @@ describe('IBKR Orders active order cache', () => {
         expect(eventPayload.updatedAt).to.be.a('number');
         expect(observedTradeIds).to.deep.equal(['1001']);
         expect(orders.orders).to.deep.equal([]);
+    });
+
+    it('should preserve explicit false order fields when parsing orders', () => {
+        const orders = Orders.Instance as any;
+        const parsed = orders.parseOrder({
+            orderType: OrderType.LMT,
+            outsideRth: false,
+            transmit: false,
+            lmtPrice: 0,
+            auxPrice: Number.NaN,
+        }, {
+            contract: {
+                symbol: 'NQ',
+                secType: 'FUT',
+                exchange: 'CME',
+                primaryExch: '',
+            },
+        });
+
+        expect(parsed.order).to.include({
+            outsideRth: false,
+            transmit: false,
+            lmtPrice: 0,
+        });
+        expect(parsed.order).not.to.have.property('auxPrice');
+        expect(parsed.contract).to.deep.equal({
+            symbol: 'NQ',
+            secType: 'FUT',
+            exchange: 'CME',
+        });
+    });
+
+    it('should drop NaN order prices when parsing orders', () => {
+        const orders = Orders.Instance as any;
+        const parsed = orders.parseOrder({
+            orderType: OrderType.LMT,
+            lmtPrice: Number.NaN,
+        }, {
+            contract: {
+                symbol: 'NQ',
+                secType: 'FUT',
+                exchange: 'CME',
+            },
+        });
+
+        expect(parsed.order).not.to.have.property('lmtPrice');
     });
 });
