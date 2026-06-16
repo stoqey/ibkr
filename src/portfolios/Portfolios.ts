@@ -190,10 +190,8 @@ export class Portfolios {
             log("Portfolios.init", "MD_ONLY enabled, skipping portfolio init");
             return;
         }
-        if (!this.ib) {
-            this.ib = IBKRConnection.Instance.ib;
-            this.syncPortfolios();
-        }
+        this.ib = IBKRConnection.Instance.ib;
+        this.syncPortfolios();
     };
 
 }

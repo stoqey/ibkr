@@ -29,7 +29,7 @@ export const normalizeReconnectInterval = (reconnectInterval?: number): number =
 
 export class IBKRConnection {
 
-    private ibApiNext: IBApiNext;
+    private ibApiNext?: IBApiNext;
 
     connected: boolean = false;
     private connection?: Subscription;
@@ -100,13 +100,14 @@ export class IBKRConnection {
 
 
     public init(opt?: Partial<IBApiNextCreationOptions>): Promise<boolean> {
-            if (this.connected || this.ibApiNext) {
+            if (this.connected) {
                 log('already init');
-                if (!this.connected) {
-                    this.shouldReconnect = true;
-                    this.startReconnectLoop();
-                }
-                return Promise.resolve(this.connected);
+                return Promise.resolve(true);
+            }
+
+            if (this.ibApiNext) {
+                log('reset stale ibkr connection before init');
+                this.disconnect();
             }
             if (opt) {
                 opt.reconnectInterval = normalizeReconnectInterval(opt.reconnectInterval);
@@ -261,6 +262,7 @@ export class IBKRConnection {
             this.errors = undefined;
         }
         this.ibApiNext?.disconnect();
+        this.ibApiNext = undefined;
         this.connected = false;
     }
 

@@ -268,12 +268,10 @@ export class Orders {
         }
         const self = this;
 
-        if (!self.ib) {
-            const ib = IBKRConnection.Instance.ib;
-            self.ib = ib;
+        const ib = IBKRConnection.Instance.ib;
+        self.ib = ib;
 
-            this.syncOpenOrders();
-        }
+        this.syncOpenOrders();
     };
 
     parseOrder = (orderPlaced: Order, contractDetails: ContractInstrument): { order: Order, contract: Contract } => {

@@ -151,10 +151,7 @@ export class AccountSummary {
             log("AccountSummary.init", "MD_ONLY enabled, skipping account summary init");
             return;
         }
-        const ib = IBKRConnection.Instance.ib;
-        if (!this.ib) {
-            this.ib = ib;
-        }
+        this.ib = IBKRConnection.Instance.ib;
     }
 
     private constructor() {
