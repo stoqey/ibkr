@@ -88,6 +88,51 @@ describe("IBKRConnection reconnect loop", () => {
         expect(connection.connected).to.equal(false);
     });
 
+    it("should refresh cached dependency API clients when dependencies reinitialize", async () => {
+        const connection = IBKRConnection.Instance as any;
+        const accountSummary = AccountSummary.Instance as any;
+        const marketData = MarketDataManager.Instance as any;
+        const portfolios = Portfolios.Instance as any;
+        const orders = Orders.Instance as any;
+        const originalIbApiNext = connection.ibApiNext;
+        const originalAccountSummaryIb = accountSummary.ib;
+        const originalMarketDataIb = marketData.ib;
+        const originalPortfoliosIb = portfolios.ib;
+        const originalOrdersIb = orders.ib;
+        const originalSyncPortfolios = portfolios.syncPortfolios;
+        const originalSyncOpenOrders = orders.syncOpenOrders;
+        const oldIb = { client: "old" };
+        const newIb = { client: "new" };
+
+        accountSummary.ib = oldIb;
+        marketData.ib = oldIb;
+        portfolios.ib = oldIb;
+        orders.ib = oldIb;
+        connection.ibApiNext = newIb;
+        portfolios.syncPortfolios = () => undefined;
+        orders.syncOpenOrders = () => undefined;
+
+        try {
+            accountSummary.init();
+            marketData.init();
+            portfolios.init();
+            await orders.init();
+
+            expect(accountSummary.ib).to.equal(newIb);
+            expect(marketData.ib).to.equal(newIb);
+            expect(portfolios.ib).to.equal(newIb);
+            expect(orders.ib).to.equal(newIb);
+        } finally {
+            connection.ibApiNext = originalIbApiNext;
+            accountSummary.ib = originalAccountSummaryIb;
+            marketData.ib = originalMarketDataIb;
+            portfolios.ib = originalPortfoliosIb;
+            orders.ib = originalOrdersIb;
+            portfolios.syncPortfolios = originalSyncPortfolios;
+            orders.syncOpenOrders = originalSyncOpenOrders;
+        }
+    });
+
 
     it("should not duplicate account summary subscriptions when dependencies reinitialize", () => {
         const accountSummary = AccountSummary.Instance as any;

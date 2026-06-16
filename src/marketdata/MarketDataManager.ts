@@ -523,14 +523,10 @@ export class MarketDataManager extends MkdManager {
     }
 
     init = () => {
-        const ib = IBKRConnection.Instance.ib;
+        this.ib = IBKRConnection.Instance.ib;
 
-        if (!this.ib) {
-            this.ib = ib;
-
-            // ib.getHistoricalData // async
-            // ib.getHistoricalDataUpdates() // subscribe
-        }
+        // ib.getHistoricalData // async
+        // ib.getHistoricalDataUpdates() // subscribe
     }
 
     private constructor() {
