@@ -162,6 +162,7 @@ describe('IBKR Orders active order cache', () => {
             outsideRth: false,
             transmit: false,
             lmtPrice: 0,
+            auxPrice: Number.NaN,
         }, {
             contract: {
                 symbol: 'NQ',
@@ -176,10 +177,27 @@ describe('IBKR Orders active order cache', () => {
             transmit: false,
             lmtPrice: 0,
         });
+        expect(parsed.order).not.to.have.property('auxPrice');
         expect(parsed.contract).to.deep.equal({
             symbol: 'NQ',
             secType: 'FUT',
             exchange: 'CME',
         });
+    });
+
+    it('should drop NaN order prices when parsing orders', () => {
+        const orders = Orders.Instance as any;
+        const parsed = orders.parseOrder({
+            orderType: OrderType.LMT,
+            lmtPrice: Number.NaN,
+        }, {
+            contract: {
+                symbol: 'NQ',
+                secType: 'FUT',
+                exchange: 'CME',
+            },
+        });
+
+        expect(parsed.order).not.to.have.property('lmtPrice');
     });
 });

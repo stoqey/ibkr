@@ -16,7 +16,7 @@ import { getContractFilterLabel, isContractAllowed } from '../utils/contract-fil
 
 const ibkrEvents = IBKREvents.Instance;
 
-const hasValue = (value: unknown): boolean => value !== undefined && value !== null && value !== "";
+const hasValue = (value: unknown): boolean => value !== undefined && value !== null && value !== "" && !(typeof value === "number" && Number.isNaN(value));
 
 const ACTIVE_OPEN_ORDER_STATUSES = new Set<OrderStatus>([
     OrderStatus.PendingCancel,
