@@ -3,7 +3,7 @@ import { IBApiNextCreationOptions } from '@stoqey/ib';
 import {IBKRConnection} from './connection';
 
 // Export main
-const ibkr = (opt?: Partial<IBApiNextCreationOptions>): Promise<boolean> => {
+export const ibkr = (opt?: Partial<IBApiNextCreationOptions>): Promise<boolean> => {
     return IBKRConnection.Instance.init(opt);
 };
 
