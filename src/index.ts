@@ -1,9 +1,10 @@
 import "dotenv/config";
+import { IBApiNextCreationOptions } from '@stoqey/ib';
 import {IBKRConnection} from './connection';
 
 // Export main
-const ibkr = (): Promise<boolean> => {
-    return IBKRConnection.Instance.init();
+const ibkr = (opt?: Partial<IBApiNextCreationOptions>): Promise<boolean> => {
+    return IBKRConnection.Instance.init(opt);
 };
 
 // Export all modules
