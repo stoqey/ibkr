@@ -58,4 +58,15 @@ describe('MarketDataManager - getHistoricalData', () => {
         expect(result).to.have.length(1);
         expect(result[0].date.toISOString()).to.equal('2023-10-06T19:59:59.000Z');
     });
+
+    it('should not normalize malformed date-only bar times', async () => {
+        const { manager, contract } = buildManager([
+            { time: '20250230', open: 104.32, high: 104.32, low: 99.91, close: 101.35, volume: 227874919, WAP: 101.38, count: 774511 },
+        ]);
+
+        const result = await manager.getHistoricalData(contract as any, '', '301 D', BarSizeSetting.DAYS_ONE, WhatToShow.ADJUSTED_LAST, true);
+
+        expect(result).to.have.length(1);
+        expect(Number.isNaN(result[0].date.getTime())).to.be.true;
+    });
 });

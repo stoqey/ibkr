@@ -45,11 +45,14 @@ const parseHistoricalBarDate = (time?: string): Date => {
     }
 
     if (/^\d{8}$/.test(rawTime)) {
-        const year = Number(rawTime.slice(0, 4));
-        const month = Number(rawTime.slice(4, 6)) - 1;
-        const day = Number(rawTime.slice(6, 8));
+        const parsedDate = moment.utc(rawTime, 'YYYYMMDD', true);
 
-        return new Date(Date.UTC(year, month, day));
+        return parsedDate.isValid() ? parsedDate.toDate() : new Date(Number.NaN);
+    }
+
+    const parsedDateTime = moment.utc(rawTime, ['YYYYMMDD HH:mm:ss', 'YYYYMMDD-HH:mm:ss'], true);
+    if (parsedDateTime.isValid()) {
+        return parsedDateTime.toDate();
     }
 
     return new Date(Number(rawTime) * 1000);
