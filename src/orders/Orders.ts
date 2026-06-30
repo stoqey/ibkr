@@ -292,7 +292,7 @@ export class Orders {
 
         const contract = pickBy(omit(contractDetails.contract, ["primaryExch"]), hasValue);
 
-        const order = pickBy(orderPlaced, hasValue);
+        const order = pickBy(orderPlaced, hasValue) as Order;
 
         return { order, contract };
     }
