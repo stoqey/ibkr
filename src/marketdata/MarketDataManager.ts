@@ -38,6 +38,23 @@ interface MarketDataItem extends MarketData {
     timestamp?: number;
 }
 
+const parseHistoricalBarDate = (time?: string): Date => {
+    const rawTime = time?.trim();
+    if (!rawTime) {
+        return new Date(Number.NaN);
+    }
+
+    if (/^\d{8}$/.test(rawTime)) {
+        const year = Number(rawTime.slice(0, 4));
+        const month = Number(rawTime.slice(4, 6)) - 1;
+        const day = Number(rawTime.slice(6, 8));
+
+        return new Date(Date.UTC(year, month, day));
+    }
+
+    return new Date(Number(rawTime) * 1000);
+};
+
 export class MarketDataManager extends MkdManager {
     logsNames = logsNames;
     ib: IBApiNext;
@@ -218,7 +235,7 @@ export class MarketDataManager extends MkdManager {
         const [bars, err] = await awaitP(IBKRConnection.Instance.ib.getHistoricalData(contractInstrument, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, 2));
         if (bars && bars.length > 0) {
             const mkd = bars.map(bar => {
-                const date = new Date(+bar.time * 1000);
+                const date = parseHistoricalBarDate(bar.time);
                 const marketDataItem: MarketData = {
                     instrument: contractInstrument?.contract as Instrument,
                     date,
