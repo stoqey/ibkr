@@ -38,6 +38,26 @@ interface MarketDataItem extends MarketData {
     timestamp?: number;
 }
 
+const parseHistoricalBarDate = (time?: string): Date => {
+    const rawTime = time?.trim();
+    if (!rawTime) {
+        return new Date(Number.NaN);
+    }
+
+    if (/^\d{8}$/.test(rawTime)) {
+        const parsedDate = moment.utc(rawTime, 'YYYYMMDD', true);
+
+        return parsedDate.isValid() ? parsedDate.toDate() : new Date(Number.NaN);
+    }
+
+    const parsedDateTime = moment.utc(rawTime, ['YYYYMMDD HH:mm:ss', 'YYYYMMDD-HH:mm:ss'], true);
+    if (parsedDateTime.isValid()) {
+        return parsedDateTime.toDate();
+    }
+
+    return new Date(Number(rawTime) * 1000);
+};
+
 export class MarketDataManager extends MkdManager {
     logsNames = logsNames;
     ib: IBApiNext;
@@ -218,7 +238,7 @@ export class MarketDataManager extends MkdManager {
         const [bars, err] = await awaitP(IBKRConnection.Instance.ib.getHistoricalData(contractInstrument, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, 2));
         if (bars && bars.length > 0) {
             const mkd = bars.map(bar => {
-                const date = new Date(+bar.time * 1000);
+                const date = parseHistoricalBarDate(bar.time);
                 const marketDataItem: MarketData = {
                     instrument: contractInstrument?.contract as Instrument,
                     date,
