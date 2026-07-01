@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { catchError, lastValueFrom, of, Subscription } from "rxjs";
 import IBKRConnection from '../connection/IBKRConnection';
-import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast } from '@stoqey/ib';
+import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast, Bar } from '@stoqey/ib';
 import { MarketData, TickByTickAllLast } from '../interfaces';
 import awaitP from '../utils/awaitP';
 import { Instrument } from '../interfaces';
@@ -36,6 +36,11 @@ interface CurrentBarData extends Partial<MarketData> {
 
 interface MarketDataItem extends MarketData {
     timestamp?: number;
+}
+
+interface HistoricalRawDataResult {
+    bars: Bar[] | null;
+    contractInstrument: ContractInstrument | null;
 }
 
 const parseHistoricalBarDate = (time?: string): Date => {
@@ -218,24 +223,39 @@ export class MarketDataManager extends MkdManager {
     }
 
 
-    getHistoricalData = async (contract: Contract, endDateTime: string | undefined, durationStr: string, barSizeSetting: BarSizeSetting, whatToShow: WhatToShow, useRTH = false): Promise<MarketData[]> => {
+    private getHistoricalDataRawWithContract = async (contract: Contract, endDateTime: string | undefined, durationStr: string, barSizeSetting: BarSizeSetting, whatToShow: WhatToShow, useRTH = false): Promise<HistoricalRawDataResult> => {
         const [contractInstrument, errContract] = await awaitP(this.getContract(contract));
         if (errContract) {
             warn("getHistoricalData contract err", errContract);
-            return null;
+            return { bars: null, contractInstrument: null };
         }
         if (!contractInstrument) {
             warn("getHistoricalData contract not found", contract);
-            return null;
+            return { bars: null, contractInstrument: null };
         }
 
         const symbol = this.getSymbolKey(contractInstrument);
         if (!isContractAllowed(contractInstrument, "marketdata")) {
-            warn(`${logsNames}.getHistoricalData`, `Contract ${symbol} filtered by IBKR contract filter=${getContractFilterLabel("marketdata")}`);
-            return null;
+            warn(`${logsNames}.getHistoricalDataRaw`, `Contract ${symbol} filtered by IBKR contract filter=${getContractFilterLabel("marketdata")}`);
+            return { bars: null, contractInstrument };
         }
 
         const [bars, err] = await awaitP(IBKRConnection.Instance.ib.getHistoricalData(contractInstrument, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, 2));
+        if (err) {
+            warn(`getHistoricalDataRaw err ${symbol}`, err);
+        }
+
+        return { bars: bars ?? null, contractInstrument };
+    };
+
+    getHistoricalDataRaw = async (contract: Contract, endDateTime: string | undefined, durationStr: string, barSizeSetting: BarSizeSetting, whatToShow: WhatToShow, useRTH = false): Promise<Bar[]> => {
+        const { bars } = await this.getHistoricalDataRawWithContract(contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH);
+
+        return bars;
+    };
+
+    getHistoricalData = async (contract: Contract, endDateTime: string | undefined, durationStr: string, barSizeSetting: BarSizeSetting, whatToShow: WhatToShow, useRTH = false): Promise<MarketData[]> => {
+        const { bars, contractInstrument } = await this.getHistoricalDataRawWithContract(contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH);
         if (bars && bars.length > 0) {
             const mkd = bars.map(bar => {
                 const date = parseHistoricalBarDate(bar.time);
@@ -255,9 +275,6 @@ export class MarketDataManager extends MkdManager {
             });
 
             return sortBy(mkd, 'date');
-        }
-        if (err) {
-            warn(`getHistoricalData err ${symbol}`, err);
         }
         return null;
     };
