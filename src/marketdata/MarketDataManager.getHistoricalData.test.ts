@@ -24,15 +24,23 @@ describe('MarketDataManager - getHistoricalData', () => {
         };
 
         const manager = new MarketDataManager();
-        manager.getContract = async () => contractInstrument as any;
+        let getContractCalls = 0;
+        manager.getContract = async () => {
+            getContractCalls += 1;
+            return contractInstrument as any;
+        };
+        let historicalDataArgs: any[];
 
         (IBKRConnection as any)._instance = {
             ib: {
-                getHistoricalData: async () => bars,
+                getHistoricalData: async (...args: any[]) => {
+                    historicalDataArgs = args;
+                    return bars;
+                },
             },
         };
 
-        return { manager, contract };
+        return { manager, contract, getContractCalls: () => getContractCalls, getHistoricalDataArgs: () => historicalDataArgs };
     };
 
     it('should parse date-only daily bars when IBKR returns yyyyMMdd times', async () => {
@@ -68,5 +76,37 @@ describe('MarketDataManager - getHistoricalData', () => {
 
         expect(result).to.have.length(1);
         expect(Number.isNaN(result[0].date.getTime())).to.be.true;
+    });
+
+    it('should return raw bars when caller requests historical data without parsing', async () => {
+        const bars = [
+            { time: '20260618', open: 208.92, high: 212.72, low: 203.45, close: 210.69, volume: 301767666, WAP: 209.011, count: 1288876 },
+            { time: '20260626', open: 211.44, high: 213.99, low: 191.22, close: 192.53, volume: 369526864, WAP: 200.004, count: 1726049 },
+        ];
+        const { manager, contract, getHistoricalDataArgs } = buildManager(bars);
+
+        const result = await manager.getHistoricalDataRaw(contract as any, '', '6 Y', BarSizeSetting.WEEKS_ONE, WhatToShow.TRADES, true);
+
+        expect(result).to.deep.equal(bars);
+        expect(getHistoricalDataArgs()).to.include.members(['', '6 Y', BarSizeSetting.WEEKS_ONE, WhatToShow.TRADES, true, 2]);
+    });
+
+    it('should return an empty raw bar array when IBKR returns no historical data', async () => {
+        const { manager, contract } = buildManager([]);
+
+        const result = await manager.getHistoricalDataRaw(contract as any, '', '6 Y', BarSizeSetting.WEEKS_ONE, WhatToShow.TRADES, true);
+
+        expect(result).to.deep.equal([]);
+    });
+
+    it('should resolve the contract once when parsing historical data', async () => {
+        const { manager, contract, getContractCalls } = buildManager([
+            { time: '20250417', open: 104.32, high: 104.32, low: 99.91, close: 101.35, volume: 227874919, WAP: 101.38, count: 774511 },
+        ]);
+
+        const result = await manager.getHistoricalData(contract as any, '', '301 D', BarSizeSetting.DAYS_ONE, WhatToShow.ADJUSTED_LAST, true);
+
+        expect(result).to.have.length(1);
+        expect(getContractCalls()).to.equal(1);
     });
 });
