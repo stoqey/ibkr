@@ -3,6 +3,7 @@ import 'mocha';
 import { MkdManager } from './Mkd';
 import { Instrument, MarketData } from '../interfaces';
 import { getSymbolKey } from '../utils/instrument.utils';
+import { log } from '../utils/log';
 
 describe('MkdManager with Arrays', () => {
     let manager: MkdManager;
@@ -36,6 +37,32 @@ describe('MkdManager with Arrays', () => {
             expect(result).to.have.length(4); // items 2, 3, 4, 5 (0-indexed)
             expect(result[0].close).to.equal(102); // 3rd item
             expect(result[3].close).to.equal(105); // 6th item
+        });
+
+        it('should not emit CLI chart output when returning historical data', async () => {
+            const messages: string[] = [];
+            const originalEnabled = log.enabled;
+            const originalLog = log.log;
+            log.enabled = true;
+            log.log = (...args: unknown[]) => {
+                messages.push(args.map(String).join(' '));
+            };
+
+            try {
+                const result = await manager.historicalData(
+                    instrument,
+                    new Date('2024-01-15T10:32:00Z'),
+                    new Date('2024-01-15T10:35:00Z')
+                );
+
+                expect(result).to.have.length(4);
+            } finally {
+                log.log = originalLog;
+                log.enabled = originalEnabled;
+            }
+
+            expect(messages).to.have.length(1);
+            expect(messages[0]).to.not.include('\n');
         });
 
         it('should return empty array for non-existent symbol', async () => {

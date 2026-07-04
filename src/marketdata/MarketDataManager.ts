@@ -12,7 +12,7 @@ import isEmpty from 'lodash/isEmpty';
 import { formatDateStr } from '../utils/time.utils';
 import { getSymbolKey } from '../utils/instrument.utils';
 import { formatDec } from '../utils/data.utils';
-import { plotMkdCli } from '../utils/chart';
+// import { plotMkdCli } from '../utils/chart';
 import sortBy from 'lodash/sortBy';
 import { logBar } from '../utils';
 import { createAggregator } from '../utils/mkd.utils';
@@ -133,7 +133,7 @@ export class MarketDataManager extends MkdManager {
                     const first = historicalData && historicalData[0];
                     const last = (historicalData || [])[historicalData.length - 1];
 
-                    plotMkdCli(historicalData);
+                    // plotMkdCli(historicalData);
 
                     log(`${logsNames}.getHistoricalDataUpdates.getMarketDataLast30Minutes.length`, `${historicalData?.length} data points for ${symbolId} from ${formatDateStr(first?.date)} to ${formatDateStr(last?.date)} @${formatDec(first?.close)} -> @${formatDec(last?.close)} whatToShow=${whatToShow}`);
                     historicalData.forEach((marketDataItem) => {
@@ -384,7 +384,7 @@ export class MarketDataManager extends MkdManager {
                     const first = historicalData && historicalData[0];
                     const last = (historicalData || [])[historicalData.length - 1];
 
-                    plotMkdCli(historicalData);
+                    // plotMkdCli(historicalData);
 
                     log(`${logsNames}.getTickByTickDataUpdates.getMarketDataLast30Minutes.length`, `${historicalData?.length} data points for ${symbolId} from ${formatDateStr(first?.date)} to ${formatDateStr(last?.date)} @${formatDec(first?.close)} -> @${formatDec(last?.close)} whatToShow=TRADES`);
 

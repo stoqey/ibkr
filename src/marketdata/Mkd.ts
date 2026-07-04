@@ -1,7 +1,7 @@
 import { Instrument, MarketData } from "../interfaces";
 import { Contract } from "@stoqey/ib";
 import { getSymbolKey } from "../utils/instrument.utils";
-import { plotMkdCli } from "../utils/chart";
+// import { plotMkdCli } from "../utils/chart";
 import { log } from "../utils/log";
 import { formatDateStr } from "../utils/time.utils";
 import { formatDec } from "../utils/data.utils";
@@ -171,7 +171,7 @@ export class MkdManager {
         const first = slicedData && slicedData[0];
         const last = (slicedData || [])[slicedData?.length - 1];
 
-        plotMkdCli(slicedData);
+        // plotMkdCli(slicedData);
 
         log(`${this.logsNames}.historicalData`, `${slicedData.length} data points for ${symbol} from ${formatDateStr(first.date)} to ${formatDateStr(last.date)} @${formatDec(first.close)} -> @${formatDec(last.close)}`);
 
