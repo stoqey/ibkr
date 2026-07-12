@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { catchError, lastValueFrom, of, Subscription } from "rxjs";
 import IBKRConnection from '../connection/IBKRConnection';
-import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast, Bar } from '@stoqey/ib';
+import { IBApiNext, Contract, BarSizeSetting, WhatToShow, ContractDetails, HistoricalTickLast, Bar, MutableMarketData } from '@stoqey/ib';
 import { MarketData, TickByTickAllLast } from '../interfaces';
 import awaitP from '../utils/awaitP';
 import { Instrument } from '../interfaces';
@@ -520,6 +520,23 @@ export class MarketDataManager extends MkdManager {
         this.PendingTickByTickDataUpdates.delete(symbolId);
         this.currentTickBarData.delete(symbolId);
     };
+
+    getMarketDataSnapshot = async (contract: Partial<Contract>, genericTickList = '', regulatorySnapshot = false): Promise<MutableMarketData> => {
+        const { contract: _ignored, ...query } = (contract || {}) as Partial<Contract> & { contract?: unknown };
+        const resolved = await this.getContract(query);
+        if (!resolved?.contract) {
+            throw new Error(`Unable to resolve contract for market data snapshot: ${JSON.stringify(contract || {})}`);
+        }
+
+        const symbol = this.getSymbolKey(resolved.contract);
+        if (!isContractAllowed(resolved.contract, "marketdata")) {
+            const filter = getContractFilterLabel("marketdata");
+            warn(`${logsNames}.getMarketDataSnapshot`, `Contract ${symbol} filtered by IBKR contract filter=${filter}`);
+            throw new Error(`Contract ${symbol} filtered by IBKR contract filter=${filter}`);
+        }
+
+        return this.ib.getMarketDataSnapshot(resolved.contract, genericTickList, regulatorySnapshot);
+    }
 
     getContract = async (contract: Partial<Contract | any>): Promise<ContractInstrument> => {
         if ((contract as ContractInstrument)?.contract) {
