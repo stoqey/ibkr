@@ -522,12 +522,20 @@ export class MarketDataManager extends MkdManager {
     };
 
     getMarketDataSnapshot = async (contract: Partial<Contract>, genericTickList = '', regulatorySnapshot = false): Promise<MutableMarketData> => {
-        const contractInstrument = await this.getContract(contract);
-        if (!contractInstrument?.contract) {
+        const { contract: _ignored, ...query } = (contract || {}) as Partial<Contract> & { contract?: unknown };
+        const resolved = await this.getContract(query);
+        if (!resolved?.contract) {
             throw new Error(`Unable to resolve contract for market data snapshot: ${JSON.stringify(contract || {})}`);
         }
 
-        return this.ib.getMarketDataSnapshot(contractInstrument.contract, genericTickList, regulatorySnapshot);
+        const symbol = this.getSymbolKey(resolved.contract);
+        if (!isContractAllowed(resolved.contract, "marketdata")) {
+            const filter = getContractFilterLabel("marketdata");
+            warn(`${logsNames}.getMarketDataSnapshot`, `Contract ${symbol} filtered by IBKR contract filter=${filter}`);
+            throw new Error(`Contract ${symbol} filtered by IBKR contract filter=${filter}`);
+        }
+
+        return this.ib.getMarketDataSnapshot(resolved.contract, genericTickList, regulatorySnapshot);
     }
 
     getContract = async (contract: Partial<Contract | any>): Promise<ContractInstrument> => {
