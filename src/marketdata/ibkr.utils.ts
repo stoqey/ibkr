@@ -14,8 +14,25 @@ import { GetHistoricalData, getSymbolKey } from '../utils/instrument.utils';
  */
 
 const throttleDelay = 500;
+const exchangeTimeZoneFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    timeZoneName: 'longOffset',
+});
 
 export const formatHistoricalEndDateTime = (date: Date): string => moment.utc(date).format('YYYYMMDD-HH:mm:ss');
+
+const createExchangeDate = (dayDate: Date, hour: number, minute: number, second: number): Date => {
+    const utcDate = new Date(Date.UTC(dayDate.getUTCFullYear(), dayDate.getUTCMonth(), dayDate.getUTCDate(), hour, minute, second));
+    const offsetMatch = exchangeTimeZoneFormatter.format(utcDate).match(/GMT([+-])(\d{2}):(\d{2})/);
+
+    if (!offsetMatch) {
+        throw new Error('Unable to determine the America/New_York timezone offset');
+    }
+
+    const offset = (parseInt(offsetMatch[2], 10) * 60 + parseInt(offsetMatch[3], 10)) * 60 * 1000;
+
+    return new Date(utcDate.getTime() - (offsetMatch[1] === '+' ? offset : -offset));
+};
 
 export const getHistoricalData = async (opt: GetHistoricalData): Promise<MarketData[]> => {
     const { instrument, startDate, endDate, whatToShow } = opt;
@@ -41,12 +58,12 @@ export const getHistoricalData = async (opt: GetHistoricalData): Promise<MarketD
         while (dayDate <= endDateLoop) {
             const dayData = await getSecondsHistoricalDataFromIb(instrument, dayDate, whatToShow);
             if (isEmpty(dayData)) {
-                dayDate.setDate(dayDate.getDate() + 1);
+                dayDate.setUTCDate(dayDate.getUTCDate() + 1);
                 continue;
             }
             await save(dayData);
             data = data.concat(dayData);
-            dayDate.setDate(dayDate.getDate() + 1);
+            dayDate.setUTCDate(dayDate.getUTCDate() + 1);
         }
         return data;
     }
@@ -72,12 +89,12 @@ export async function getSecondsHistoricalDataFromIb(
         }
 
         // Default to 8 - 5:30
-        let date = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 17, 30, 0); // set date to 5:30 when market closes
+        let date = createExchangeDate(dayDate, 17, 30, 0); // set date to 5:30 when market closes
         let count = 10; // 10 hours back
 
         if (contract?.secType === SecType.FUT) {
             // futures e.t.c ...
-            date = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 23, 59, 0);
+            date = createExchangeDate(dayDate, 23, 59, 0);
             count = 23; // 23 hours back
         }
 
@@ -97,7 +114,7 @@ export async function getSecondsHistoricalDataFromIb(
 
         const symbolKey = getSymbolKey(contract);
         for (const x of new Array(count).fill('x')) {
-            date = new Date(date.setHours(date.getHours() - 1));
+            date = new Date(date.setUTCHours(date.getUTCHours() - 1));
             const endDateTime = formatHistoricalEndDateTime(date);
             log(`ibApi.reqHistoricalData -----> ${symbolKey}`, endDateTime);
 
