@@ -15,6 +15,8 @@ import { GetHistoricalData, getSymbolKey } from '../utils/instrument.utils';
 
 const throttleDelay = 500;
 
+export const formatHistoricalEndDateTime = (date: Date): string => moment.utc(date).format('YYYYMMDD-HH:mm:ss');
+
 export const getHistoricalData = async (opt: GetHistoricalData): Promise<MarketData[]> => {
     const { instrument, startDate, endDate, whatToShow } = opt;
     const saveToDb = opt?.saveToDb;
@@ -96,7 +98,7 @@ export async function getSecondsHistoricalDataFromIb(
         const symbolKey = getSymbolKey(contract);
         for (const x of new Array(count).fill('x')) {
             date = new Date(date.setHours(date.getHours() - 1));
-            const endDateTime = moment(date).format('yyyyMMDD-HH:mm:ss');
+            const endDateTime = formatHistoricalEndDateTime(date);
             log(`ibApi.reqHistoricalData -----> ${symbolKey}`, endDateTime);
 
             const timeout = 1000 * 50; // 50 seconds
