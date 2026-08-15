@@ -249,10 +249,10 @@
   resolved "https://registry.yarnpkg.com/@package-json/types/-/types-0.0.12.tgz#4629e833ba128ed9880b6b7a947633ee22952462"
   integrity sha512-uu43FGU34B5VM9mCNjXCwLaGHYjXdNincqKLaraaCW+7S2+SmiBg1Nv8bPnmschrIfZmfKNY9f3fC376MRrObw==
 
-"@stoqey/ib@^1.6.3":
-  version "1.6.3"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.6.3.tgz#b342e38fdcdcec438e1ecfbce23348563a9ac781"
-  integrity sha512-wqR7HD0mxaq80u+AIirTvZLusOWAh6q2+5A1xWR4E0LbsENuopsuPc+OXzoFdJ933FKBJJrKUhTJ8vCCJQrzOA==
+"@stoqey/ib@^1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.6.7.tgz#e5f5c4874e173879b284dc094a8eeda32b253f19"
+  integrity sha512-So2MfGrodLg+2cCWV8OGqMZNp3uS6Vs5VM1WMj2y81G89w2IEYvGu1GkwUXo5dfz9IRqrOcYIbNlaCWrIHGgZQ==
   dependencies:
     colors "^1.4.0"
     command-buffer "^0.1.0"
