@@ -5,6 +5,220 @@
   "description": "NodeJS Interactive Brokers wrapper & utilities using @stoqey/ib",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./account": {
+      "types": "./dist/account/index.d.ts",
+      "import": "./dist/account/index.js",
+      "require": "./dist/account/index.js",
+      "default": "./dist/account/index.js"
+    },
+    "./account/*.js": {
+      "types": "./dist/account/*.d.ts",
+      "import": "./dist/account/*.js",
+      "require": "./dist/account/*.js",
+      "default": "./dist/account/*.js"
+    },
+    "./account/*": {
+      "types": "./dist/account/*.d.ts",
+      "import": "./dist/account/*.js",
+      "require": "./dist/account/*.js",
+      "default": "./dist/account/*.js"
+    },
+    "./connection": {
+      "types": "./dist/connection/index.d.ts",
+      "import": "./dist/connection/index.js",
+      "require": "./dist/connection/index.js",
+      "default": "./dist/connection/index.js"
+    },
+    "./connection/*.js": {
+      "types": "./dist/connection/*.d.ts",
+      "import": "./dist/connection/*.js",
+      "require": "./dist/connection/*.js",
+      "default": "./dist/connection/*.js"
+    },
+    "./connection/*": {
+      "types": "./dist/connection/*.d.ts",
+      "import": "./dist/connection/*.js",
+      "require": "./dist/connection/*.js",
+      "default": "./dist/connection/*.js"
+    },
+    "./events": {
+      "types": "./dist/events/index.d.ts",
+      "import": "./dist/events/index.js",
+      "require": "./dist/events/index.js",
+      "default": "./dist/events/index.js"
+    },
+    "./events/*.js": {
+      "types": "./dist/events/*.d.ts",
+      "import": "./dist/events/*.js",
+      "require": "./dist/events/*.js",
+      "default": "./dist/events/*.js"
+    },
+    "./events/*": {
+      "types": "./dist/events/*.d.ts",
+      "import": "./dist/events/*.js",
+      "require": "./dist/events/*.js",
+      "default": "./dist/events/*.js"
+    },
+    "./interfaces": {
+      "types": "./dist/interfaces.d.ts",
+      "import": "./dist/interfaces.js",
+      "require": "./dist/interfaces.js",
+      "default": "./dist/interfaces.js"
+    },
+    "./interfaces.js": {
+      "types": "./dist/interfaces.d.ts",
+      "import": "./dist/interfaces.js",
+      "require": "./dist/interfaces.js",
+      "default": "./dist/interfaces.js"
+    },
+    "./marketdata": {
+      "types": "./dist/marketdata/index.d.ts",
+      "import": "./dist/marketdata/index.js",
+      "require": "./dist/marketdata/index.js",
+      "default": "./dist/marketdata/index.js"
+    },
+    "./marketdata/*.js": {
+      "types": "./dist/marketdata/*.d.ts",
+      "import": "./dist/marketdata/*.js",
+      "require": "./dist/marketdata/*.js",
+      "default": "./dist/marketdata/*.js"
+    },
+    "./marketdata/*": {
+      "types": "./dist/marketdata/*.d.ts",
+      "import": "./dist/marketdata/*.js",
+      "require": "./dist/marketdata/*.js",
+      "default": "./dist/marketdata/*.js"
+    },
+    "./orders": {
+      "types": "./dist/orders/index.d.ts",
+      "import": "./dist/orders/index.js",
+      "require": "./dist/orders/index.js",
+      "default": "./dist/orders/index.js"
+    },
+    "./orders/*.js": {
+      "types": "./dist/orders/*.d.ts",
+      "import": "./dist/orders/*.js",
+      "require": "./dist/orders/*.js",
+      "default": "./dist/orders/*.js"
+    },
+    "./orders/*": {
+      "types": "./dist/orders/*.d.ts",
+      "import": "./dist/orders/*.js",
+      "require": "./dist/orders/*.js",
+      "default": "./dist/orders/*.js"
+    },
+    "./portfolios": {
+      "types": "./dist/portfolios/index.d.ts",
+      "import": "./dist/portfolios/index.js",
+      "require": "./dist/portfolios/index.js",
+      "default": "./dist/portfolios/index.js"
+    },
+    "./portfolios/*.js": {
+      "types": "./dist/portfolios/*.d.ts",
+      "import": "./dist/portfolios/*.js",
+      "require": "./dist/portfolios/*.js",
+      "default": "./dist/portfolios/*.js"
+    },
+    "./portfolios/*": {
+      "types": "./dist/portfolios/*.d.ts",
+      "import": "./dist/portfolios/*.js",
+      "require": "./dist/portfolios/*.js",
+      "default": "./dist/portfolios/*.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
+      "default": "./dist/utils/index.js"
+    },
+    "./utils/*.js": {
+      "types": "./dist/utils/*.d.ts",
+      "import": "./dist/utils/*.js",
+      "require": "./dist/utils/*.js",
+      "default": "./dist/utils/*.js"
+    },
+    "./utils/*": {
+      "types": "./dist/utils/*.d.ts",
+      "import": "./dist/utils/*.js",
+      "require": "./dist/utils/*.js",
+      "default": "./dist/utils/*.js"
+    },
+    "./dist/*.js": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.js",
+      "default": "./dist/*.js"
+    },
+    "./dist/*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.js",
+      "default": "./dist/*.js"
+    },
+    "./register": "./register/index.js",
+    "./register/*.js": "./register/*.js",
+    "./register/*": "./register/*.js",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "account": [
+        "dist/account/index.d.ts"
+      ],
+      "account/*": [
+        "dist/account/*"
+      ],
+      "connection": [
+        "dist/connection/index.d.ts"
+      ],
+      "connection/*": [
+        "dist/connection/*"
+      ],
+      "events": [
+        "dist/events/index.d.ts"
+      ],
+      "events/*": [
+        "dist/events/*"
+      ],
+      "interfaces": [
+        "dist/interfaces.d.ts"
+      ],
+      "marketdata": [
+        "dist/marketdata/index.d.ts"
+      ],
+      "marketdata/*": [
+        "dist/marketdata/*"
+      ],
+      "orders": [
+        "dist/orders/index.d.ts"
+      ],
+      "orders/*": [
+        "dist/orders/*"
+      ],
+      "portfolios": [
+        "dist/portfolios/index.d.ts"
+      ],
+      "portfolios/*": [
+        "dist/portfolios/*"
+      ],
+      "utils": [
+        "dist/utils/index.d.ts"
+      ],
+      "utils/*": [
+        "dist/utils/*"
+      ],
+      "dist/*": [
+        "dist/*"
+      ]
+    }
+  },
   "files": [
     "dist/",
     "register/",
@@ -23,6 +237,7 @@
     "test:mkd:cleanup": "mocha src/marketdata/MarketDataManager.cleanup.test.ts --exit",
     "test:mkd:findIndex": "mocha src/marketdata/MarketDataManager.findIndex.test.ts --exit",
     "test:mkd": "mocha src/marketdata/Mkd.test.ts --exit",
+    "test:types:nodenext": "rimraf dist test/types/nodenext/node_modules && tsc && mkdir -p test/types/nodenext/node_modules/@stoqey && ln -s ../../../../.. test/types/nodenext/node_modules/@stoqey/ibkr && tsc -p test/types/nodenext/tsconfig.json && rimraf test/types/nodenext/node_modules",
     "prepublishOnly": "npm run build",
     "eslint": "eslint ./src --fix --ext=ts"
   },
