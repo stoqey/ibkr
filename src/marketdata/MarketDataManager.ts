@@ -538,12 +538,30 @@ export class MarketDataManager extends MkdManager {
         return this.ib.getMarketDataSnapshot(resolved.contract, genericTickList, regulatorySnapshot);
     }
 
+    private normalizeContractQuery(contract: Partial<Contract>): Partial<Contract> {
+        if (contract.conId > 0) {
+            // Saved details can contain response-only fields that Gateway rejects in queries.
+            return {
+                conId: contract.conId,
+                ...(contract.exchange !== undefined ? { exchange: contract.exchange } : {}),
+                ...(contract.includeExpired !== undefined ? { includeExpired: contract.includeExpired } : {}),
+            };
+        }
+
+        const query = { ...contract };
+        const expiryTimestamp = /^(\d{8})\s+\d{2}:\d{2}:\d{2}(?:\s+\S+)?$/.exec(query.lastTradeDateOrContractMonth || '');
+        if (expiryTimestamp) {
+            query.lastTradeDateOrContractMonth = expiryTimestamp[1];
+        }
+        return query;
+    }
+
     getContract = async (contract: Partial<Contract | any>): Promise<ContractInstrument> => {
         if ((contract as ContractInstrument)?.contract) {
             return contract as ContractInstrument;
         };
 
-        const [contracts, err] = await awaitP(this.ib.getContractDetails(contract));
+        const [contracts, err] = await awaitP(this.ib.getContractDetails(this.normalizeContractQuery(contract)));
         if (contracts && contracts.length > 0) {
             const firstContract = contracts[0];
             return {
@@ -559,7 +577,7 @@ export class MarketDataManager extends MkdManager {
 
     searchContracts = async (contract: Partial<Contract>): Promise<ContractInstrument[]> => {
 
-        const [contracts, err] = await awaitP(this.ib.getContractDetails(contract));
+        const [contracts, err] = await awaitP(this.ib.getContractDetails(this.normalizeContractQuery(contract)));
 
         if (contracts && contracts.length > 0) {
             return contracts.map(c => {

@@ -127,6 +127,24 @@ describe('MarketDataManager - getMarketDataSnapshot', () => {
         ]);
     });
 
+    it('should query by identity when a saved snapshot contract contains an expiry timestamp', async () => {
+        const canonicalContract: Contract = {
+            symbol: 'GC',
+            secType: SecType.FUT,
+            conId: 462941472,
+            exchange: 'COMEX',
+            lastTradeDateOrContractMonth: '20261229 13:30:00 US/Eastern',
+        };
+        const input = Object.freeze({ ...canonicalContract, contract: canonicalContract });
+        const { manager, snapshotCalls, contractDetailsCalls } = buildManager(canonicalContract);
+
+        await manager.getMarketDataSnapshot(input);
+
+        expect(contractDetailsCalls).to.deep.equal([{ conId: 462941472, exchange: 'COMEX' }]);
+        expect(snapshotCalls[0].contract).to.equal(canonicalContract);
+        expect(input.lastTradeDateOrContractMonth).to.equal('20261229 13:30:00 US/Eastern');
+    });
+
     it('should reject without requesting a snapshot when contract resolution fails', async () => {
         const incompleteContract: Partial<Contract> = {
             symbol: 'ES',
