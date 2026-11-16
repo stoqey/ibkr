@@ -124,7 +124,7 @@ export class MarketDataManager extends MkdManager {
 
             const getMarketDataLast30Minutes = async () => {
                 log(`${logsNames}.getHistoricalDataUpdates.getMarketDataLast30Minutes`, `${symbolId}`);
-                const endDateTime = moment().format('YYYYMMDD HH:mm:ss');
+                const endDateTime = moment.utc().format('YYYYMMDD-HH:mm:ss');
                 const durationStr = '3600 S';
                 const barSizeSetting5Sec = '5 secs';
                 const [historicalData] = await awaitP(this.getHistoricalData(contract, endDateTime, durationStr, barSizeSetting5Sec as BarSizeSetting, whatToShow));
@@ -149,7 +149,7 @@ export class MarketDataManager extends MkdManager {
             await getMarketDataLast30Minutes();
 
             log(`${logsNames}.getHistoricalDataUpdates`, `Subscribing to ${symbolId}`);
-            const subscription = IBKRConnection.Instance.ib.getHistoricalDataUpdates(contract, barSizeSetting, whatToShow, 2)
+            const subscription = IBKRConnection.Instance.ib.getHistoricalDataUpdates(this.normalizeRequestContract(contract), barSizeSetting, whatToShow, 2)
                 .pipe(
                     catchError((error) => {
                         warn(`${logsNames}.getHistoricalDataUpdates`, `Error subscribing to ${symbolId}`, error);
@@ -240,7 +240,7 @@ export class MarketDataManager extends MkdManager {
             return { bars: null, contractInstrument };
         }
 
-        const [bars, err] = await awaitP(IBKRConnection.Instance.ib.getHistoricalData(contractInstrument, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, 2));
+        const [bars, err] = await awaitP(IBKRConnection.Instance.ib.getHistoricalData(this.normalizeRequestContract(contractInstrument), endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, 2));
         if (err) {
             warn(`getHistoricalDataRaw err ${symbol}`, err);
         }
@@ -290,8 +290,8 @@ export class MarketDataManager extends MkdManager {
             return null;
         }
 
-        const startDateTime = typeof startDate === 'string' ? startDate : moment(startDate).format('YYYYMMDD HH:mm:ss');
-        const endDateTime = typeof endDate === 'string' ? endDate : moment(endDate).format('YYYYMMDD HH:mm:ss');
+        const startDateTime = typeof startDate === 'string' ? startDate : moment.utc(startDate).format('YYYYMMDD-HH:mm:ss');
+        const endDateTime = typeof endDate === 'string' ? endDate : moment.utc(endDate).format('YYYYMMDD-HH:mm:ss');
 
         const [contractInstrument, errContract] = await awaitP(this.getContract(contract));
         if (errContract) {
@@ -311,7 +311,7 @@ export class MarketDataManager extends MkdManager {
 
         const [ticks, err] = await awaitP(lastValueFrom(
             IBKRConnection.Instance.ib.getHistoricalTicksLast(
-                contractInstrument,
+                this.normalizeRequestContract(contractInstrument),
                 startDateTime,
                 endDateTime,
                 numberOfTicks,
@@ -375,7 +375,7 @@ export class MarketDataManager extends MkdManager {
 
             const getMarketDataLast30Minutes = async () => {
                 log(`${logsNames}.getTickByTickDataUpdates.getMarketDataLast30Minutes`, `${symbolId}`);
-                const endDateTime = moment().format('YYYYMMDD HH:mm:ss');
+                const endDateTime = moment.utc().format('YYYYMMDD-HH:mm:ss');
                 const durationStr = '3600 S';
                 const barSizeSetting5Sec = '5 secs';
                 const [historicalData] = await awaitP(this.getHistoricalData(contract, endDateTime, durationStr, barSizeSetting5Sec as BarSizeSetting, WhatToShow.TRADES));
@@ -401,7 +401,7 @@ export class MarketDataManager extends MkdManager {
             await getMarketDataLast30Minutes();
 
             log(`${logsNames}.getTickByTickDataUpdates`, `Subscribing to ${symbolId}`);
-            const subscription = this.ib.getTickByTickAllLastDataUpdates(contract, 0, false)
+            const subscription = this.ib.getTickByTickAllLastDataUpdates(this.normalizeRequestContract(contract), 0, false)
                 .pipe(
                     catchError((error) => {
                         warn(`${logsNames}.getTickByTickDataUpdates`, `Error subscribing to ${symbolId}`, error);
@@ -535,7 +535,7 @@ export class MarketDataManager extends MkdManager {
             throw new Error(`Contract ${symbol} filtered by IBKR contract filter=${filter}`);
         }
 
-        return this.ib.getMarketDataSnapshot(resolved.contract, genericTickList, regulatorySnapshot);
+        return this.ib.getMarketDataSnapshot(this.normalizeRequestContract(resolved.contract), genericTickList, regulatorySnapshot);
     }
 
     private normalizeContractQuery(contract: Partial<Contract>): Partial<Contract> {
@@ -548,12 +548,16 @@ export class MarketDataManager extends MkdManager {
             };
         }
 
-        const query = { ...contract };
-        const expiryTimestamp = /^(\d{8})\s+\d{2}:\d{2}:\d{2}(?:\s+\S+)?$/.exec(query.lastTradeDateOrContractMonth || '');
+        return this.normalizeRequestContract({ ...contract });
+    }
+
+    private normalizeRequestContract(contract: Partial<Contract>): Partial<Contract> {
+        // Gateway returns expiry timestamps but accepts only dates in outgoing contracts.
+        const expiryTimestamp = /^(\d{8})\s+\d{2}:\d{2}:\d{2}(?:\s+\S+)?$/.exec(contract.lastTradeDateOrContractMonth || '');
         if (expiryTimestamp) {
-            query.lastTradeDateOrContractMonth = expiryTimestamp[1];
+            return { ...contract, lastTradeDateOrContractMonth: expiryTimestamp[1] };
         }
-        return query;
+        return contract;
     }
 
     getContract = async (contract: Partial<Contract | any>): Promise<ContractInstrument> => {

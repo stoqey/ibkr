@@ -141,7 +141,7 @@ describe('MarketDataManager - getMarketDataSnapshot', () => {
         await manager.getMarketDataSnapshot(input);
 
         expect(contractDetailsCalls).to.deep.equal([{ conId: 462941472, exchange: 'COMEX' }]);
-        expect(snapshotCalls[0].contract).to.equal(canonicalContract);
+        expect(snapshotCalls[0].contract).to.deep.equal({ ...canonicalContract, lastTradeDateOrContractMonth: '20261229' });
         expect(input.lastTradeDateOrContractMonth).to.equal('20261229 13:30:00 US/Eastern');
     });
 
